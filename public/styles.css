@@ -231,6 +231,30 @@ button {
   background: #f6f8f5;
 }
 
+.button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.button.secondary {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.button.secondary:hover {
+  border-color: #aab6af;
+  background: #f6f8f5;
+}
+
 svg {
   width: 18px;
   height: 18px;
@@ -1411,7 +1435,7 @@ svg {
 
 .career-section-grid {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr 1.25fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   align-items: start;
 }
@@ -1459,14 +1483,16 @@ svg {
 }
 
 .pvp-history-card {
+  grid-column: 1 / -1;
   display: grid;
   gap: 10px;
 }
 
 .pvp-mode-list {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 8px;
-  max-height: 420px;
+  max-height: 360px;
   overflow: auto;
   padding-right: 2px;
 }
@@ -1500,7 +1526,7 @@ svg {
 
 .pvp-mode-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -1646,6 +1672,33 @@ svg {
   margin-bottom: 10px;
 }
 
+.crafting-summary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.crafting-summary-actions b,
+.crafting-summary-actions span {
+  display: block;
+}
+
+.crafting-summary-actions b {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.crafting-summary-actions span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .crafting-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -1714,6 +1767,70 @@ svg {
 .crafting-collection-board {
   display: grid;
   gap: 12px;
+}
+
+.career-modal[hidden] {
+  display: none;
+}
+
+.career-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.career-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 22, 21, 0.56);
+}
+
+.career-modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, 100%);
+  max-height: min(92vh, 980px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.career-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.career-modal-head h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.career-modal-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.career-modal-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 .crafting-source-group {
@@ -2063,6 +2180,11 @@ svg {
     align-items: flex-start;
     flex-direction: column;
     border-radius: 8px;
+  }
+
+  .crafting-summary-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .career-activity-card {

@@ -18,6 +18,10 @@ function initCareerPage() {
     event.preventDefault();
     await queryCareer(elements.input.value);
   });
+  elements.result.addEventListener('click', handleCareerResultClick);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeCraftingModal();
+  });
 
   const params = new URLSearchParams(window.location.search);
   const query = params.get('q');
@@ -25,6 +29,30 @@ function initCareerPage() {
     elements.input.value = query;
     queryCareer(query);
   }
+}
+
+function handleCareerResultClick(event) {
+  if (event.target.closest('[data-crafting-modal-open]')) {
+    openCraftingModal();
+    return;
+  }
+  if (event.target.closest('[data-crafting-modal-close]') || event.target.matches('[data-crafting-modal-backdrop]')) {
+    closeCraftingModal();
+  }
+}
+
+function openCraftingModal() {
+  const modal = document.querySelector('#craftingModal');
+  if (!modal) return;
+  modal.hidden = false;
+  document.body.classList.add('modal-open');
+}
+
+function closeCraftingModal() {
+  const modal = document.querySelector('#craftingModal');
+  if (!modal || modal.hidden) return;
+  modal.hidden = true;
+  document.body.classList.remove('modal-open');
 }
 
 async function queryCareer(rawName) {
@@ -394,11 +422,44 @@ function renderCraftingBoardPanel(crafting, loading, error) {
           ${miniStat('Perk 解锁', `${statDisplay(crafting.plugUnlocked)} / ${statDisplay(crafting.plugTotal)}`)}
           ${miniStat('Perk 完成率', statDisplay(crafting.plugCompletionRate))}
         </div>
-        <div class="crafting-collection-board">
-          ${groups.map(renderCraftingSourceGroup).join('') || '<div class="detail-loading">没有公开锻造数据</div>'}
+        <div class="crafting-summary-actions">
+          <div>
+            <b>${escapeHtml(formatNumber(groups.length))} 个来源</b>
+            <span>${escapeHtml(formatNumber(items.length))} 件可锻造装备</span>
+          </div>
+          <button class="button secondary" type="button" data-crafting-modal-open>查看明细</button>
         </div>
+        ${renderCraftingModal(crafting, groups)}
       `}
     </section>
+  `;
+}
+
+function renderCraftingModal(crafting, groups) {
+  return `
+    <div class="career-modal" id="craftingModal" hidden>
+      <div class="career-modal-backdrop" data-crafting-modal-backdrop></div>
+      <div class="career-modal-panel" role="dialog" aria-modal="true" aria-labelledby="craftingModalTitle">
+        <div class="career-modal-head">
+          <div>
+            <h3 id="craftingModalTitle">锻造进度</h3>
+            <span>${escapeHtml(privacyText(crafting.privacy))}</span>
+          </div>
+          <button class="icon-button" type="button" data-crafting-modal-close aria-label="关闭">×</button>
+        </div>
+        <div class="career-mini-grid crafting-summary">
+          ${miniStat('配方解锁', `${statDisplay(crafting.unlocked)} / ${statDisplay(crafting.total)}`)}
+          ${miniStat('配方完成率', statDisplay(crafting.completionRate))}
+          ${miniStat('Perk 解锁', `${statDisplay(crafting.plugUnlocked)} / ${statDisplay(crafting.plugTotal)}`)}
+          ${miniStat('Perk 完成率', statDisplay(crafting.plugCompletionRate))}
+        </div>
+        <div class="career-modal-scroll">
+          <div class="crafting-collection-board">
+            ${groups.map(renderCraftingSourceGroup).join('') || '<div class="detail-loading">没有公开锻造数据</div>'}
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 

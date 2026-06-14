@@ -50,10 +50,10 @@ npm run worker:deploy
 
 可选缓存优化：
 
-- 首选 KV：玩家基础资料和 Raid/地牢完整历史都是 JSON，适合放在 KV 中跨 Worker 实例复用。创建命令：`npx wrangler kv namespace create CAREER_CACHE`，然后把返回的 `id` 填到 `wrangler.toml` 的 `[[kv_namespaces]]`。
-- 可选 R2：如果你想长期保留较大的历史快照，可以创建 `CAREER_R2` 绑定。当前代码会优先读边缘 Cache 和 KV，只有完整 Raid/地牢历史会额外写入 R2。
+- 首选 KV：玩家基础资料和 Raid/地牢/PvP 完整历史都是 JSON，适合放在 KV 中跨 Worker 实例复用。创建命令：`npx wrangler kv namespace create CAREER_CACHE`，然后把返回的 `id` 填到 `wrangler.toml` 的 `[[kv_namespaces]]`。
+- 可选 R2：如果你想长期保留较大的历史快照，可以创建 `CAREER_R2` 绑定。当前代码会优先读边缘 Cache 和 KV，完整 Raid/地牢/PvP 历史会额外写入 R2。
 - 不配置 KV/R2 也能运行：Worker 会使用 `caches.default` 和单实例内存缓存，只是冷启动或不同边缘节点之间不能完全复用缓存。
-- 可用 `SUMMARY_CACHE_TTL_SECONDS` 和 `ENDGAME_CACHE_TTL_SECONDS` 调整缓存时间。默认基础资料 300 秒，完整 Raid/地牢历史 900 秒。活动定义名称/图片默认缓存 604800 秒，并发默认 4。
+- 可用 `SUMMARY_CACHE_TTL_SECONDS` 和 `ENDGAME_CACHE_TTL_SECONDS` 调整缓存时间。默认基础资料 300 秒，完整活动历史 900 秒。`ENDGAME_HISTORY_PAGE_LIMIT`/`ENDGAME_HISTORY_PAGE_SIZE` 控制 Raid 和地牢分页，`PVP_HISTORY_PAGE_LIMIT`/`PVP_HISTORY_PAGE_SIZE` 单独控制 PvP 分页。活动定义名称/图片默认缓存 604800 秒，并发默认 4。
 
 当前公开玩家查询不需要 OAuth，不需要 `client_id`、`client_secret` 或 `state`。
 

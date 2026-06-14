@@ -52,7 +52,7 @@ async function queryCareer(rawName) {
     state.career = {
       ...summary,
       detailLoading: true,
-      endgameLoading: { raid: true, dungeon: true }
+      endgameLoading: { raid: true, dungeon: true, pvp: true }
     };
     renderCareerPage();
 
@@ -65,7 +65,8 @@ async function queryCareer(rawName) {
     await Promise.allSettled([
       loadDetails(queryId, baseRequest),
       loadEndgame(queryId, baseRequest, 'raid'),
-      loadEndgame(queryId, baseRequest, 'dungeon')
+      loadEndgame(queryId, baseRequest, 'dungeon'),
+      loadEndgame(queryId, baseRequest, 'pvp')
     ]);
     if (state.queryId !== queryId) return;
     clearNotice();
@@ -138,13 +139,13 @@ function mergeEndgameCareer(career, payload) {
   const loading =
     career.endgameLoading && typeof career.endgameLoading === 'object'
       ? { ...career.endgameLoading }
-      : { raid: false, dungeon: false };
+      : { raid: false, dungeon: false, pvp: false };
   for (const mode of Object.keys(endgame)) {
-    if (mode === 'raid' || mode === 'dungeon') loading[mode] = false;
+    if (mode === 'raid' || mode === 'dungeon' || mode === 'pvp') loading[mode] = false;
   }
   const merged = {
     ...career,
-    endgameLoading: loading.raid || loading.dungeon ? loading : false,
+    endgameLoading: loading.raid || loading.dungeon || loading.pvp ? loading : false,
     endgame: {
       ...(career.endgame || {}),
       ...endgame
@@ -172,6 +173,8 @@ function renderCareerPage() {
   const records = details.records || {};
   const crafting = details.crafting || {};
   const pvp = stats.pvp || {};
+  const pvpHistory = career.endgame?.pvp || {};
+  const pvpTotal = pvpHistory.total || pvp;
   const raid = career.endgame?.raid || stats.raid || {};
   const dungeon = career.endgame?.dungeon || stats.dungeon || {};
   const raidTotal = raid.total || raid;
@@ -197,7 +200,7 @@ function renderCareerPage() {
         ${metricCard('成就点数', statDisplay(records.activeScore), records.lifetimeScore ? `生涯 ${statDisplay(records.lifetimeScore)}` : loadingText(career.detailLoading))}
         ${metricCard('Raid 完成', statDisplay(raidTotal.clears), `${statDisplay(raidTotal.completionRate)} 完成率`)}
         ${metricCard('地牢完成', statDisplay(dungeonTotal.clears), `${statDisplay(dungeonTotal.completionRate)} 完成率`)}
-        ${metricCard('PvP 胜场', statDisplay(pvp.activitiesWon), `${winRate(pvp)} 胜率`)}
+        ${metricCard('PvP 胜场', statDisplay(pvpTotal.activitiesWon), `${winRate(pvpTotal)} 胜率`)}
         ${metricCard('锻造解锁', crafting.unlocked ? `${statDisplay(crafting.unlocked)} / ${statDisplay(crafting.total)}` : '-', statDisplay(crafting.completionRate) || loadingText(career.detailLoading))}
       </div>
     </section>
@@ -205,7 +208,7 @@ function renderCareerPage() {
     <section class="career-section-grid">
       ${renderCharacters(career.characters || [])}
       ${renderRecordPanel(records, career.detailLoading, career.detailError)}
-      ${renderPvpPanel(pvp)}
+      ${renderPvpPanel(pvp, pvpHistory, isEndgameModeLoading(career, 'pvp'), career.endgameErrors?.pvp)}
     </section>
 
     <section class="career-section-wide">
@@ -261,26 +264,51 @@ function renderRecordPanel(records, loading, error) {
   `;
 }
 
-function renderPvpPanel(pvp) {
+function renderPvpPanel(pvp, history, loading, error) {
+  const total = history.total || pvp || {};
+  const subModes = Array.isArray(history.subModes) ? history.subModes : [];
   return `
-    <article class="career-info-card">
+    <article class="career-info-card pvp-history-card">
       <div class="career-card-head">
         <h3>PvP 数据</h3>
-        <span>${escapeHtml(winRate(pvp))} 胜率</span>
+        <span>${loading ? '完整历史加载中' : `${escapeHtml(statDisplay(total.activitiesEntered))} 场`}</span>
       </div>
       <div class="career-mini-grid">
-        ${miniStat('场次', statDisplay(pvp.activitiesEntered))}
-        ${miniStat('胜场', statDisplay(pvp.activitiesWon))}
-        ${miniStat('击杀', statDisplay(pvp.kills))}
-        ${miniStat('死亡', statDisplay(pvp.deaths))}
-        ${miniStat('助攻', statDisplay(pvp.assists))}
-        ${miniStat('KD', statDisplay(pvp.kd))}
-        ${miniStat('KDA', statDisplay(pvp.kda))}
-        ${miniStat('效率', statDisplay(pvp.efficiency))}
-        ${miniStat('精准击杀', statDisplay(pvp.precisionKills))}
-        ${miniStat('时长', statDisplay(pvp.secondsPlayed))}
+        ${miniStat('场次', statDisplay(total.activitiesEntered))}
+        ${miniStat('胜场', statDisplay(total.activitiesWon))}
+        ${miniStat('胜率', winRate(total))}
+        ${miniStat('击败', statDisplay(total.opponentsDefeated || total.kills))}
+        ${miniStat('KD', statDisplay(total.kd))}
+        ${miniStat('KDA', statDisplay(total.kda))}
+        ${miniStat('效率', statDisplay(total.efficiency))}
+        ${miniStat('时长', total.hours ? `${statDisplay(total.hours)} 小时` : statDisplay(total.secondsPlayed))}
+      </div>
+      ${error ? `<div class="notice error">${escapeHtml(error)}</div>` : ''}
+      <div class="pvp-mode-list">
+        ${
+          subModes.length
+            ? subModes.map(renderPvpModeRow).join('')
+            : `<div class="detail-loading">${loading ? 'PvP 完整历史加载中' : '没有公开 PvP 活动历史'}</div>`
+        }
       </div>
     </article>
+  `;
+}
+
+function renderPvpModeRow(mode) {
+  return `
+    <div class="pvp-mode-row">
+      <div>
+        <b>${escapeHtml(mode.label || `PvP 模式 ${mode.modeId || '-'}`)}</b>
+        <span>${escapeHtml(mode.lastPlayed ? `最近 ${dateOnly(mode.lastPlayed)}` : '暂无最近记录')}</span>
+      </div>
+      <div class="pvp-mode-stats">
+        ${miniStat('场次', statDisplay(mode.activitiesEntered))}
+        ${miniStat('胜率', statDisplay(mode.winRate))}
+        ${miniStat('KD', statDisplay(mode.kd))}
+        ${miniStat('击败', statDisplay(mode.opponentsDefeated || mode.kills))}
+      </div>
+    </div>
   `;
 }
 

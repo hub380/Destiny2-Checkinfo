@@ -1458,6 +1458,52 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.pvp-history-card {
+  display: grid;
+  gap: 10px;
+}
+
+.pvp-mode-list {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.pvp-mode-row {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.pvp-mode-row b,
+.pvp-mode-row span {
+  display: block;
+}
+
+.pvp-mode-row b {
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.pvp-mode-row span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pvp-mode-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
 .career-character-grid {
   display: grid;
   gap: 8px;
@@ -1915,6 +1961,10 @@ svg {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .pvp-mode-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .crafting-source-items {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2003,6 +2053,7 @@ svg {
 
   .career-mini-grid,
   .career-activity-stats,
+  .pvp-mode-stats,
   .crafting-grid,
   .crafting-source-items {
     grid-template-columns: 1fr;

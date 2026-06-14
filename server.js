@@ -19,7 +19,7 @@ const ENDGAME_CACHE = new Map();
 const GEAR_INDEX_CACHE = new Map();
 const PROFILE_DETAIL_CACHE = new Map();
 const ITEM_DEFINITION_CACHE = new Map();
-const CACHE_VERSION = '2026-06-13-endgame-v2';
+const CACHE_VERSION = '2026-06-15-history-v1';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -821,15 +821,13 @@ async function getDestinyEndgame(body) {
 
   const target = await resolveEndgameTarget(body);
   const modes = normalizeEndgameModes(body?.modes || body?.mode);
-  const pageLimit = Number(process.env.ENDGAME_HISTORY_PAGE_LIMIT || 50);
-  const pageSize = Number(process.env.ENDGAME_HISTORY_PAGE_SIZE || 250);
+  const historyConfig = modes.map((mode) => `${mode}:${historyPageLimit(mode)}x${historyPageSize(mode)}`).join(',');
   const characterIds = target.characters.map((character) => character.id).filter(Boolean).sort().join(',');
   const cacheKey = [
     'endgame',
     CACHE_VERSION,
     process.env.BUNGIE_LOCALE || 'zh-chs',
-    pageLimit,
-    pageSize,
+    historyConfig,
     modes.join(','),
     target.membership.membershipType,
     target.membership.membershipId,
@@ -975,8 +973,22 @@ function attachEndgameToCareer(career, endgamePayload) {
 
 function normalizeEndgameModes(value) {
   const raw = Array.isArray(value) ? value : value ? [value] : ['raid', 'dungeon'];
-  const modes = raw.map((item) => String(item || '').toLowerCase()).filter((item) => item === 'raid' || item === 'dungeon');
+  const modes = raw.map((item) => String(item || '').toLowerCase()).filter((item) => item === 'raid' || item === 'dungeon' || item === 'pvp');
   return Array.from(new Set(modes.length ? modes : ['raid', 'dungeon']));
+}
+
+function historyPageLimit(modeName) {
+  if (modeName === 'pvp') {
+    return positiveNumber(process.env.PVP_HISTORY_PAGE_LIMIT, positiveNumber(process.env.ENDGAME_HISTORY_PAGE_LIMIT, 50));
+  }
+  return positiveNumber(process.env.ENDGAME_HISTORY_PAGE_LIMIT, 50);
+}
+
+function historyPageSize(modeName) {
+  if (modeName === 'pvp') {
+    return positiveNumber(process.env.PVP_HISTORY_PAGE_SIZE, positiveNumber(process.env.ENDGAME_HISTORY_PAGE_SIZE, 250));
+  }
+  return positiveNumber(process.env.ENDGAME_HISTORY_PAGE_SIZE, 250);
 }
 
 function buildEndgameStatsPatch(endgame) {
@@ -1373,11 +1385,10 @@ function summarizeCareer(query, membership, memberships, profileResponse, statsR
 }
 
 async function getEndgameCareer(membership, characters, modes = ['raid', 'dungeon']) {
-  const pageLimit = Number(process.env.ENDGAME_HISTORY_PAGE_LIMIT || 50);
-  const pageSize = Number(process.env.ENDGAME_HISTORY_PAGE_SIZE || 250);
   const modeConfig = {
     raid: { apiMode: 4, hashes: new Map() },
-    dungeon: { apiMode: 82, hashes: new Map() }
+    dungeon: { apiMode: 82, hashes: new Map() },
+    pvp: { apiMode: 5, hashes: new Map() }
   };
   const selectedModes = normalizeEndgameModes(modes);
   const warnings = [];
@@ -1390,8 +1401,8 @@ async function getEndgameCareer(membership, characters, modes = ['raid', 'dungeo
           character.id,
           modeName,
           modeConfig[modeName].apiMode,
-          pageSize,
-          pageLimit,
+          historyPageSize(modeName),
+          historyPageLimit(modeName),
           modeConfig[modeName].hashes,
           warnings
         )
@@ -1399,12 +1410,14 @@ async function getEndgameCareer(membership, characters, modes = ['raid', 'dungeo
     )
   );
 
-  const hashes = selectedModes.flatMap((modeName) => [...modeConfig[modeName].hashes.keys()]);
+  const hashes = selectedModes.flatMap((modeName) => [...modeConfig[modeName].hashes.values()].map((item) => item.hash));
   const definitions = await getActivityDefinitions(hashes, warnings);
 
   const result = {
-    pageLimit,
-    pageSize,
+    pageConfig: Object.fromEntries(selectedModes.map((modeName) => [modeName, {
+      pageLimit: historyPageLimit(modeName),
+      pageSize: historyPageSize(modeName)
+    }])),
     warnings
   };
   for (const modeName of selectedModes) {
@@ -1432,12 +1445,18 @@ async function collectEndgameHistory(membership, characterId, modeName, mode, pa
 function addEndgameActivity(output, activity, characterId, modeName) {
   const hash = String(activity.activityDetails?.referenceId || activity.activityDetails?.directorActivityHash || '');
   if (!hash) return;
+  const activityMode = Number(activity.activityDetails?.mode || 0);
+  const activityModes = Array.isArray(activity.activityDetails?.modes) ? activity.activityDetails.modes.map(Number).filter(Boolean) : [];
+  const key = modeName === 'pvp' ? `${hash}:${activityMode || 'unknown'}` : hash;
 
-  if (!output.has(hash)) {
-    output.set(hash, {
+  if (!output.has(key)) {
+    output.set(key, {
       hash,
       mode: modeName,
+      activityMode,
+      activityModes: new Set(activityModes),
       attempts: 0,
+      wins: 0,
       clears: 0,
       kills: 0,
       deaths: 0,
@@ -1451,23 +1470,27 @@ function addEndgameActivity(output, activity, characterId, modeName) {
     });
   }
 
-  const item = output.get(hash);
+  const item = output.get(key);
   const values = activity.values || {};
   const completed = statValue(values.completed) > 0;
+  const won = modeName === 'pvp' ? statValue(values.standing) === 0 : false;
   const playerCount = statValue(values.playerCount);
   const deaths = statValue(values.deaths);
   const isSolo = completed && playerCount === 1;
   const isSoloFlawless = isSolo && deaths === 0;
   const seconds = statValue(values.timePlayedSeconds) || statValue(values.activityDurationSeconds);
   item.attempts += 1;
+  item.wins += won ? 1 : 0;
   item.clears += completed ? 1 : 0;
   item.kills += statValue(values.kills);
   item.deaths += deaths;
   item.assists += statValue(values.assists);
+  item.opponentsDefeated = Number(item.opponentsDefeated || 0) + statValue(values.opponentsDefeated);
   item.seconds += seconds;
   item.soloClears += isSolo ? 1 : 0;
   item.soloFlawlessClears += isSoloFlawless ? 1 : 0;
   item.characters.add(characterId);
+  for (const id of activityModes) item.activityModes.add(id);
 
   if (completed && seconds > 0 && (item.bestSeconds == null || seconds < item.bestSeconds)) {
     item.bestSeconds = seconds;
@@ -1532,11 +1555,15 @@ function buildEndgameMode(modeName, hashGroups, definitions) {
       byName.set(name, {
         name,
         mode: modeName,
+        activityMode: item.activityMode || 0,
+        activityModes: new Set(),
         attempts: 0,
+        wins: 0,
         clears: 0,
         kills: 0,
         deaths: 0,
         assists: 0,
+        opponentsDefeated: 0,
         seconds: 0,
         soloClears: 0,
         soloFlawlessClears: 0,
@@ -1552,14 +1579,18 @@ function buildEndgameMode(modeName, hashGroups, definitions) {
     const group = byName.get(name);
     const variant = formatEndgameVariant(item, definition);
     group.attempts += item.attempts;
+    group.wins += item.wins || 0;
     group.clears += item.clears;
     group.kills += item.kills;
     group.deaths += item.deaths;
     group.assists += item.assists;
+    group.opponentsDefeated += Number(item.opponentsDefeated || 0);
     group.seconds += item.seconds;
     group.soloClears += item.soloClears;
     group.soloFlawlessClears += item.soloFlawlessClears;
     group.hashes.add(item.hash);
+    group.activityMode = group.activityMode || item.activityMode || 0;
+    for (const id of item.activityModes || []) group.activityModes.add(id);
     for (const characterId of item.characters) group.characterIds.add(characterId);
     group.variants.push(variant);
     if (!group.image && definition.image) group.image = definition.image;
@@ -1578,20 +1609,122 @@ function buildEndgameMode(modeName, hashGroups, definitions) {
   const rawTotal = activities.reduce(
     (total, item) => {
       total.attempts += item.attempts.value;
+      total.wins += item.wins.value;
       total.clears += item.clears.value;
       total.kills += item.kills.value;
       total.deaths += item.deaths.value;
       total.assists += item.assists.value;
+      total.opponentsDefeated += item.opponentsDefeated.value;
       total.seconds += item.seconds.value;
       return total;
     },
-    { attempts: 0, clears: 0, kills: 0, deaths: 0, assists: 0, seconds: 0 }
+    { attempts: 0, wins: 0, clears: 0, kills: 0, deaths: 0, assists: 0, opponentsDefeated: 0, seconds: 0 }
   );
 
-  return {
+  const result = {
     total: formatEndgameTotal(rawTotal),
     activities
   };
+  if (modeName === 'pvp') {
+    result.subModes = buildPvpSubModes(hashGroups);
+  }
+  return result;
+}
+
+function buildPvpSubModes(hashGroups) {
+  const groups = new Map();
+  for (const item of hashGroups.values()) {
+    const modeId = Number(item.activityMode || 0);
+    const key = String(modeId || 'unknown');
+    if (!groups.has(key)) {
+      groups.set(key, {
+        modeId,
+        label: pvpModeLabel(modeId),
+        attempts: 0,
+        wins: 0,
+        clears: 0,
+        kills: 0,
+        deaths: 0,
+        assists: 0,
+        opponentsDefeated: 0,
+        seconds: 0,
+        lastPlayed: null
+      });
+    }
+    const group = groups.get(key);
+    group.attempts += item.attempts;
+    group.wins += item.wins || 0;
+    group.clears += item.clears;
+    group.kills += item.kills;
+    group.deaths += item.deaths;
+    group.assists += item.assists;
+    group.opponentsDefeated += Number(item.opponentsDefeated || 0);
+    group.seconds += item.seconds;
+    if (item.lastPlayed && (!group.lastPlayed || new Date(item.lastPlayed) > new Date(group.lastPlayed))) {
+      group.lastPlayed = item.lastPlayed;
+    }
+  }
+
+  return Array.from(groups.values())
+    .map((item) => ({
+      modeId: item.modeId,
+      label: item.label,
+      lastPlayed: item.lastPlayed,
+      ...formatEndgameTotal(item)
+    }))
+    .sort((a, b) => b.activitiesEntered.value - a.activitiesEntered.value || pvpModeSortWeight(a.modeId) - pvpModeSortWeight(b.modeId) || a.label.localeCompare(b.label, 'zh-CN'));
+}
+
+function pvpModeLabel(modeId) {
+  const labels = {
+    5: 'PvP 全部',
+    10: '控制',
+    12: '冲突',
+    19: '铁旗',
+    25: '狂欢',
+    31: '霸权',
+    32: '私人比赛',
+    37: '生存',
+    38: '倒计时',
+    39: '九人试炼',
+    43: '铁旗控制',
+    44: '铁旗冲突',
+    45: '铁旗霸权',
+    48: '混战',
+    50: '双打',
+    59: '决胜',
+    60: '封锁',
+    61: '灼烧',
+    62: '团队灼烧',
+    69: '竞技',
+    70: '快速比赛',
+    71: '快速冲突',
+    72: '竞技冲突',
+    73: '快速控制',
+    74: '竞技控制',
+    80: '淘汰',
+    81: '动能控制',
+    84: '奥西里斯试炼',
+    88: '裂隙',
+    89: '区域控制',
+    90: '铁旗裂隙',
+    91: '铁旗区域控制',
+    92: '遗物'
+  };
+  return labels[Number(modeId)] || `PvP 模式 ${modeId || '-'}`;
+}
+
+function pvpModeSortWeight(modeId) {
+  const weights = {
+    84: 1,
+    19: 2,
+    43: 3,
+    90: 4,
+    91: 5,
+    69: 10,
+    70: 20
+  };
+  return weights[Number(modeId)] || 100;
 }
 
 function formatEndgameActivity(item) {
@@ -1601,6 +1734,9 @@ function formatEndgameActivity(item) {
   return {
     name: item.name,
     mode: item.mode,
+    activityMode: item.activityMode || 0,
+    modeLabel: pvpModeLabel(item.activityMode),
+    activityModes: Array.from(item.activityModes || []),
     image: item.image,
     variantCount: item.hashes.size,
     variants,
@@ -1616,6 +1752,9 @@ function formatEndgameVariant(item, definition) {
   const base = formatEndgameTotal(item);
   return {
     hash: item.hash,
+    activityMode: item.activityMode || 0,
+    modeLabel: pvpModeLabel(item.activityMode),
+    activityModes: Array.from(item.activityModes || []),
     name: cleanText(definition.name) || `活动 ${item.hash}`,
     image: definition.image || '',
     lastPlayed: item.lastPlayed,
@@ -1628,25 +1767,33 @@ function formatEndgameVariant(item, definition) {
 function formatEndgameTotal(item) {
   const attempts = Number(item.attempts || 0);
   const clears = Number(item.clears || 0);
+  const wins = Number(item.wins || 0);
   const kills = Number(item.kills || 0);
   const deaths = Number(item.deaths || 0);
+  const assists = Number(item.assists || 0);
   const seconds = Number(item.seconds || 0);
   const soloClears = Number(item.soloClears || 0);
   const soloFlawlessClears = Number(item.soloFlawlessClears || 0);
   return {
     activitiesEntered: numberStat(attempts),
     attempts: numberStat(attempts),
+    wins: numberStat(wins),
+    activitiesWon: numberStat(wins),
     clears: numberStat(clears),
     activitiesCleared: numberStat(clears),
     kills: numberStat(kills),
     deaths: numberStat(deaths),
-    assists: numberStat(Number(item.assists || 0)),
+    assists: numberStat(assists),
+    opponentsDefeated: numberStat(Number(item.opponentsDefeated || 0)),
     soloClears: numberStat(soloClears),
     soloFlawlessClears: numberStat(soloFlawlessClears),
     secondsPlayed: secondsDisplayStat(seconds),
     seconds: numberStat(seconds),
     hours: decimalStat(seconds / 3600, 1),
     kd: ratioStat(kills, deaths),
+    kda: ratioStat(kills + assists / 2, deaths),
+    efficiency: ratioStat(kills + assists, deaths),
+    winRate: percentStat(numberStat(wins), numberStat(attempts)),
     completionRate: percentStat(numberStat(clears), numberStat(attempts))
   };
 }

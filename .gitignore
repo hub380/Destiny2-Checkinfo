@@ -1,0 +1,14 @@
+node_modules/
+.wrangler/
+.gh-temp/
+work/
+.env
+.env.local
+.env.production
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+mitm_mcp_traffic.db
+*.db
+.DS_Store
+*.log

@@ -1,0 +1,35 @@
+name = "destiny2-fireteam-dashboard"
+main = "src/worker.js"
+compatibility_date = "2026-06-12"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[vars]
+HEYBOX_SOURCE_URL = "https://api.xiaoheihe.cn/game/common_team_v2/home?appid=1085660"
+BUNGIE_MEMBERSHIP_TYPE = "-1"
+BUNGIE_LOCALE = "zh-chs"
+REQUEST_TIMEOUT_MS = "15000"
+HEYBOX_MAX_BYTES = "2000000"
+CAREER_CACHE_TTL_SECONDS = "900"
+SUMMARY_CACHE_TTL_SECONDS = "300"
+ENDGAME_CACHE_TTL_SECONDS = "900"
+ACTIVITY_DEFINITION_CACHE_TTL_SECONDS = "604800"
+ACTIVITY_DEFINITION_CONCURRENCY = "4"
+GEAR_INDEX_CACHE_TTL_SECONDS = "604800"
+GEAR_MANIFEST_MAX_BYTES = "80000000"
+GEAR_MANIFEST_TIMEOUT_MS = "30000"
+
+# Optional cache bindings. KV is recommended for player JSON cache.
+# Create with: npx wrangler kv namespace create CAREER_CACHE
+[[kv_namespaces]]
+binding = "CAREER_CACHE"
+id = "76ed0ae024ae4e7ab49eefd9cbe1ad6f"
+
+# Optional R2 fallback for larger historical snapshots.
+# Create with: npx wrangler r2 bucket create destiny2-career-cache
+# [[r2_buckets]]
+# binding = "CAREER_R2"
+# bucket_name = "destiny2-career-cache"

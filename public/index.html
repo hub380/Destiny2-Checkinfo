@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Destiny 2 组队监控</title>
+    <link rel="icon" href="https://imgheybox.max-c.com/oa/2026/06/11/3271d1932bba2fe079e7305532ce2367.png" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <img src="https://imgheybox.max-c.com/oa/2026/06/11/3271d1932bba2fe079e7305532ce2367.png" alt="" class="brand-mark" />
+          <div>
+            <h1>Destiny 2 组队监控</h1>
+            <p>小黑盒组队 · 棒鸡公开生涯</p>
+          </div>
+        </div>
+
+        <nav class="main-nav" aria-label="主导航">
+          <a href="#fireteams" class="current">组队</a>
+          <a href="/career.html">玩家生涯</a>
+          <a href="/gear.html">装备搜索</a>
+        </nav>
+
+        <div class="toolbar">
+          <span class="status-pill" id="sourceBadge">连接中</span>
+          <span class="status-text" id="lastUpdated">尚未刷新</span>
+          <label class="switch" title="自动刷新">
+            <input type="checkbox" id="autoRefresh" checked />
+            <span></span>
+            <b id="countdown">30s</b>
+          </label>
+          <button class="icon-button" id="refreshButton" title="刷新">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel fireteams-panel" id="fireteams">
+          <div class="panel-header">
+            <div>
+              <h2>组队信息</h2>
+              <p id="feedSummary">等待数据</p>
+            </div>
+            <div class="filter-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" />
+              </svg>
+              <input id="filterInput" type="search" placeholder="筛选活动、队长、用户名" />
+            </div>
+          </div>
+
+          <div class="notice hidden" id="feedNotice"></div>
+          <div class="fireteam-list" id="fireteamList"></div>
+        </section>
+
+        <aside class="panel career-panel" id="career">
+          <div class="panel-header stacked">
+            <div>
+              <h2>棒鸡玩家生涯</h2>
+              <p id="careerSubtitle">公开玩家查询</p>
+            </div>
+          </div>
+
+          <form class="career-search" id="careerForm">
+            <input id="careerInput" autocomplete="off" spellcheck="false" placeholder="Guardian#2333" />
+            <button type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" />
+              </svg>
+              查询
+            </button>
+          </form>
+
+          <div class="notice hidden" id="careerNotice"></div>
+          <div class="career-result empty" id="careerResult">暂无查询结果</div>
+        </aside>
+      </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

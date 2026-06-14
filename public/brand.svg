@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Destiny radar mark">
+  <rect width="64" height="64" rx="14" fill="#111315"/>
+  <path d="M32 8c10.5 0 19.8 6.9 22.9 16.9h-7.2A17.2 17.2 0 0 0 32 14.8a17.2 17.2 0 0 0-15.7 10.1H9.1C12.2 14.9 21.5 8 32 8Z" fill="#d7e2d1"/>
+  <path d="M10.6 31.6h11.7c1.6-3.5 5.2-5.9 9.7-5.9s8.1 2.4 9.7 5.9h11.7C52.9 44.6 43.5 56 32 56S11.1 44.6 10.6 31.6Z" fill="#69a88f"/>
+  <circle cx="32" cy="35" r="7" fill="#111315"/>
+  <circle cx="32" cy="35" r="3" fill="#f2c36b"/>
+</svg>

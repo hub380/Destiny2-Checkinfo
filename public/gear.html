@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Destiny 2 装备搜索</title>
+    <link rel="icon" href="https://imgheybox.max-c.com/oa/2026/06/11/3271d1932bba2fe079e7305532ce2367.png" />
+    <link rel="stylesheet" href="/styles.css?v=gear-v4-frame-inline" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <img src="https://imgheybox.max-c.com/oa/2026/06/11/3271d1932bba2fe079e7305532ce2367.png" alt="" class="brand-mark" />
+          <div>
+            <h1>Destiny 2 装备搜索</h1>
+            <p>统一搜索武器、护甲、Perk 与可出武器</p>
+          </div>
+        </div>
+
+        <nav class="main-nav" aria-label="主导航">
+          <a href="/">组队</a>
+          <a href="/career.html">玩家生涯</a>
+          <a href="/gear.html" class="current">装备搜索</a>
+        </nav>
+      </header>
+
+      <main class="layout gear-layout">
+        <section class="panel gear-panel" id="gear">
+          <div class="panel-header">
+            <div>
+              <h2>装备搜索</h2>
+              <p id="gearSubtitle">输入名称或 Hash 查询，点击结果查看详情</p>
+            </div>
+          </div>
+
+          <form class="gear-search" id="gearForm">
+            <div class="gear-query">
+              <input id="gearInput" autocomplete="off" spellcheck="false" placeholder="狂野飞禽 / 诱导推销 / 狂野圣歌" />
+              <button type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" />
+                </svg>
+                查询
+              </button>
+            </div>
+          </form>
+
+          <div class="notice hidden" id="gearNotice"></div>
+          <div class="gear-result empty" id="gearResult">输入装备或 Perk 名称开始查询</div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/gear.js?v=gear-v4-frame-inline" type="module"></script>
+  </body>
+</html>

@@ -208,7 +208,7 @@ function HomePage() {
             </div>
           </div>
           <form className={cn('career-search')} onSubmit={queryCareer}>
-            <input value={careerQuery} onChange={(event) => setCareerQuery(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Guardian#2333" />
+            <input value={careerQuery} onChange={(event) => setCareerQuery(event.target.value)} autoComplete="off" spellCheck={false} placeholder="输入棒鸡 ID：名称#数字代码" />
             <button type="submit">
               <SearchIcon />
               查询

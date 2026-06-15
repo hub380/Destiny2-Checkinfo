@@ -2,6 +2,8 @@ node_modules/
 dist/
 .wrangler/
 .gh-temp/
+.codegraph/
+.cursor/rules/codegraph.mdc
 work/
 .env
 .env.local

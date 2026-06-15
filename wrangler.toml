@@ -25,6 +25,9 @@ ACTIVITY_DEFINITION_CONCURRENCY = "4"
 GEAR_INDEX_CACHE_TTL_SECONDS = "604800"
 GEAR_MANIFEST_MAX_BYTES = "80000000"
 GEAR_MANIFEST_TIMEOUT_MS = "30000"
+R2_SNAPSHOT_PREFIX = "career-snapshots"
+R2_GUIDE_PREFIX = "guides"
+GUIDE_INDEX_CACHE_TTL_SECONDS = "300"
 
 # Optional cache bindings. KV is recommended for player JSON cache.
 # Create with: npx wrangler kv namespace create CAREER_CACHE
@@ -32,8 +35,6 @@ GEAR_MANIFEST_TIMEOUT_MS = "30000"
 binding = "CAREER_CACHE"
 id = "76ed0ae024ae4e7ab49eefd9cbe1ad6f"
 
-# Optional R2 fallback for larger historical snapshots.
-# Create with: npx wrangler r2 bucket create destiny2-career-cache
-# [[r2_buckets]]
-# binding = "CAREER_R2"
-# bucket_name = "destiny2-career-cache"
+[[r2_buckets]]
+binding = "CAREER_R2"
+bucket_name = "destiny2-checkinfo-data"

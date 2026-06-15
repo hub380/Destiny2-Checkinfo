@@ -1,0 +1,49 @@
+{
+  "slug": "example-raid-mechanics",
+  "title": "示例 Raid 机制记录",
+  "subtitle": "用于验证 R2 攻略库的第一篇示例内容",
+  "type": "raid",
+  "activityName": "示例 Raid",
+  "cover": "/brand.svg",
+  "summary": "这是一篇用于验证攻略列表、详情章节、机制步骤和外部视频占位的示例内容。",
+  "tags": ["Raid", "机制", "示例"],
+  "updatedAt": "2026-06-15T00:00:00.000Z",
+  "difficulty": "普通",
+  "estimatedMinutes": 8,
+  "authors": ["Destiny2 Checkinfo"],
+  "videos": [
+    {
+      "title": "外部视频占位",
+      "provider": "External",
+      "url": "https://www.bungie.net/"
+    }
+  ],
+  "sections": [
+    {
+      "id": "overview",
+      "title": "机制概览",
+      "summary": "用简短章节描述机制目标、分工和失败条件。",
+      "media": [
+        {
+          "type": "image",
+          "title": "示例图片",
+          "url": "/brand.svg",
+          "alt": "Destiny 2 Checkinfo"
+        }
+      ],
+      "steps": [
+        {
+          "title": "确认分工",
+          "body": "进入战斗前确认清怪、读符号、跑机制和输出位置。",
+          "tips": ["用固定叫法减少沟通成本", "把容易混淆的位置写成图文说明"]
+        },
+        {
+          "title": "执行循环",
+          "body": "每轮机制都记录触发条件、交互对象和容错点。",
+          "danger": "真实攻略上线前需要替换本示例内容。"
+        }
+      ]
+    }
+  ],
+  "related": []
+}

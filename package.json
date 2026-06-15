@@ -10,6 +10,8 @@
     "build": "tsc --noEmit && vite build",
     "gear:index": "node scripts/build-gear-index.js",
     "activity:index": "node scripts/build-activity-index.js",
+    "guides:validate": "node scripts/guides-validate.js",
+    "guides:upload": "node scripts/guides-upload.js",
     "worker:dev": "wrangler dev",
     "worker:deploy": "wrangler deploy"
   },

@@ -70,3 +70,35 @@ export interface GearSearchDto extends JsonRecord {
   items?: JsonRecord[];
   cache?: JsonRecord;
 }
+
+export interface GuideSummaryDto extends JsonRecord {
+  slug: string;
+  title: string;
+  subtitle?: string;
+  type?: string;
+  typeLabel?: string;
+  activityHash?: string;
+  activityName?: string;
+  cover?: string;
+  summary?: string;
+  tags?: string[];
+  updatedAt?: string;
+  difficulty?: string;
+  estimatedMinutes?: number;
+}
+
+export interface GuideIndexDto extends JsonRecord {
+  updatedAt?: string;
+  categories?: string[];
+  tags?: string[];
+  items?: GuideSummaryDto[];
+  cache?: JsonRecord;
+}
+
+export interface GuideDetailDto extends GuideSummaryDto {
+  authors?: string[];
+  videos?: JsonRecord[];
+  sections?: JsonRecord[];
+  related?: string[];
+  cache?: JsonRecord;
+}

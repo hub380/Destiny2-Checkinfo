@@ -18,7 +18,8 @@ export default defineConfig({
       input: {
         index: resolve(rootDir, 'index.html'),
         career: resolve(rootDir, 'career.html'),
-        gear: resolve(rootDir, 'gear.html')
+        gear: resolve(rootDir, 'gear.html'),
+        guides: resolve(rootDir, 'guides.html')
       },
       output: {
         entryFileNames: 'assets/[name]-[hash].js',

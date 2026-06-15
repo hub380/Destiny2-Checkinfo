@@ -1,4 +1,4 @@
-import type { CareerSummaryDto, EndgameDto, FireteamsResponseDto, GearSearchDto, JsonRecord } from './types';
+import type { CareerSummaryDto, EndgameDto, FireteamsResponseDto, GearSearchDto, GuideDetailDto, GuideIndexDto, JsonRecord } from './types';
 
 export async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options);
@@ -39,6 +39,14 @@ export function getGearItem(hash: string) {
 
 export function getPerkWeapons(body: JsonRecord) {
   return postJson<JsonRecord>('/api/gear/perk-weapons', { ...body, limit: 80 });
+}
+
+export function getGuides() {
+  return fetchJson<GuideIndexDto>('/api/guides');
+}
+
+export function getGuide(slug: string) {
+  return fetchJson<GuideDetailDto>(`/api/guides/${encodeURIComponent(slug)}`);
 }
 
 function postJson<T>(url: string, body: JsonRecord) {

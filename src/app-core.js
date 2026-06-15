@@ -1,4 +1,6 @@
 import { getGearItem, getGearSearch, getPerkWeapons } from './gear-core.js';
+import { getGuideDetail, getGuidesIndex } from './guides-core.js';
+import { getCachedR2Json, getGuideMediaObject, writeCachedR2Json } from './r2-store.js';
 
 const DEFAULT_HEYBOX_SOURCE_URL = 'https://api.xiaoheihe.cn/game/common_team_v2/home?appid=1085660';
 const ACTIVITY_INDEX_CACHE = new Map();
@@ -47,6 +49,20 @@ export async function handleAppRequest(request, env = {}, ctx = {}, options = {}
 
       if (url.pathname === '/api/fireteams' && request.method === 'GET') {
         return json(await getFireteams(env));
+      }
+
+      if (url.pathname === '/api/guides' && request.method === 'GET') {
+        return json(await getGuides(env, ctx));
+      }
+
+      const guideMediaMatch = url.pathname.match(/^\/api\/guides\/([^/]+)\/media\/(.+)$/);
+      if (guideMediaMatch && request.method === 'GET') {
+        return getGuideMedia(guideMediaMatch, env);
+      }
+
+      if (url.pathname.startsWith('/api/guides/') && request.method === 'GET') {
+        const slug = decodeURIComponent(url.pathname.slice('/api/guides/'.length));
+        return json(await getGuide(slug, env, ctx));
       }
 
       if (url.pathname === '/api/gear/search' && request.method === 'POST') {
@@ -172,6 +188,91 @@ async function getFireteams(env) {
     warning: payload.status && payload.status !== 'ok' ? payload.msg || '小黑盒接口返回异常状态。' : undefined,
     items
   };
+}
+
+async function getGuides(env, ctx) {
+  const cacheKey = ['guides-index', CACHE_VERSION, env.R2_GUIDE_PREFIX || 'guides'].join(':');
+  const cached = await getWorkerCachedJson(
+    cacheKey,
+    guideIndexCacheTtlSeconds(env),
+    () => getGuidesIndex(env),
+    env,
+    ctx,
+    { memoryOnly: true }
+  );
+  return {
+    ...cached.value,
+    updatedAt: cached.value.updatedAt || cached.cachedAt || new Date().toISOString(),
+    cache: {
+      ...(cached.value.cache || {}),
+      memory: cached.status,
+      ttlSeconds: cached.ttlSeconds,
+      cachedAt: cached.cachedAt
+    }
+  };
+}
+
+async function getGuide(slug, env, ctx) {
+  const cacheKey = ['guide-detail', CACHE_VERSION, env.R2_GUIDE_PREFIX || 'guides', slug].join(':');
+  const cached = await getWorkerCachedJson(
+    cacheKey,
+    guideIndexCacheTtlSeconds(env),
+    () => getGuideDetail(slug, env),
+    env,
+    ctx,
+    { memoryOnly: true }
+  );
+  return {
+    ...cached.value,
+    cache: {
+      ...(cached.value.cache || {}),
+      memory: cached.status,
+      ttlSeconds: cached.ttlSeconds,
+      cachedAt: cached.cachedAt
+    }
+  };
+}
+
+async function getGuideMedia(match, env) {
+  const slug = safeGuideSlug(decodeURIComponent(match[1] || ''));
+  const filename = safeGuideMediaPath(decodeURIComponent(match[2] || ''));
+  const media = await getGuideMediaObject(slug, filename, env);
+  if (!media?.object?.body) {
+    throw httpError(404, 'GUIDE_MEDIA_NOT_FOUND', '没有找到这份攻略媒体资源');
+  }
+  const headers = {
+    ...corsHeaders(),
+    'content-type': media.object.httpMetadata?.contentType || mediaContentType(filename),
+    'cache-control': 'public, max-age=31536000, immutable'
+  };
+  if (media.object.httpEtag) headers.etag = media.object.httpEtag;
+  return new Response(media.object.body, { headers });
+}
+
+function safeGuideMediaPath(value) {
+  const normalized = String(value || '').replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!normalized || normalized.split('/').some((part) => !part || part === '.' || part === '..')) {
+    throw httpError(400, 'INVALID_GUIDE_MEDIA_PATH', '攻略媒体路径不正确');
+  }
+  return normalized;
+}
+
+function safeGuideSlug(value) {
+  const slug = String(value || '').trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{1,80}$/.test(slug)) {
+    throw httpError(400, 'INVALID_GUIDE_SLUG', '攻略 slug 格式不正确');
+  }
+  return slug;
+}
+
+function mediaContentType(filename) {
+  const lower = String(filename || '').toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.svg')) return 'image/svg+xml; charset=utf-8';
+  return 'application/octet-stream';
 }
 
 function normalizeXiaoheiheHomePayload(payload, sourceUrl) {
@@ -346,8 +447,14 @@ async function getDestinyEndgame(body, env, ctx) {
     statsPatch: buildEndgameStatsPatch(endgame),
     cache: {
       endgame: cached.status,
+      hitLevel: cached.status,
+      endgameHitLevel: cached.status,
       endgameCachedAt: cached.cachedAt,
-      endgameTtlSeconds: cached.ttlSeconds
+      endgameTtlSeconds: cached.ttlSeconds,
+      r2Key: cached.r2Key || '',
+      byteSize: cached.byteSize || 0,
+      endgameR2Key: cached.r2Key || '',
+      endgameByteSize: cached.byteSize || 0
     }
   };
 }
@@ -391,8 +498,14 @@ async function getDestinyDetails(body, env, ctx) {
     details: cached.value,
     cache: {
       details: cached.status,
+      hitLevel: cached.status,
+      detailsHitLevel: cached.status,
       detailsCachedAt: cached.cachedAt,
-      detailsTtlSeconds: cached.ttlSeconds
+      detailsTtlSeconds: cached.ttlSeconds,
+      r2Key: cached.r2Key || '',
+      byteSize: cached.byteSize || 0,
+      detailsR2Key: cached.r2Key || '',
+      detailsByteSize: cached.byteSize || 0
     }
   };
 }
@@ -790,7 +903,7 @@ async function getWorkerCachedJson(key, ttlSeconds, producer, env, ctx, options 
   }
 
   if (options.persistLarge) {
-    const r2 = await getR2Cache(key, now, env);
+    const r2 = await getCachedR2Json(key, now, env);
     if (r2) {
       setMemoryCache(key, r2.value, r2.cachedAt, r2.expiresAt, options);
       writeEdgeCache(key, r2.value, r2.cachedAt, r2.expiresAt, ttlSeconds, ctx);
@@ -805,14 +918,16 @@ async function getWorkerCachedJson(key, ttlSeconds, producer, env, ctx, options 
   setMemoryCache(key, value, cachedAt, expiresAt, options);
   writeEdgeCache(key, value, cachedAt, expiresAt, ttlSeconds, ctx);
   writeKvCache(key, value, cachedAt, expiresAt, ttlSeconds, env, ctx);
+  let r2Meta = {};
   if (options.persistLarge) {
-    writeR2Cache(key, value, cachedAt, expiresAt, ttlSeconds, env, ctx);
+    r2Meta = writeCachedR2Json(key, value, cachedAt, expiresAt, ttlSeconds, env, ctx) || {};
   }
   return {
     value: options.noClone ? value : cloneJson(value),
     status: 'miss',
     cachedAt,
-    ttlSeconds
+    ttlSeconds,
+    ...r2Meta
   };
 }
 
@@ -889,39 +1004,6 @@ function writeKvCache(key, value, cachedAt, expiresAt, ttlSeconds, env, ctx) {
   waitForCacheWrite(write, ctx);
 }
 
-async function getR2Cache(key, now, env) {
-  const r2 = env.CAREER_R2;
-  if (!r2?.get) return null;
-  const object = await r2.get(`${key}.json`);
-  if (!object) return null;
-  const entry = await object.json();
-  if (!entry || entry.expiresAt <= now) return null;
-  return {
-    value: entry.value,
-    status: 'hit-r2',
-    cachedAt: entry.cachedAt,
-    expiresAt: entry.expiresAt
-  };
-}
-
-function writeR2Cache(key, value, cachedAt, expiresAt, ttlSeconds, env, ctx) {
-  const r2 = env.CAREER_R2;
-  if (!r2?.put) return;
-  const write = Promise.resolve().then(() =>
-    r2.put(`${key}.json`, JSON.stringify({ value, cachedAt, expiresAt }), {
-      httpMetadata: {
-        contentType: 'application/json; charset=utf-8',
-        cacheControl: `public, max-age=${ttlSeconds}`
-      },
-      customMetadata: {
-        cachedAt,
-        expiresAt: String(expiresAt)
-      }
-    })
-  );
-  waitForCacheWrite(write, ctx);
-}
-
 function cacheRequest(key) {
   return new Request(`https://destiny2-fireteam-dashboard.local/cache/${encodeURIComponent(key)}`, { method: 'GET' });
 }
@@ -939,6 +1021,10 @@ function summaryCacheTtlSeconds(env) {
 
 function endgameCacheTtlSeconds(env) {
   return positiveNumber(env.ENDGAME_CACHE_TTL_SECONDS, positiveNumber(env.CAREER_CACHE_TTL_SECONDS, 900));
+}
+
+function guideIndexCacheTtlSeconds(env) {
+  return positiveNumber(env.GUIDE_INDEX_CACHE_TTL_SECONDS, 300);
 }
 
 function activityDefinitionCacheTtlSeconds(env) {

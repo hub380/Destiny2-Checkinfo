@@ -149,6 +149,7 @@ function HomePage() {
           <a href="#fireteams" className={cn('current')}>组队</a>
           <a href="/career.html">玩家生涯</a>
           <a href="/gear.html">装备搜索</a>
+          <a href="/guides.html">攻略/资讯</a>
         </nav>
         <div className={cn('toolbar')}>
           <span className={cn(`status-pill ${isDemo ? 'demo' : payload ? 'ready' : 'warn'}`)}>{isDemo ? '演示数据' : payload ? '已连接' : '连接中'}</span>

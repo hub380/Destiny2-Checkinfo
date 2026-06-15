@@ -74,6 +74,13 @@ npm run frontend:dev
 npm run build
 ```
 
+攻略/资讯内容源放在 `content/guides/`。先校验再上传到 R2：
+
+```powershell
+npm run guides:validate
+npm run guides:upload
+```
+
 ## 说明
 
 小黑盒组队工具没有稳定公开接口文档，本项目没有硬编码私有凭据或绕过鉴权逻辑。后端会尽量归一化常见 JSON 字段，并从文本里提取 `名称#代码` 用户名。

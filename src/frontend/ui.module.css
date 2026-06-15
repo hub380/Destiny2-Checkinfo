@@ -1,0 +1,377 @@
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  min-height: 78px;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 240px;
+}
+
+.brand-mark {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+}
+
+.brand h1,
+.panel-header h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 760;
+  letter-spacing: 0;
+}
+
+.brand p,
+.panel-header p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 260px;
+}
+
+.main-nav a {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.main-nav a:hover {
+  color: var(--text);
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+
+.main-nav a.current {
+  color: var(--green);
+  border-color: #b7dccf;
+  background: var(--green-2);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.status-pill,
+.status-text {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 13px;
+  white-space: nowrap;
+  background: var(--surface-2);
+}
+
+.status-pill.ready {
+  color: var(--green);
+  background: var(--green-2);
+  border-color: #b7dccf;
+}
+
+.status-pill.demo,
+.status-pill.warn {
+  color: var(--amber);
+  background: var(--amber-2);
+  border-color: #ebcc96;
+}
+
+.switch {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  user-select: none;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch span {
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: #b7bfba;
+  position: relative;
+  transition: background 140ms ease;
+}
+
+.switch span::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px;
+  left: 2px;
+  transition: transform 140ms ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+}
+
+.switch input:checked + span {
+  background: var(--green);
+}
+
+.switch input:checked + span::after {
+  transform: translateX(16px);
+}
+
+.switch b {
+  font-size: 12px;
+  min-width: 28px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.icon-button:hover,
+.career-search button:hover,
+.button.secondary:hover {
+  border-color: #aab6af;
+  background: #f6f8f5;
+}
+
+.button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.button.secondary {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.panel-header.stacked {
+  align-items: flex-start;
+}
+
+.career-search {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  gap: 8px;
+  padding: 6px;
+  margin-bottom: 12px;
+}
+
+.career-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  min-height: 38px;
+  color: var(--text);
+  padding: 0 8px;
+  min-width: 0;
+}
+
+.career-search button {
+  min-height: 36px;
+  border: 1px solid var(--text);
+  border-radius: 8px;
+  background: var(--text);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 11px;
+  font-weight: 720;
+  flex: 0 0 auto;
+}
+
+.career-search button:hover {
+  background: #303533;
+  border-color: #303533;
+}
+
+.notice {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #ebcc96;
+  border-radius: 8px;
+  color: #7f5619;
+  background: var(--amber-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notice.error {
+  border-color: #e2b5b5;
+  color: var(--red);
+  background: #fff0f0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.career-metric-card,
+.career-mini-stat {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.career-metric-card {
+  padding: 10px;
+}
+
+.career-metric-card span,
+.career-mini-stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.career-metric-card b {
+  display: block;
+  margin-top: 5px;
+  font-size: 22px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.career-metric-card em {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.career-mini-stat {
+  padding: 8px;
+}
+
+.career-mini-stat b {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .toolbar {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .main-nav {
+    width: 100%;
+    justify-content: flex-start;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .panel-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .brand h1 {
+    font-size: 18px;
+  }
+}

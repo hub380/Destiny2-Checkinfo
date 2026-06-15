@@ -2,8 +2,12 @@ import React, { FormEvent, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getCareerDetails, getCareerSummary, getEndgame } from '../api';
 import type { CareerSummaryDto, CharacterDto } from '../types';
-import { Header, MetricCard, MiniStat, Notice, SearchIcon, dateOnly, dateTime, formatMinutes, formatNumber, formatTime, privacyText, statDisplay, winRate } from '../ui';
-import '../styles.css';
+import { Header, MetricCard, MiniStat, Notice, SearchIcon, css, dateOnly, dateTime, formatMinutes, formatNumber, formatTime, privacyText, statDisplay, uiClasses, winRate } from '../ui';
+import '../global.css';
+import styles from './career.module.css';
+import craftingStyles from './crafting.module.css';
+
+const cn = (classNames: string | false | null | undefined) => css([uiClasses, styles, craftingStyles], classNames);
 
 function CareerPage() {
   const [query, setQuery] = useState('');
@@ -80,17 +84,17 @@ function CareerPage() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={cn('app-shell')}>
       <Header title="Destiny 2 玩家生涯" subtitle="公开生涯 · Raid / 地牢 · PvP · 锻造进度" current="career" />
-      <main className="career-page">
-        <section className="panel career-query-panel">
-          <div className="panel-header">
+      <main className={cn('career-page')}>
+        <section className={cn('panel career-query-panel')}>
+          <div className={cn('panel-header')}>
             <div>
               <h2>玩家查询</h2>
               <p>{career?.updatedAt ? `更新 ${formatTime(career.updatedAt)}` : '输入棒鸡 ID 查询公开玩家生涯'}</p>
             </div>
           </div>
-          <form className="career-search career-page-search" onSubmit={onSubmit}>
+          <form className={cn('career-search career-page-search')} onSubmit={onSubmit}>
             <input value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Feng#3850" />
             <button type="submit">
               <SearchIcon />
@@ -99,8 +103,8 @@ function CareerPage() {
           </form>
           <Notice message={notice} error={error} />
         </section>
-        <section className="career-detail-root">
-          {career ? <CareerDetail career={career} /> : <div className="career-result empty">暂无查询结果</div>}
+        <section className={cn('career-detail-root')}>
+          {career ? <CareerDetail career={career} /> : <div className={cn('career-result empty')}>暂无查询结果</div>}
         </section>
       </main>
     </div>
@@ -123,18 +127,18 @@ function CareerDetail({ career }: { career: CareerSummaryDto }) {
 
   return (
     <>
-      <section className="career-profile-panel">
-        <div className="career-account-head">
+      <section className={cn('career-profile-panel')}>
+        <div className={cn('career-account-head')}>
           <div>
             <h2>{career.account.displayName}</h2>
             <p>{career.account.membershipTypeName} · {career.account.membershipId}</p>
           </div>
-          <div className="career-account-meta">
+          <div className={cn('career-account-meta')}>
             <span>{career.queriedName || ''}</span>
             <span>{profile.dateLastPlayed ? `最后在线 ${dateTime(profile.dateLastPlayed)}` : '公开资料'}</span>
           </div>
         </div>
-        <div className="career-metric-grid">
+        <div className={cn('career-metric-grid')}>
           <MetricCard label="守护者等级" value={profile.guardianRank || '-'} note="当前等级" />
           <MetricCard label="最高光等" value={profile.maxLight || '-'} note="角色最高光" />
           <MetricCard label="总时长" value={formatMinutes(profile.totalMinutesPlayed)} note="全部角色" />
@@ -146,13 +150,13 @@ function CareerDetail({ career }: { career: CareerSummaryDto }) {
         </div>
       </section>
 
-      <section className="career-section-grid">
+      <section className={cn('career-section-grid')}>
         <CharactersPanel characters={career.characters || []} />
         <RecordPanel records={records} loading={career.detailLoading} error={career.detailError} />
         <PvpPanel pvp={pvp} history={pvpHistory} loading={isEndgameModeLoading(career, 'pvp')} error={career.endgameErrors?.pvp} />
       </section>
 
-      <section className="career-section-wide">
+      <section className={cn('career-section-wide')}>
         <EndgamePanel label="Raid" mode={raid} loading={isEndgameModeLoading(career, 'raid')} error={career.endgameErrors?.raid} />
         <EndgamePanel label="地牢" mode={dungeon} loading={isEndgameModeLoading(career, 'dungeon')} error={career.endgameErrors?.dungeon} />
       </section>
@@ -164,14 +168,14 @@ function CareerDetail({ career }: { career: CareerSummaryDto }) {
 
 function CharactersPanel({ characters }: { characters: CharacterDto[] }) {
   return (
-    <article className="career-info-card">
-      <div className="career-card-head">
+    <article className={cn('career-info-card')}>
+      <div className={cn('career-card-head')}>
         <h3>角色</h3>
         <span>{characters.length} 个</span>
       </div>
-      <div className="career-character-grid">
+      <div className={cn('career-character-grid')}>
         {characters.length ? characters.map((character) => (
-          <div className="career-character" key={character.id}>
+          <div className={cn('career-character')} key={character.id}>
             <img src={character.emblemPath || '/brand.svg'} alt="" />
             <div>
               <b>{character.className || '-'}</b>
@@ -180,7 +184,7 @@ function CharactersPanel({ characters }: { characters: CharacterDto[] }) {
             </div>
             <strong>{character.light || '-'}</strong>
           </div>
-        )) : <div className="detail-loading">没有角色数据</div>}
+        )) : <div className={cn('detail-loading')}>没有角色数据</div>}
       </div>
     </article>
   );
@@ -188,14 +192,14 @@ function CharactersPanel({ characters }: { characters: CharacterDto[] }) {
 
 function RecordPanel({ records, loading, error }: { records: any; loading?: boolean; error?: string }) {
   return (
-    <article className="career-info-card">
-      <div className="career-card-head">
+    <article className={cn('career-info-card')}>
+      <div className={cn('career-card-head')}>
         <h3>成就点数</h3>
         <span>{privacyText(records.privacy)}</span>
       </div>
       <Notice message={error} error />
-      {loading ? <div className="detail-loading">成就数据加载中</div> : (
-        <div className="career-mini-grid">
+      {loading ? <div className={cn('detail-loading')}>成就数据加载中</div> : (
+        <div className={cn('career-mini-grid')}>
           <MiniStat label="当前分数" value={statDisplay(records.activeScore)} />
           <MiniStat label="生涯分数" value={statDisplay(records.lifetimeScore)} />
           <MiniStat label="传承分数" value={statDisplay(records.legacyScore)} />
@@ -210,12 +214,12 @@ function PvpPanel({ pvp, history, loading, error }: { pvp: any; history: any; lo
   const total = history.total || pvp || {};
   const subModes = Array.isArray(history.subModes) ? history.subModes : [];
   return (
-    <article className="career-info-card pvp-history-card">
-      <div className="career-card-head">
+    <article className={cn('career-info-card pvp-history-card')}>
+      <div className={cn('career-card-head')}>
         <h3>PvP 数据</h3>
         <span>{loading ? '完整历史加载中' : `${statDisplay(total.activitiesEntered)} 场`}</span>
       </div>
-      <div className="career-mini-grid">
+      <div className={cn('career-mini-grid')}>
         <MiniStat label="场次" value={statDisplay(total.activitiesEntered)} />
         <MiniStat label="胜场" value={statDisplay(total.activitiesWon)} />
         <MiniStat label="胜率" value={winRate(total)} />
@@ -226,21 +230,21 @@ function PvpPanel({ pvp, history, loading, error }: { pvp: any; history: any; lo
         <MiniStat label="时长" value={total.hours ? `${statDisplay(total.hours)} 小时` : statDisplay(total.secondsPlayed)} />
       </div>
       <Notice message={error} error />
-      <div className="pvp-mode-list">
+      <div className={cn('pvp-mode-list')}>
         {subModes.length ? subModes.map((mode: any) => (
-          <div className="pvp-mode-row" key={mode.modeId || mode.label}>
+          <div className={cn('pvp-mode-row')} key={mode.modeId || mode.label}>
             <div>
               <b>{mode.label || `PvP 模式 ${mode.modeId || '-'}`}</b>
               <span>{mode.lastPlayed ? `最近 ${dateOnly(mode.lastPlayed)}` : '暂无最近记录'}</span>
             </div>
-            <div className="pvp-mode-stats">
+            <div className={cn('pvp-mode-stats')}>
               <MiniStat label="场次" value={statDisplay(mode.activitiesEntered)} />
               <MiniStat label="胜率" value={statDisplay(mode.winRate)} />
               <MiniStat label="KD" value={statDisplay(mode.kd)} />
               <MiniStat label="击败" value={statDisplay(mode.opponentsDefeated || mode.kills)} />
             </div>
           </div>
-        )) : <div className="detail-loading">{loading ? 'PvP 完整历史加载中' : '没有公开 PvP 活动历史'}</div>}
+        )) : <div className={cn('detail-loading')}>{loading ? 'PvP 完整历史加载中' : '没有公开 PvP 活动历史'}</div>}
       </div>
     </article>
   );
@@ -250,12 +254,12 @@ function EndgamePanel({ label, mode, loading, error }: { label: string; mode: an
   const total = mode.total || mode || {};
   const activities = Array.isArray(mode.activities) ? mode.activities : [];
   return (
-    <article className="career-endgame-card">
-      <div className="career-card-head">
+    <article className={cn('career-endgame-card')}>
+      <div className={cn('career-card-head')}>
         <h3>{label}</h3>
         <span>{loading ? '完整历史加载中' : `${statDisplay(total.clears)} 完成`}</span>
       </div>
-      <div className="career-mini-grid endgame-summary">
+      <div className={cn('career-mini-grid endgame-summary')}>
         <MiniStat label="完成" value={statDisplay(total.clears)} />
         <MiniStat label="进入" value={statDisplay(total.activitiesEntered || total.attempts)} />
         <MiniStat label="完成率" value={statDisplay(total.completionRate)} />
@@ -266,9 +270,9 @@ function EndgamePanel({ label, mode, loading, error }: { label: string; mode: an
         <MiniStat label="Solo 无暇" value={statDisplay(total.soloFlawlessClears)} />
       </div>
       <Notice message={error} error />
-      <div className="career-activity-grid">
+      <div className={cn('career-activity-grid')}>
         {activities.length ? activities.map((activity: any) => <EndgameActivity activity={activity} key={`${label}-${activity.name}`} />) : (
-          <div className="detail-loading">{loading ? '活动历史加载中' : '没有公开活动历史'}</div>
+          <div className={cn('detail-loading')}>{loading ? '活动历史加载中' : '没有公开活动历史'}</div>
         )}
       </div>
     </article>
@@ -278,16 +282,16 @@ function EndgamePanel({ label, mode, loading, error }: { label: string; mode: an
 function EndgameActivity({ activity }: { activity: any }) {
   const variants = Array.isArray(activity.variants) ? activity.variants : [];
   return (
-    <div className="career-activity-card">
+    <div className={cn('career-activity-card')}>
       <img src={activity.image || '/brand.svg'} alt="" />
-      <div className="activity-detail-main">
+      <div className={cn('activity-detail-main')}>
         <div>
           <b>{activity.name || '未知活动'}</b>
           <span>{activity.variantCount > 1 ? `${activity.variantCount} 个变体` : '单一变体'}</span>
         </div>
         <EndgameTags item={activity} />
       </div>
-      <div className="career-activity-stats">
+      <div className={cn('career-activity-stats')}>
         <MiniStat label="完成/进入" value={`${statDisplay(activity.clears)} / ${statDisplay(activity.attempts)}`} />
         <MiniStat label="完成率" value={statDisplay(activity.completionRate)} />
         <MiniStat label="KD" value={statDisplay(activity.kd)} />
@@ -296,9 +300,9 @@ function EndgameActivity({ activity }: { activity: any }) {
         <MiniStat label="最近" value={activity.lastPlayed ? dateOnly(activity.lastPlayed) : '-'} />
       </div>
       {variants.length > 1 ? (
-        <div className="career-variant-list">
+        <div className={cn('career-variant-list')}>
           {variants.slice(0, 8).map((variant: any) => (
-            <div className="career-variant-row" key={variant.hash || variant.name}>
+            <div className={cn('career-variant-row')} key={variant.hash || variant.name}>
               <span>{variant.name || '未知变体'}</span>
               <b>{statDisplay(variant.clears)} 完成</b>
             </div>
@@ -316,7 +320,7 @@ function EndgameTags({ item }: { item: any }) {
   if (solo > 0) tags.push(`Solo x${solo}`);
   if (soloFlawless > 0) tags.push(`Solo 无暇 x${soloFlawless}`);
   if (!tags.length) return null;
-  return <div className="activity-tags">{tags.map((tag) => <em key={tag}>{tag}</em>)}</div>;
+  return <div className={cn('activity-tags')}>{tags.map((tag) => <em key={tag}>{tag}</em>)}</div>;
 }
 
 function CraftingPanel({ crafting, loading, error }: { crafting: any; loading?: boolean; error?: string }) {
@@ -324,26 +328,26 @@ function CraftingPanel({ crafting, loading, error }: { crafting: any; loading?: 
   const items = Array.isArray(crafting.items) ? crafting.items : [];
   const groups = buildCraftingGroups(items);
   return (
-    <section className="career-crafting-panel">
-      <div className="career-card-head">
+    <section className={cn('career-crafting-panel')}>
+      <div className={cn('career-card-head')}>
         <h3>锻造进度</h3>
         <span>{privacyText(crafting.privacy)}</span>
       </div>
       <Notice message={error} error />
-      {loading ? <div className="detail-loading">锻造数据加载中</div> : (
+      {loading ? <div className={cn('detail-loading')}>锻造数据加载中</div> : (
         <>
-          <div className="career-mini-grid crafting-summary">
+          <div className={cn('career-mini-grid crafting-summary')}>
             <MiniStat label="配方解锁" value={`${statDisplay(crafting.unlocked)} / ${statDisplay(crafting.total)}`} />
             <MiniStat label="配方完成率" value={statDisplay(crafting.completionRate)} />
             <MiniStat label="Perk 解锁" value={`${statDisplay(crafting.plugUnlocked)} / ${statDisplay(crafting.plugTotal)}`} />
             <MiniStat label="Perk 完成率" value={statDisplay(crafting.plugCompletionRate)} />
           </div>
-          <div className="crafting-summary-actions">
+          <div className={cn('crafting-summary-actions')}>
             <div>
               <b>{formatNumber(groups.length)} 个来源</b>
               <span>{formatNumber(items.length)} 件可锻造装备</span>
             </div>
-            <button className="button secondary" type="button" onClick={() => setOpen(true)}>查看明细</button>
+            <button className={cn('button secondary')} type="button" onClick={() => setOpen(true)}>查看明细</button>
           </div>
           {open ? <CraftingModal crafting={crafting} groups={groups} onClose={() => setOpen(false)} /> : null}
         </>
@@ -354,25 +358,25 @@ function CraftingPanel({ crafting, loading, error }: { crafting: any; loading?: 
 
 function CraftingModal({ crafting, groups, onClose }: { crafting: any; groups: any[]; onClose: () => void }) {
   return (
-    <div className="career-modal">
-      <div className="career-modal-backdrop" onClick={onClose}></div>
-      <div className="career-modal-panel" role="dialog" aria-modal="true" aria-labelledby="craftingModalTitle">
-        <div className="career-modal-head">
+    <div className={cn('career-modal')}>
+      <div className={cn('career-modal-backdrop')} onClick={onClose}></div>
+      <div className={cn('career-modal-panel')} role="dialog" aria-modal="true" aria-labelledby="craftingModalTitle">
+        <div className={cn('career-modal-head')}>
           <div>
             <h3 id="craftingModalTitle">锻造进度</h3>
             <span>{privacyText(crafting.privacy)}</span>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭">×</button>
+          <button className={cn('icon-button')} type="button" onClick={onClose} aria-label="关闭">×</button>
         </div>
-        <div className="career-mini-grid crafting-summary">
+        <div className={cn('career-mini-grid crafting-summary')}>
           <MiniStat label="配方解锁" value={`${statDisplay(crafting.unlocked)} / ${statDisplay(crafting.total)}`} />
           <MiniStat label="配方完成率" value={statDisplay(crafting.completionRate)} />
           <MiniStat label="Perk 解锁" value={`${statDisplay(crafting.plugUnlocked)} / ${statDisplay(crafting.plugTotal)}`} />
           <MiniStat label="Perk 完成率" value={statDisplay(crafting.plugCompletionRate)} />
         </div>
-        <div className="career-modal-scroll">
-          <div className="crafting-collection-board">
-            {groups.length ? groups.map((group) => <CraftingSourceGroup group={group} key={group.key} />) : <div className="detail-loading">没有公开锻造数据</div>}
+        <div className={cn('career-modal-scroll')}>
+          <div className={cn('crafting-collection-board')}>
+            {groups.length ? groups.map((group) => <CraftingSourceGroup group={group} key={group.key} />) : <div className={cn('detail-loading')}>没有公开锻造数据</div>}
           </div>
         </div>
       </div>
@@ -382,12 +386,12 @@ function CraftingModal({ crafting, groups, onClose }: { crafting: any; groups: a
 
 function CraftingSourceGroup({ group }: { group: any }) {
   return (
-    <article className={`crafting-source-group ${group.complete >= group.total && group.total ? 'complete' : ''}`}>
-      <div className="crafting-source-head">
+    <article className={cn(`crafting-source-group ${group.complete >= group.total && group.total ? 'complete' : ''}`)}>
+      <div className={cn('crafting-source-head')}>
         <strong>{group.source}</strong>
         <span>收集进度：{formatNumber(group.complete)}/{formatNumber(group.total)}</span>
       </div>
-      <div className="crafting-source-items">
+      <div className={cn('crafting-source-items')}>
         {group.items.map((item: any) => <CraftingBoardItem item={item} key={item.hash} />)}
       </div>
     </article>
@@ -398,12 +402,12 @@ function CraftingBoardItem({ item }: { item: any }) {
   const percent = craftingPatternPercent(item);
   const complete = isCraftingPatternComplete(item);
   return (
-    <div className={`crafting-board-item ${complete ? 'complete' : 'incomplete'}`}>
-      <div className="crafting-board-icon">
+    <div className={cn(`crafting-board-item ${complete ? 'complete' : 'incomplete'}`)}>
+      <div className={cn('crafting-board-icon')}>
         <img src={item.icon || '/brand.svg'} alt="" />
       </div>
-      <i className="crafting-pattern-meter" style={{ '--pattern-fill': `${Math.max(0, Math.min(100, percent))}%` } as React.CSSProperties}></i>
-      <div className="crafting-board-copy">
+      <i className={cn('crafting-pattern-meter')} style={{ '--pattern-fill': `${Math.max(0, Math.min(100, percent))}%` } as React.CSSProperties}></i>
+      <div className={cn('crafting-board-copy')}>
         <b>{item.name || `装备 ${item.hash}`}</b>
         <span>{item.type || '-'}</span>
         <em>{craftingPatternLabel(item)}</em>

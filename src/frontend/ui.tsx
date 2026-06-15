@@ -1,22 +1,41 @@
 import type { ReactNode } from 'react';
 import type { StatDto } from './types';
+import styles from './ui.module.css';
 
 export const BRAND_LOGO = 'https://imgheybox.max-c.com/oa/2026/06/11/3271d1932bba2fe079e7305532ce2367.png';
 
+type CssModule = Record<string, string>;
+
+export const uiClasses = styles;
+
+export function css(modules: CssModule | CssModule[], classNames: string | false | null | undefined): string {
+  if (!classNames) return '';
+  const maps = Array.isArray(modules) ? modules : [modules];
+  return classNames
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((name) => maps.find((module) => module[name])?.[name] || name)
+    .join(' ');
+}
+
+function cn(classNames: string | false | null | undefined) {
+  return css(styles, classNames);
+}
+
 export function Header({ title, subtitle, current }: { title: string; subtitle: string; current: 'home' | 'career' | 'gear' }) {
   return (
-    <header className="topbar">
-      <div className="brand">
-        <img src={BRAND_LOGO} alt="" className="brand-mark" />
+    <header className={cn('topbar')}>
+      <div className={cn('brand')}>
+        <img src={BRAND_LOGO} alt="" className={cn('brand-mark')} />
         <div>
           <h1>{title}</h1>
           <p>{subtitle}</p>
         </div>
       </div>
-      <nav className="main-nav" aria-label="主导航">
-        <a href="/" className={current === 'home' ? 'current' : ''}>组队</a>
-        <a href="/career.html" className={current === 'career' ? 'current' : ''}>玩家生涯</a>
-        <a href="/gear.html" className={current === 'gear' ? 'current' : ''}>装备搜索</a>
+      <nav className={cn('main-nav')} aria-label="主导航">
+        <a href="/" className={cn(current === 'home' ? 'current' : '')}>组队</a>
+        <a href="/career.html" className={cn(current === 'career' ? 'current' : '')}>玩家生涯</a>
+        <a href="/gear.html" className={cn(current === 'gear' ? 'current' : '')}>装备搜索</a>
       </nav>
     </header>
   );
@@ -48,12 +67,12 @@ export function CopyIcon() {
 }
 
 export function Notice({ message, error = false }: { message?: string; error?: boolean }) {
-  return <div className={`notice${message ? '' : ' hidden'}${error ? ' error' : ''}`}>{message || ''}</div>;
+  return <div className={cn(`notice${message ? '' : ' hidden'}${error ? ' error' : ''}`)}>{message || ''}</div>;
 }
 
 export function MetricCard({ label, value, note }: { label: string; value: ReactNode; note?: ReactNode }) {
   return (
-    <div className="career-metric-card">
+    <div className={cn('career-metric-card')}>
       <span>{label}</span>
       <b>{value ?? '-'}</b>
       <em>{note || ''}</em>
@@ -63,7 +82,7 @@ export function MetricCard({ label, value, note }: { label: string; value: React
 
 export function MiniStat({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="career-mini-stat">
+    <div className={cn('career-mini-stat')}>
       <span>{label}</span>
       <b>{value ?? '-'}</b>
     </div>

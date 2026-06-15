@@ -2,8 +2,11 @@ import React, { FormEvent, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getGearItem, getPerkWeapons, searchGear } from '../api';
 import type { GearSearchDto, JsonRecord } from '../types';
-import { Header, Notice, SearchIcon, formatNumber } from '../ui';
-import '../styles.css';
+import { Header, Notice, SearchIcon, css, formatNumber, uiClasses } from '../ui';
+import '../global.css';
+import styles from './gear.module.css';
+
+const cn = (classNames: string | false | null | undefined) => css([uiClasses, styles], classNames);
 
 function GearPage() {
   const [query, setQuery] = useState('');
@@ -68,18 +71,18 @@ function GearPage() {
   const items = Array.isArray(payload?.items) ? payload.items : [];
 
   return (
-    <div className="app-shell">
+    <div className={cn('app-shell')}>
       <Header title="Destiny 2 装备搜索" subtitle="统一搜索武器、护甲、Perk 与可出武器" current="gear" />
-      <main className="layout gear-layout">
-        <section className="panel gear-panel">
-          <div className="panel-header">
+      <main className={cn('layout gear-layout')}>
+        <section className={cn('panel gear-panel')}>
+          <div className={cn('panel-header')}>
             <div>
               <h2>装备搜索</h2>
               <p>{subtitle}</p>
             </div>
           </div>
-          <form className="gear-search" onSubmit={onSubmit}>
-            <div className="gear-query">
+          <form className={cn('gear-search')} onSubmit={onSubmit}>
+            <div className={cn('gear-query')}>
               <input value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" spellCheck={false} placeholder="灾变 / 诱导推销 / 狂野飞禽" />
               <button type="submit">
                 <SearchIcon />
@@ -88,19 +91,19 @@ function GearPage() {
             </div>
           </form>
           <Notice message={notice} error={error} />
-          <div className={`gear-result ${payload ? '' : 'empty'}`}>
+          <div className={cn(`gear-result ${payload ? '' : 'empty'}`)}>
             {!payload ? (
-              detail?.loading ? <div className="detail-loading">{detail.message}</div> : '输入装备或 Perk 名称开始查询'
+              detail?.loading ? <div className={cn('detail-loading')}>{detail.message}</div> : '输入装备或 Perk 名称开始查询'
             ) : (
               <>
-                <div className="gear-summary">
+                <div className={cn('gear-summary')}>
                   <b>{payload.query}</b>
                   <span>Manifest {payload.manifestVersion || '-'}</span>
                   <span>显示 {formatNumber(items.length)} / {formatNumber(payload.total || 0)}</span>
                 </div>
                 <GearDetailSlot detail={detail} />
-                <div className="gear-grid">
-                  {items.length ? items.map((item) => <GearResultCard item={item} onOpen={() => openItem(item)} key={`${item.kind}-${item.hash}`} />) : <div className="detail-loading">没有匹配的装备数据</div>}
+                <div className={cn('gear-grid')}>
+                  {items.length ? items.map((item) => <GearResultCard item={item} onOpen={() => openItem(item)} key={`${item.kind}-${item.hash}`} />) : <div className={cn('detail-loading')}>没有匹配的装备数据</div>}
                 </div>
               </>
             )}
@@ -115,16 +118,16 @@ function GearResultCard({ item, onOpen }: { item: JsonRecord; onOpen: () => void
   const meta = gearMeta(item);
   const action = item.kind === 'perk' ? '反查武器' : '查看详情';
   return (
-    <button className="gear-card gear-card-button" type="button" onClick={onOpen}>
-      <img className="gear-icon" src={item.icon || '/brand.svg'} alt="" />
-      <div className="gear-main">
-        <div className="gear-title">
+    <button className={cn('gear-card gear-card-button')} type="button" onClick={onOpen}>
+      <img className={cn('gear-icon')} src={item.icon || '/brand.svg'} alt="" />
+      <div className={cn('gear-main')}>
+        <div className={cn('gear-title')}>
           <h3>{item.name || '未知装备'}</h3>
           <span>{gearKindLabel(item.kind)}</span>
         </div>
-        {meta.length ? <div className="gear-tags">{meta.map((value) => <span className="gear-tag" key={value}>{value}</span>)}</div> : null}
-        {item.description ? <p className="gear-description">{item.description}</p> : null}
-        <div className="gear-card-foot">
+        {meta.length ? <div className={cn('gear-tags')}>{meta.map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}</div> : null}
+        {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
+        <div className={cn('gear-card-foot')}>
           <span>#{item.hash || '-'}</span>
           <b>{action}</b>
         </div>
@@ -134,31 +137,31 @@ function GearResultCard({ item, onOpen }: { item: JsonRecord; onOpen: () => void
 }
 
 function GearDetailSlot({ detail }: { detail: JsonRecord | null }) {
-  if (!detail) return <div className="gear-detail-slot"></div>;
-  if (detail.loading) return <div className="gear-detail-slot"><div className="detail-loading">{detail.message}</div></div>;
-  if (detail.error) return <div className="gear-detail-slot"><div className="notice error">{detail.error}</div></div>;
-  if (detail.weapons || detail.perks) return <div className="gear-detail-slot"><PerkWeapons payload={detail} /></div>;
-  return <div className="gear-detail-slot"><GearDetail item={detail.item} detail={detail.detail} /></div>;
+  if (!detail) return <div className={cn('gear-detail-slot')}></div>;
+  if (detail.loading) return <div className={cn('gear-detail-slot')}><div className={cn('detail-loading')}>{detail.message}</div></div>;
+  if (detail.error) return <div className={cn('gear-detail-slot')}><div className={cn('notice error')}>{detail.error}</div></div>;
+  if (detail.weapons || detail.perks) return <div className={cn('gear-detail-slot')}><PerkWeapons payload={detail} /></div>;
+  return <div className={cn('gear-detail-slot')}><GearDetail item={detail.item} detail={detail.detail} /></div>;
 }
 
 function GearDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord }) {
-  if (!item || !detail) return <div className="detail-loading">没有可展示的详情</div>;
+  if (!item || !detail) return <div className={cn('detail-loading')}>没有可展示的详情</div>;
   if (item.kind === 'weapon') return <WeaponDetail item={item} detail={detail} />;
   if (item.kind === 'armor') return <ArmorDetail item={item} detail={detail} />;
-  return <div className="detail-loading">点击 Perk 可反查支持该 Perk 的武器</div>;
+  return <div className={cn('detail-loading')}>点击 Perk 可反查支持该 Perk 的武器</div>;
 }
 
 function WeaponDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord }) {
   return (
-    <section className="gear-detail-panel">
-      <div className="gear-detail-head">
-        <img className="gear-icon large" src={item.icon || detail.icon || '/brand.svg'} alt="" />
+    <section className={cn('gear-detail-panel')}>
+      <div className={cn('gear-detail-head')}>
+        <img className={cn('gear-icon large')} src={item.icon || detail.icon || '/brand.svg'} alt="" />
         <div>
           <h3>{item.name || detail.name || '未知武器'}</h3>
-          <div className="gear-tags">
-            {[detail.weaponType, detail.ammo, detail.element, detail.adept ? '专家' : ''].filter(Boolean).map((value) => <span className="gear-tag" key={value}>{value}</span>)}
+          <div className={cn('gear-tags')}>
+            {[detail.weaponType, detail.ammo, detail.element, detail.adept ? '专家' : ''].filter(Boolean).map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}
           </div>
-          {item.description ? <p className="gear-description">{item.description}</p> : null}
+          {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
         </div>
       </div>
       <Stats stats={detail.stats || []} />
@@ -171,19 +174,19 @@ function ArmorDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord })
   const setBonus = detail.setBonus;
   const intrinsicPerks = Array.isArray(detail.intrinsicPerks) ? detail.intrinsicPerks : [];
   return (
-    <section className="gear-detail-panel">
-      <div className="gear-detail-head">
-        <img className="gear-icon large" src={item.icon || detail.icon || '/brand.svg'} alt="" />
+    <section className={cn('gear-detail-panel')}>
+      <div className={cn('gear-detail-head')}>
+        <img className={cn('gear-icon large')} src={item.icon || detail.icon || '/brand.svg'} alt="" />
         <div>
           <h3>{item.name || detail.name || '未知护甲'}</h3>
-          <div className="gear-tags">
-            {[detail.slot, detail.className, detail.tier, detail.type].filter(Boolean).map((value) => <span className="gear-tag" key={value}>{value}</span>)}
+          <div className={cn('gear-tags')}>
+            {[detail.slot, detail.className, detail.tier, detail.type].filter(Boolean).map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}
           </div>
-          {item.description ? <p className="gear-description">{item.description}</p> : null}
+          {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
         </div>
       </div>
-      {setBonus ? <ArmorSetBonus setBonus={setBonus} /> : <div className="detail-loading">这件护甲没有公开的两件 / 四件套效果</div>}
-      {intrinsicPerks.length ? <div className="perk-columns armor-intrinsics"><div className="perk-column"><h4>护甲特性</h4>{intrinsicPerks.map((perk: JsonRecord) => <PerkCard perk={perk} key={perk.hash || perk.name} />)}</div></div> : null}
+      {setBonus ? <ArmorSetBonus setBonus={setBonus} /> : <div className={cn('detail-loading')}>这件护甲没有公开的两件 / 四件套效果</div>}
+      {intrinsicPerks.length ? <div className={cn('perk-columns armor-intrinsics')}><div className={cn('perk-column')}><h4>护甲特性</h4>{intrinsicPerks.map((perk: JsonRecord) => <PerkCard perk={perk} key={perk.hash || perk.name} />)}</div></div> : null}
     </section>
   );
 }
@@ -191,16 +194,16 @@ function ArmorDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord })
 function ArmorSetBonus({ setBonus }: { setBonus: JsonRecord }) {
   const perks = Array.isArray(setBonus.perks) ? setBonus.perks : [];
   return (
-    <div className="armor-set">
-      <div className="section-title">套装效果 · {setBonus.name || '-'}</div>
-      <div className="set-bonus-grid">
+    <div className={cn('armor-set')}>
+      <div className={cn('section-title')}>套装效果 · {setBonus.name || '-'}</div>
+      <div className={cn('set-bonus-grid')}>
         {perks.length ? perks.map((perk: JsonRecord) => (
-          <div className="set-bonus-card" key={perk.hash || perk.name}>
+          <div className={cn('set-bonus-card')} key={perk.hash || perk.name}>
             <span>{perk.requiredSetCount} 件套</span>
             <b>{perk.name || '-'}</b>
             {perk.description ? <p>{perk.description}</p> : null}
           </div>
-        )) : <div className="detail-loading">没有套装效果说明</div>}
+        )) : <div className={cn('detail-loading')}>没有套装效果说明</div>}
       </div>
     </div>
   );
@@ -210,14 +213,14 @@ function PerkWeapons({ payload }: { payload: JsonRecord }) {
   const weapons = Array.isArray(payload.weapons) ? payload.weapons : [];
   const perks = Array.isArray(payload.perks) ? payload.perks : [];
   return (
-    <section className="gear-detail-panel">
-      <div className="gear-summary">
+    <section className={cn('gear-detail-panel')}>
+      <div className={cn('gear-summary')}>
         <b>Perk 反查：{payload.query}</b>
         <span>命中 Perk {formatNumber(perks.length)} 个</span>
         <span>武器 {formatNumber(payload.total || 0)} 组</span>
       </div>
-      {perks.length ? <div className="perk-strip">{perks.slice(0, 12).map((perk: JsonRecord) => <PerkChip perk={perk} key={perk.hash || perk.name} />)}</div> : null}
-      {weapons.length ? <div className="weapon-group-list">{weapons.map((group: JsonRecord) => <WeaponGroup group={group} key={group.hash || group.name} />)}</div> : <div className="detail-loading">没有找到可出该 Perk 的武器</div>}
+      {perks.length ? <div className={cn('perk-strip')}>{perks.slice(0, 12).map((perk: JsonRecord) => <PerkChip perk={perk} key={perk.hash || perk.name} />)}</div> : null}
+      {weapons.length ? <div className={cn('weapon-group-list')}>{weapons.map((group: JsonRecord) => <WeaponGroup group={group} key={group.hash || group.name} />)}</div> : <div className={cn('detail-loading')}>没有找到可出该 Perk 的武器</div>}
     </section>
   );
 }
@@ -231,18 +234,18 @@ function WeaponGroup({ group }: { group: JsonRecord }) {
   const canRoll = [group.canRoll?.normal ? '普通可出' : '', group.canRoll?.enhanced ? '强化可出' : ''].filter(Boolean);
   const meta = [group.weaponType, group.ammo, group.element, `${variants.length} 个变体`].filter(Boolean);
   return (
-    <article className="weapon-group expanded">
-      <img className="gear-icon" src={primary.icon || '/brand.svg'} alt="" />
-      <div className="gear-main">
-        <div className="gear-title">
+    <article className={cn('weapon-group expanded')}>
+      <img className={cn('gear-icon')} src={primary.icon || '/brand.svg'} alt="" />
+      <div className={cn('gear-main')}>
+        <div className={cn('gear-title')}>
           <h3>{group.name || '未知武器'}</h3>
           <span>{canRoll.join(' / ') || '可出'}</span>
         </div>
-        <div className="gear-tags">
-          {meta.map((value) => <span className="gear-tag" key={value}>{value}</span>)}
+        <div className={cn('gear-tags')}>
+          {meta.map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}
           <InlineFrameSocket socket={frameSocket} />
         </div>
-        <div className="variant-pills">
+        <div className={cn('variant-pills')}>
           {variants.slice(0, 10).map((variant: JsonRecord) => <span title={`#${variant.hash || ''}`} key={variant.hash || variant.name}>{variant.name || '未知变体'}{variant.adept ? ' · 专家' : ''}</span>)}
           {variants.length > 10 ? <span>+{variants.length - 10}</span> : null}
         </div>
@@ -255,12 +258,12 @@ function WeaponGroup({ group }: { group: JsonRecord }) {
 function Stats({ stats }: { stats: JsonRecord[] }) {
   if (!stats.length) return null;
   return (
-    <div className="weapon-stat-list">
+    <div className={cn('weapon-stat-list')}>
       {stats.map((stat) => {
         const max = Number(stat.displayMaximum || 100) || 100;
         const width = Math.max(3, Math.min(100, (Number(stat.value || 0) / max) * 100));
         return (
-          <div className="weapon-stat" key={stat.name}>
+          <div className={cn('weapon-stat')} key={stat.name}>
             <span>{stat.name}</span>
             <b>{stat.value}</b>
             <i style={{ width: `${width}%` }}></i>
@@ -272,11 +275,11 @@ function Stats({ stats }: { stats: JsonRecord[] }) {
 }
 
 function PerkColumns({ sockets }: { sockets: JsonRecord[] }) {
-  if (!sockets.length) return <div className="detail-loading">没有可展示的 Perk 池</div>;
+  if (!sockets.length) return <div className={cn('detail-loading')}>没有可展示的 Perk 池</div>;
   return (
-    <div className="perk-columns">
+    <div className={cn('perk-columns')}>
       {sockets.map((socket) => (
-        <div className="perk-column" key={socket.socketIndex || socket.label}>
+        <div className={cn('perk-column')} key={socket.socketIndex || socket.label}>
           <h4>{socket.label || `第 ${Number(socket.socketIndex || 0) + 1} 列`}</h4>
           {(socket.perks || []).map((perk: JsonRecord) => <PerkCard perk={perk} key={perk.hash || perk.name} />)}
         </div>
@@ -287,7 +290,7 @@ function PerkColumns({ sockets }: { sockets: JsonRecord[] }) {
 
 function PerkCard({ perk }: { perk: JsonRecord }) {
   return (
-    <div className={`perk-card ${perk.matched ? 'matched' : ''}`}>
+    <div className={cn(`perk-card ${perk.matched ? 'matched' : ''}`)}>
       <img src={perk.icon || '/brand.svg'} alt="" />
       <div>
         <b>{perk.name || '-'}</b>
@@ -303,7 +306,7 @@ function EnhancedNotes({ perk }: { perk: JsonRecord }) {
   const options = Array.isArray(perk.enhancedOptions) ? perk.enhancedOptions : [];
   const lines = options.flatMap((option: JsonRecord) => enhancedLines(option));
   if (!lines.length) return null;
-  return <div className="perk-enhanced-notes">{lines.map((line: string) => <em key={line}>{line}</em>)}</div>;
+  return <div className={cn('perk-enhanced-notes')}>{lines.map((line: string) => <em key={line}>{line}</em>)}</div>;
 }
 
 function InlineFrameSocket({ socket }: { socket?: JsonRecord }) {
@@ -311,7 +314,7 @@ function InlineFrameSocket({ socket }: { socket?: JsonRecord }) {
   if (!perk) return null;
   const title = [socket.label, perk.name, perk.description].filter(Boolean).join(' · ');
   return (
-    <span className="gear-tag frame-inline" title={title}>
+    <span className={cn('gear-tag frame-inline')} title={title}>
       <img src={perk.icon || '/brand.svg'} alt="" />
       <span>{socket.label || '框架 / 固有'}</span>
       <b>{perk.name || '-'}</b>
@@ -321,7 +324,7 @@ function InlineFrameSocket({ socket }: { socket?: JsonRecord }) {
 
 function PerkChip({ perk }: { perk: JsonRecord }) {
   return (
-    <span className="perk-chip">
+    <span className={cn('perk-chip')}>
       <img src={perk.icon || '/brand.svg'} alt="" />
       <b>{perk.name || '未知 Perk'}</b>
       <em>{perk.enhanced ? '强化' : '普通'}</em>

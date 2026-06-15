@@ -2,10 +2,12 @@ import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getCareerSummary, getConfig, getEndgame, getFireteams } from '../api';
 import type { CareerSummaryDto, FireteamDto, FireteamsResponseDto } from '../types';
-import { BRAND_LOGO, CopyIcon, Header, Notice, RefreshIcon, SearchIcon, formatMinutes, formatNumber, formatTime, relativeTime, statDisplay } from '../ui';
-import '../styles.css';
+import { BRAND_LOGO, CopyIcon, Notice, RefreshIcon, SearchIcon, css, formatMinutes, formatTime, relativeTime, statDisplay, uiClasses } from '../ui';
+import '../global.css';
+import styles from './home.module.css';
 
 const REFRESH_SECONDS = 30;
+const cn = (classNames: string | false | null | undefined) => css([uiClasses, styles], classNames);
 
 function HomePage() {
   const [items, setItems] = useState<FireteamDto[]>([]);
@@ -134,24 +136,24 @@ function HomePage() {
   const isDemo = payload?.source === 'demo';
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div className="brand">
-          <img src={BRAND_LOGO} alt="" className="brand-mark" />
+    <div className={cn('app-shell')}>
+      <header className={cn('topbar')}>
+        <div className={cn('brand')}>
+          <img src={BRAND_LOGO} alt="" className={cn('brand-mark')} />
           <div>
             <h1>Destiny 2 组队监控</h1>
             <p>小黑盒组队 · 棒鸡公开生涯</p>
           </div>
         </div>
-        <nav className="main-nav" aria-label="主导航">
-          <a href="#fireteams" className="current">组队</a>
+        <nav className={cn('main-nav')} aria-label="主导航">
+          <a href="#fireteams" className={cn('current')}>组队</a>
           <a href="/career.html">玩家生涯</a>
           <a href="/gear.html">装备搜索</a>
         </nav>
-        <div className="toolbar">
-          <span className={`status-pill ${isDemo ? 'demo' : payload ? 'ready' : 'warn'}`}>{isDemo ? '演示数据' : payload ? '已连接' : '连接中'}</span>
-          <span className="status-text">{payload?.updatedAt ? `更新 ${formatTime(payload.updatedAt)}` : '尚未刷新'}</span>
-          <label className="switch" title="自动刷新">
+        <div className={cn('toolbar')}>
+          <span className={cn(`status-pill ${isDemo ? 'demo' : payload ? 'ready' : 'warn'}`)}>{isDemo ? '演示数据' : payload ? '已连接' : '连接中'}</span>
+          <span className={cn('status-text')}>{payload?.updatedAt ? `更新 ${formatTime(payload.updatedAt)}` : '尚未刷新'}</span>
+          <label className={cn('switch')} title="自动刷新">
             <input
               type="checkbox"
               checked={autoRefresh}
@@ -163,26 +165,26 @@ function HomePage() {
             <span></span>
             <b>{autoRefresh ? `${countdown || REFRESH_SECONDS}s` : 'off'}</b>
           </label>
-          <button className="icon-button" title="刷新" onClick={refreshFireteams} disabled={loading}>
+          <button className={cn('icon-button')} title="刷新" onClick={refreshFireteams} disabled={loading}>
             <RefreshIcon />
           </button>
         </div>
       </header>
 
-      <main className="layout">
-        <section className="panel fireteams-panel" id="fireteams">
-          <div className="panel-header">
+      <main className={cn('layout')}>
+        <section className={cn('panel fireteams-panel')} id="fireteams">
+          <div className={cn('panel-header')}>
             <div>
               <h2>组队信息</h2>
               <p>{loading ? '刷新中' : `${filteredItems.length} 条 / 共 ${items.length} 条`}</p>
             </div>
-            <div className="filter-box">
+            <div className={cn('filter-box')}>
               <SearchIcon />
               <input value={filter} onChange={(event) => setFilter(event.target.value)} type="search" placeholder="筛选活动、队长、用户名" />
             </div>
           </div>
           <Notice message={notice} error={noticeError} />
-          <div className="fireteam-list">
+          <div className={cn('fireteam-list')}>
             {filteredItems.length ? (
               filteredItems.map((item, index) => (
                 <FireteamCard
@@ -193,19 +195,19 @@ function HomePage() {
                 />
               ))
             ) : (
-              <div className="career-result empty">没有匹配的组队信息</div>
+              <div className={cn('career-result empty')}>没有匹配的组队信息</div>
             )}
           </div>
         </section>
 
-        <aside className="panel career-panel" id="career">
-          <div className="panel-header stacked">
+        <aside className={cn('panel career-panel')} id="career">
+          <div className={cn('panel-header stacked')}>
             <div>
               <h2>棒鸡玩家生涯</h2>
               <p>{career?.updatedAt ? `更新 ${formatTime(career.updatedAt)}` : '公开玩家查询'}</p>
             </div>
           </div>
-          <form className="career-search" onSubmit={queryCareer}>
+          <form className={cn('career-search')} onSubmit={queryCareer}>
             <input value={careerQuery} onChange={(event) => setCareerQuery(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Guardian#2333" />
             <button type="submit">
               <SearchIcon />
@@ -213,10 +215,10 @@ function HomePage() {
             </button>
           </form>
           <Notice message={careerNotice} error={careerError} />
-          {career ? <CompactCareer career={career} /> : <div className="career-result empty">暂无查询结果</div>}
+          {career ? <CompactCareer career={career} /> : <div className={cn('career-result empty')}>暂无查询结果</div>}
         </aside>
       </main>
-      <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>
+      <div className={cn(`toast ${toast ? 'show' : ''}`)}>{toast}</div>
     </div>
   );
 }
@@ -226,30 +228,30 @@ function FireteamCard({ item, onCopy, onPickUser }: { item: FireteamDto; onCopy:
   const command = item.joinCommand || (username ? `/j ${username}` : '');
   const meta = [item.activity, item.author ? `队长 ${item.author}` : '', item.createdAt ? relativeTime(item.createdAt) : '', item.source === 'demo' ? '演示' : ''].filter(Boolean).join(' · ');
   return (
-    <article className="fireteam-card">
-      <div className="fireteam-main">
-        <div className="fireteam-head">
-          <img className="team-avatar" src={item.avatar || '/brand.svg'} alt="" />
-          <div className="fireteam-copy">
-            <div className="fireteam-title">
+    <article className={cn('fireteam-card')}>
+      <div className={cn('fireteam-main')}>
+        <div className={cn('fireteam-head')}>
+          <img className={cn('team-avatar')} src={item.avatar || '/brand.svg'} alt="" />
+          <div className={cn('fireteam-copy')}>
+            <div className={cn('fireteam-title')}>
               <h3>{item.title || '未命名组队'}</h3>
-              {item.slots?.max ? <span className="slot">{item.slots.current}/{item.slots.max}</span> : null}
+              {item.slots?.max ? <span className={cn('slot')}>{item.slots.current}/{item.slots.max}</span> : null}
             </div>
-            <div className="meta-row">{meta || '小黑盒'}</div>
+            <div className={cn('meta-row')}>{meta || '小黑盒'}</div>
           </div>
         </div>
-        {item.tags?.length ? <div className="tag-row">{item.tags.slice(0, 4).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div> : null}
-        <p className="content">{item.content || '无详情'}</p>
+        {item.tags?.length ? <div className={cn('tag-row')}>{item.tags.slice(0, 4).map((tag) => <span className={cn('tag')} key={tag}>{tag}</span>)}</div> : null}
+        <p className={cn('content')}>{item.content || '无详情'}</p>
       </div>
-      <div className="join-box">
-        <button className={`username ${username ? 'clickable' : ''}`} type="button" onClick={() => username && onPickUser(username)}>
+      <div className={cn('join-box')}>
+        <button className={cn(`username ${username ? 'clickable' : ''}`)} type="button" onClick={() => username && onPickUser(username)}>
           {username || '未识别用户名'}
         </button>
-        <button className="copy-button" disabled={!command} onClick={() => command && onCopy(command)}>
+        <button className={cn('copy-button')} disabled={!command} onClick={() => command && onCopy(command)}>
           <CopyIcon />
           复制
         </button>
-        {item.link ? <a className="tag" href={item.link} target="_blank" rel="noreferrer">来源</a> : null}
+        {item.link ? <a className={cn('tag')} href={item.link} target="_blank" rel="noreferrer">来源</a> : null}
       </div>
     </article>
   );
@@ -263,12 +265,12 @@ function CompactCareer({ career }: { career: CareerSummaryDto }) {
   const raidTotal = raid.total || raid;
   const dungeonTotal = dungeon.total || dungeon;
   return (
-    <div className="career-result">
-      <div className="account-head">
+    <div className={cn('career-result')}>
+      <div className={cn('account-head')}>
         <h3>{career.account.displayName}</h3>
         <p>{career.account.membershipTypeName} · {career.account.membershipId}</p>
       </div>
-      <div className="stat-grid">
+      <div className={cn('stat-grid')}>
         {statTile('守护者等级', career.profile?.guardianRank || '-')}
         {statTile('最高光等', career.profile?.maxLight || '-')}
         {statTile('总时长', formatMinutes(career.profile?.totalMinutesPlayed))}
@@ -277,16 +279,16 @@ function CompactCareer({ career }: { career: CareerSummaryDto }) {
         {statTile('地牢完成', statDisplay(dungeonTotal.clears))}
         {statTile('PvP 胜场', statDisplay(pvp.activitiesWon))}
       </div>
-      <div className="section-title">角色</div>
-      <div className="character-list">
+      <div className={cn('section-title')}>角色</div>
+      <div className={cn('character-list')}>
         {(career.characters || []).map((character) => (
-          <div className="character" key={character.id}>
+          <div className={cn('character')} key={character.id}>
             <img src={character.emblemPath || '/brand.svg'} alt="" />
             <div>
               <b>{character.className}</b>
               <span>{[character.raceName, character.genderName].filter(Boolean).join(' · ')}</span>
             </div>
-            <div className="power">{character.light || '-'}</div>
+            <div className={cn('power')}>{character.light || '-'}</div>
           </div>
         ))}
       </div>
@@ -315,7 +317,7 @@ function mergeEndgameCareer(career: CareerSummaryDto, payload: any): CareerSumma
 
 function statTile(label: string, value: any) {
   return (
-    <div className="stat-tile">
+    <div className={cn('stat-tile')}>
       <span>{label}</span>
       <b>{value}</b>
     </div>

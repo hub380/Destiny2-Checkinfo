@@ -1,0 +1,237 @@
+.crafting-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 10px;
+}
+
+.crafting-summary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.crafting-summary-actions b,
+.crafting-summary-actions span {
+  display: block;
+}
+
+.crafting-summary-actions b {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.crafting-summary-actions span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.career-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.career-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 22, 21, 0.56);
+}
+
+.career-modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, 100%);
+  max-height: min(92vh, 980px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.career-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.career-modal-head h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.career-modal-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.career-modal-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.crafting-collection-board {
+  display: grid;
+  gap: 12px;
+}
+
+.crafting-source-group {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: #202320;
+  border: 1px solid #262d28;
+}
+
+.crafting-source-group.complete .crafting-source-head {
+  background: #2f9966;
+}
+
+.crafting-source-head {
+  width: fit-content;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #c84f45;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.crafting-source-head strong,
+.crafting-source-head span {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.crafting-source-head strong {
+  font-weight: 800;
+}
+
+.crafting-source-head span {
+  opacity: 0.9;
+}
+
+.crafting-source-items {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 18px;
+}
+
+.crafting-board-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 58px 7px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  color: #eef4ec;
+}
+
+.crafting-board-icon {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #3a2c54;
+}
+
+.crafting-board-icon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.crafting-pattern-meter {
+  align-self: stretch;
+  width: 7px;
+  min-height: 58px;
+  border-radius: 999px;
+  background: #3bb978;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  justify-self: center;
+}
+
+.crafting-board-item.incomplete .crafting-pattern-meter {
+  background: linear-gradient(to top, #3bb978 var(--pattern-fill, 50%), #d64f45 var(--pattern-fill, 50%));
+}
+
+.crafting-board-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.crafting-board-copy b,
+.crafting-board-copy span,
+.crafting-board-copy em {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.crafting-board-copy b {
+  font-size: 13px;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.crafting-board-copy span,
+.crafting-board-copy em {
+  color: #cbd7cf;
+  font-size: 12px;
+  line-height: 1.25;
+  font-style: normal;
+}
+
+.crafting-board-copy em {
+  color: #fff;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .crafting-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .crafting-source-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .crafting-summary,
+  .crafting-source-items {
+    grid-template-columns: 1fr;
+  }
+
+  .crafting-source-head {
+    align-items: flex-start;
+    flex-direction: column;
+    border-radius: 8px;
+  }
+
+  .crafting-summary-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

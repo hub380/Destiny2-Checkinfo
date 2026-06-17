@@ -2,7 +2,7 @@ import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getCareerSummary, getConfig, getEndgame, getFireteams } from '../api';
 import type { CareerSummaryDto, FireteamDto, FireteamsResponseDto } from '../types';
-import { BRAND_LOGO, CopyIcon, Notice, RefreshIcon, SearchIcon, css, formatMinutes, formatTime, relativeTime, statDisplay, uiClasses } from '../ui';
+import { BRAND_LOGO, CopyIcon, GitHubBranchLink, Notice, RefreshIcon, SearchIcon, css, formatMinutes, formatTime, relativeTime, statDisplay, uiClasses } from '../ui';
 import '../global.css';
 import styles from './home.module.css';
 
@@ -169,6 +169,7 @@ function HomePage() {
           <button className={cn('icon-button')} title="刷新" onClick={refreshFireteams} disabled={loading}>
             <RefreshIcon />
           </button>
+          <GitHubBranchLink />
         </div>
       </header>
 

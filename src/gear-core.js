@@ -14,7 +14,7 @@ const ITEM_TYPE_WEAPON = 3;
 const TRAIT_CATEGORY = 3708671066;
 const EMPTY_TRAIT_SOCKET = '空特征插槽';
 const ADEPT_SUFFIX = '（专家）';
-const GEAR_INDEX_VERSION = 'gear-index-v4';
+const GEAR_INDEX_VERSION = 'gear-index-v5-source-hints';
 
 export async function getGearSearch(body, deps) {
   requireApiKey(deps);
@@ -193,7 +193,7 @@ export async function buildGearIndex(deps) {
     throw httpError(502, 'MANIFEST_PATH_MISSING', 'Bungie Manifest 缺少装备定义表');
   }
 
-  const [items, plugSets, damageTypes, statDefs, itemSets, sandboxPerks, collectibles, recordDefs] = await Promise.all([
+  const [items, plugSets, damageTypes, statDefs, itemSets, sandboxPerks, collectibles, recordDefs, rewardSources, vendors] = await Promise.all([
     bungieFetchJson(paths.DestinyInventoryItemDefinition, deps),
     bungieFetchJson(paths.DestinyPlugSetDefinition, deps),
     paths.DestinyDamageTypeDefinition ? bungieFetchJson(paths.DestinyDamageTypeDefinition, deps) : Promise.resolve({}),
@@ -201,7 +201,9 @@ export async function buildGearIndex(deps) {
     paths.DestinyEquipableItemSetDefinition ? bungieFetchJson(paths.DestinyEquipableItemSetDefinition, deps) : Promise.resolve({}),
     paths.DestinySandboxPerkDefinition ? bungieFetchJson(paths.DestinySandboxPerkDefinition, deps) : Promise.resolve({}),
     paths.DestinyCollectibleDefinition ? bungieFetchJson(paths.DestinyCollectibleDefinition, deps) : Promise.resolve({}),
-    paths.DestinyRecordDefinition ? bungieFetchJson(paths.DestinyRecordDefinition, deps) : Promise.resolve({})
+    paths.DestinyRecordDefinition ? bungieFetchJson(paths.DestinyRecordDefinition, deps) : Promise.resolve({}),
+    paths.DestinyRewardSourceDefinition ? bungieFetchJson(paths.DestinyRewardSourceDefinition, deps) : Promise.resolve({}),
+    paths.DestinyVendorDefinition ? bungieFetchJson(paths.DestinyVendorDefinition, deps) : Promise.resolve({})
   ]);
 
   const records = [];
@@ -216,7 +218,7 @@ export async function buildGearIndex(deps) {
     if (!definition || definition.redacted) continue;
 
     if (isWeapon(definition)) {
-      const item = makeWeaponItem(definition, damageTypes, craftingInfoByHash);
+      const item = makeWeaponItem(definition, damageTypes, craftingInfoByHash, collectibles, rewardSources, vendors);
       records.push(item);
       weapons.push(makeWeaponRecord(definition, item, items, plugSets, statDefs, weaponPlugs, craftingInfoByHash));
       continue;
@@ -272,7 +274,7 @@ function makeCraftingInfoMap(items, collectibles, recordDefs) {
     const collectible = collectibleHash ? collectibles?.[String(collectibleHash)] : null;
     const patternRecord = patternRecords.get(name) || patternRecords.get(displayName(outputDefinition)) || null;
     output.set(hash, {
-      source: cleanSourceLabel(collectible?.sourceString) || cleanSourceLabel(outputDefinition.displaySource) || sourceFromTraits(definition),
+      source: cleanSourceLabel(collectible?.sourceString) || cleanSourceLabel(outputDefinition.displaySource),
       sourceHash: Number(collectible?.sourceHash || 0),
       patternRecordHash: patternRecord?.hash || 0,
       patternObjectiveHash: patternRecord?.objectiveHash || 0,
@@ -324,15 +326,124 @@ function cleanSourceLabel(value) {
     .trim();
 }
 
-function sourceFromTraits(definition) {
-  const release = (definition.traitIds || []).find((trait) => String(trait).startsWith('releases.'));
-  return release ? release.replace(/^releases\./, '').replace(/\./g, ' ') : '';
+function cleanAcquisitionSource(value) {
+  const text = cleanSourceLabel(value);
+  if (!text || isNonAcquisitionSourceText(text)) return '';
+  return text;
 }
 
-function makeWeaponItem(definition, damageTypes, craftingInfoByHash = new Map()) {
+function isNonAcquisitionSourceText(value) {
+  const text = String(value || '').toLowerCase();
+  return (
+    text.includes('随机特性') ||
+    text.includes('无法从收藏品再次获取') ||
+    text.includes('random perks') ||
+    text.includes('cannot be reacquired from collections') ||
+    /^v\d+\s+[a-z0-9_-]+/i.test(text)
+  );
+}
+
+function buildSourceHints(definition, collectibles, rewardSources, vendors, craftingInfo) {
+  const hints = [];
+  const collectibleHash = Number(definition.collectibleHash || craftingInfo?.outputCollectibleHash || 0);
+  const collectible = collectibleHash ? collectibles?.[String(collectibleHash)] : null;
+
+  addSourceHint(hints, {
+    kind: 'crafting',
+    label: '锻造配方',
+    text: cleanAcquisitionSource(craftingInfo?.source),
+    hash: craftingInfo?.sourceHash || 0,
+    confidence: 'hint'
+  });
+
+  addSourceHint(hints, {
+    kind: 'collectible',
+    label: '收藏品来源',
+    text: cleanAcquisitionSource(collectible?.sourceString),
+    hash: Number(collectible?.sourceHash || 0),
+    confidence: 'hint'
+  });
+
+  addSourceHint(hints, {
+    kind: 'displaySource',
+    label: '物品来源',
+    text: cleanAcquisitionSource(definition.displaySource),
+    hash: 0,
+    confidence: 'hint'
+  });
+
+  for (const hash of rewardSourceHashes(definition)) {
+    const rewardSource = rewardSources?.[String(hash)];
+    const name = cleanSourceLabel(displayName(rewardSource));
+    const description = cleanSourceLabel(displayDescription(rewardSource));
+    addSourceHint(hints, {
+      kind: 'rewardSource',
+      label: '奖励来源',
+      text: name || description,
+      description: description && description !== name ? description : '',
+      hash,
+      confidence: 'hint'
+    });
+  }
+
+  for (const source of vendorSourceRefs(definition)) {
+    const vendor = vendors?.[String(source.vendorHash)];
+    addSourceHint(hints, {
+      kind: 'vendor',
+      label: 'Vendor 来源',
+      text: cleanSourceLabel(displayName(vendor)) || `Vendor ${source.vendorHash}`,
+      hash: source.vendorHash,
+      vendorItemIndexes: source.vendorItemIndexes,
+      confidence: 'hint'
+    });
+  }
+
+  return hints.map(({ key, ...hint }) => hint);
+}
+
+function addSourceHint(hints, hint) {
+  const text = cleanSourceLabel(hint?.text);
+  if (!text) return;
+  const key = [hint.kind || '', text.toLowerCase(), hint.hash || 0].join('|');
+  if (hints.some((entry) => entry.key === key || entry.text === text)) return;
+  hints.push({
+    kind: hint.kind || 'unknown',
+    label: hint.label || '来源提示',
+    text,
+    description: cleanText(hint.description),
+    hash: Number(hint.hash || 0),
+    confidence: hint.confidence || 'hint',
+    vendorItemIndexes: Array.isArray(hint.vendorItemIndexes) ? hint.vendorItemIndexes : [],
+    key
+  });
+}
+
+function rewardSourceHashes(definition) {
+  const hashes = new Set();
+  for (const hash of definition.sourceData?.sourceHashes || []) {
+    if (hash) hashes.add(Number(hash));
+  }
+  for (const source of definition.sourceData?.sources || []) {
+    if (source?.sourceHash) hashes.add(Number(source.sourceHash));
+    if (source?.rewardSourceHash) hashes.add(Number(source.rewardSourceHash));
+  }
+  return Array.from(hashes).filter(Boolean);
+}
+
+function vendorSourceRefs(definition) {
+  return [...(definition.sourceData?.vendorSources || []), ...(definition.vendorSources || [])]
+    .map((source) => ({
+      vendorHash: Number(source?.vendorHash || 0),
+      vendorItemIndexes: Array.isArray(source?.vendorItemIndexes) ? source.vendorItemIndexes.map(Number).filter(Number.isFinite) : []
+    }))
+    .filter((source) => source.vendorHash);
+}
+
+function makeWeaponItem(definition, damageTypes, craftingInfoByHash = new Map(), collectibles = {}, rewardSources = {}, vendors = {}) {
   const ammo = ammoLabel(definition);
   const element = elementLabel(definition, damageTypes);
   const craftingInfo = craftingInfoByHash.get(Number(definition.hash));
+  const sourceHints = buildSourceHints(definition, collectibles, rewardSources, vendors, craftingInfo);
   const item = {
     kind: 'weapon',
     hash: Number(definition.hash),
@@ -344,12 +455,13 @@ function makeWeaponItem(definition, damageTypes, craftingInfoByHash = new Map())
     element,
     tier: definition.inventory?.tierTypeName || '',
     adept: isAdept(displayName(definition)),
-    description: cleanText(displayDescription(definition))
+    description: cleanText(displayDescription(definition)),
+    sourceHints
   };
   if (craftingInfo) {
     Object.assign(item, {
       craftable: true,
-      source: craftingInfo.source,
+      source: craftingInfo.source || sourceHints[0]?.text || '',
       sourceHash: craftingInfo.sourceHash,
       patternRecordHash: craftingInfo.patternRecordHash,
       patternObjectiveHash: craftingInfo.patternObjectiveHash,
@@ -430,6 +542,7 @@ function makeWeaponRecord(definition, item, items, plugSets, statDefs, weaponPlu
     stats: formatStats(definition, statDefs),
     screenshot: imageUrl(definition.screenshot),
     sockets,
+    sourceHints: item.sourceHints || [],
     crafting: craftingInfo || null
   };
 }
@@ -721,6 +834,7 @@ function publicWeaponRecord(record, index, matchedHashes = new Set()) {
     adept: Boolean(record.adept),
     stats: record.stats || [],
     screenshot: record.screenshot || '',
+    sourceHints: Array.isArray(record.sourceHints) ? record.sourceHints : [],
     sockets: publicWeaponSockets(record, perkMap(index), matchedHashes)
   };
 }

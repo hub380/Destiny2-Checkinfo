@@ -12,7 +12,7 @@ function GearPage() {
   const [query, setQuery] = useState('');
   const [payload, setPayload] = useState<GearSearchDto | null>(null);
   const [detail, setDetail] = useState<JsonRecord | null>(null);
-  const [subtitle, setSubtitle] = useState('输入名称或 Hash 查询，点击结果查看详情');
+  const [subtitle, setSubtitle] = useState('输入名称查询，点击结果查看详情');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState(false);
 
@@ -98,7 +98,6 @@ function GearPage() {
               <>
                 <div className={cn('gear-summary')}>
                   <b>{payload.query}</b>
-                  <span>Manifest {payload.manifestVersion || '-'}</span>
                   <span>显示 {formatNumber(items.length)} / {formatNumber(payload.total || 0)}</span>
                 </div>
                 <GearDetailSlot detail={detail} />
@@ -128,7 +127,6 @@ function GearResultCard({ item, onOpen }: { item: JsonRecord; onOpen: () => void
         {meta.length ? <div className={cn('gear-tags')}>{meta.map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}</div> : null}
         {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
         <div className={cn('gear-card-foot')}>
-          <span>#{item.hash || '-'}</span>
           <b>{action}</b>
         </div>
       </div>
@@ -164,9 +162,29 @@ function WeaponDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord }
           {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
         </div>
       </div>
+      <SourceHints hints={detail.sourceHints || item.sourceHints || []} />
       <Stats stats={detail.stats || []} />
       <PerkColumns sockets={detail.sockets || []} />
     </section>
+  );
+}
+
+function SourceHints({ hints }: { hints: JsonRecord[] }) {
+  const items = Array.isArray(hints) ? hints.filter((hint) => hint?.text).slice(0, 8) : [];
+  if (!items.length) return null;
+  return (
+    <div className={cn('source-hints')}>
+      <div className={cn('section-title')}>来源提示 · 非精确掉落表</div>
+      <div className={cn('source-hint-grid')}>
+        {items.map((hint, index) => (
+          <div className={cn('source-hint')} key={`${hint.kind || 'source'}-${hint.hash || index}-${hint.text}`}>
+            <span>{hint.label || sourceKindLabel(hint.kind)}</span>
+            <b>{hint.text}</b>
+            {hint.description ? <p>{hint.description}</p> : null}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -246,7 +264,7 @@ function WeaponGroup({ group }: { group: JsonRecord }) {
           <InlineFrameSocket socket={frameSocket} />
         </div>
         <div className={cn('variant-pills')}>
-          {variants.slice(0, 10).map((variant: JsonRecord) => <span title={`#${variant.hash || ''}`} key={variant.hash || variant.name}>{variant.name || '未知变体'}{variant.adept ? ' · 专家' : ''}</span>)}
+          {variants.slice(0, 10).map((variant: JsonRecord) => <span key={variant.hash || variant.name}>{variant.name || '未知变体'}{variant.adept ? ' · 专家' : ''}</span>)}
           {variants.length > 10 ? <span>+{variants.length - 10}</span> : null}
         </div>
         <PerkColumns sockets={perkSockets} />
@@ -353,6 +371,17 @@ function gearCacheLabel(status?: string) {
   if (!status) return '索引缓存';
   if (String(status).includes('hit')) return '索引缓存命中';
   return '索引已读取';
+}
+
+function sourceKindLabel(kind?: string) {
+  const labels: Record<string, string> = {
+    crafting: '锻造配方',
+    collectible: '收藏品来源',
+    displaySource: '物品来源',
+    rewardSource: '奖励来源',
+    vendor: 'Vendor 来源'
+  };
+  return labels[String(kind || '')] || '来源提示';
 }
 
 function perkTypeLabel(perk: JsonRecord) {

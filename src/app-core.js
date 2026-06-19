@@ -85,6 +85,16 @@ export async function handleAppRequest(request, env = {}, ctx = {}, options = {}
         return json(await getDestinySummary(body, env, ctx));
       }
 
+      if (url.pathname === '/api/destiny/player-search' && request.method === 'POST') {
+        const body = await readJsonBody(request);
+        return json(await getDestinyPlayerSearch(body, env, ctx));
+      }
+
+      if (url.pathname === '/api/destiny/fireteam' && request.method === 'POST') {
+        const body = await readJsonBody(request);
+        return json(await getDestinyFireteam(body, env, ctx));
+      }
+
       if (url.pathname === '/api/destiny/endgame' && request.method === 'POST') {
         const body = await readJsonBody(request);
         return json(await getDestinyEndgame(body, env, ctx));
@@ -345,6 +355,418 @@ async function getDestinyCareer(body, env, ctx) {
     ctx
   );
   return attachEndgameToCareer(career, endgamePayload);
+}
+
+async function getDestinyPlayerSearch(body, env, ctx) {
+  if (!env.BUNGIE_API_KEY) {
+    throw httpError(400, 'BUNGIE_API_KEY_MISSING', '请先配置 BUNGIE_API_KEY 后搜索棒鸡玩家');
+  }
+
+  const query = cleanText(body?.query || body?.name || body?.displayName || '');
+  const limit = Math.min(Math.max(Number(body?.limit || 30), 1), 40);
+  if (!query) {
+    return {
+      query,
+      page: 0,
+      hasMore: false,
+      items: []
+    };
+  }
+
+  const cacheKey = [
+    'player-search',
+    CACHE_VERSION,
+    env.BUNGIE_LOCALE || 'zh-chs',
+    query.toLocaleLowerCase(),
+    limit
+  ].join(':');
+  const cached = await getWorkerCachedJson(cacheKey, positiveNumber(env.PLAYER_SEARCH_CACHE_TTL_SECONDS, 300), async () => {
+    const search = await searchBungiePlayersByPrefix(query, limit, env);
+    return {
+      query,
+      page: 0,
+      pagesScanned: search.pagesScanned,
+      hasMore: search.hasMore,
+      items: search.items
+    };
+  }, env, ctx, { memoryOnly: true });
+
+  return {
+    ...cached.value,
+    cache: {
+      status: cached.status,
+      cachedAt: cached.cachedAt,
+      ttlSeconds: cached.ttlSeconds
+    }
+  };
+}
+
+async function getDestinyFireteam(body, env, ctx) {
+  if (!env.BUNGIE_API_KEY) {
+    throw httpError(400, 'BUNGIE_API_KEY_MISSING', '请先配置 BUNGIE_API_KEY 后查询当前队伍');
+  }
+
+  const modes = normalizeEndgameModes(body?.modes || body?.mode || ['raid', 'dungeon']);
+  const includeEndgame = body?.includeEndgame === true;
+  const anchor = await resolveFireteamAnchor(body, env, ctx);
+  let transitory = {};
+  let transitoryError = '';
+  try {
+    transitory = await fetchDestinyTransitory(anchor.account, env);
+  } catch (error) {
+    transitoryError = error.message || 'Bungie 当前队伍状态读取失败';
+  }
+  const rawPartyMembers = Array.isArray(transitory.partyMembers) ? transitory.partyMembers : [];
+  const partyMembers = normalizeTransitoryParty(rawPartyMembers, anchor.account);
+  const currentActivity = await summarizeTransitoryActivity(transitory.currentActivity || {}, env, ctx);
+  const members = await mapWithConcurrency(
+    partyMembers,
+    Math.max(1, Math.min(4, positiveNumber(env.FIRETEAM_MEMBER_CONCURRENCY, 2))),
+    (member) => getDestinyFireteamMember(member, anchor.account, modes, { includeEndgame }, env, ctx)
+  );
+  const resolvedMembers = members.filter((member) => !member.error).length;
+
+  return {
+    updatedAt: new Date().toISOString(),
+    query: body?.bungieName || body?.name || anchor.account.displayName || '',
+    modes,
+    anchor: fireteamMemberAccount(anchor),
+    currentActivity,
+    joinability: normalizeJoinability(transitory.joinability),
+    members,
+    summary: {
+      detectedMembers: rawPartyMembers.length,
+      displayedMembers: members.length,
+      resolvedMembers
+    },
+    message: fireteamMessage(rawPartyMembers, members, transitoryError),
+    cache: {
+      transitory: transitoryError ? 'error' : 'live',
+      includeEndgame,
+      note: transitoryError || 'Bungie Transitory 数据可能为空、延迟或只返回本人'
+    }
+  };
+}
+
+async function resolveFireteamAnchor(body, env, ctx) {
+  const membershipType = body?.membershipType || body?.account?.membershipType;
+  const membershipId = body?.membershipId || body?.account?.membershipId;
+  if (membershipType && membershipId) {
+    return getPublicCareerSummaryByMembership({ membershipType, membershipId }, env, ctx);
+  }
+  return getDestinySummary(body, env, ctx);
+}
+
+async function fetchDestinyTransitory(account, env) {
+  const payload = await bungieFetch(
+    `/Platform/Destiny2/${account.membershipType}/Profile/${account.membershipId}/?components=1000`,
+    { method: 'GET', timeoutMs: positiveNumber(env.FIRETEAM_TRANSITORY_TIMEOUT_MS, 3500) },
+    env
+  );
+  return payload.Response?.profileTransitoryData?.data || {};
+}
+
+function normalizeTransitoryParty(partyMembers, anchorAccount) {
+  const seen = new Set();
+  const normalized = [];
+  for (const member of partyMembers) {
+    const membershipId = cleanText(member?.membershipId || member?.destinyMembershipId || '');
+    if (!membershipId || seen.has(membershipId)) continue;
+    seen.add(membershipId);
+    normalized.push({
+      membershipId,
+      membershipType: member?.membershipType || anchorAccount.membershipType,
+      emblemHash: member?.emblemHash || '',
+      status: member?.status ?? null,
+      source: 'transitory'
+    });
+  }
+
+  const anchorId = cleanText(anchorAccount.membershipId);
+  if (anchorId && !seen.has(anchorId)) {
+    normalized.unshift({
+      membershipId: anchorId,
+      membershipType: anchorAccount.membershipType,
+      status: null,
+      source: normalized.length ? 'queried-player' : 'fallback-anchor'
+    });
+  }
+  return normalized;
+}
+
+async function getDestinyFireteamMember(member, anchorAccount, modes, options, env, ctx) {
+  const startedAt = Date.now();
+  try {
+    const summary = await getPublicCareerSummaryByMembership(
+      {
+        membershipType: member.membershipType || anchorAccount.membershipType,
+        membershipId: member.membershipId
+      },
+      env,
+      ctx
+    );
+    let endgamePayload = null;
+    let endgameError = '';
+    if (options?.includeEndgame) {
+      try {
+        endgamePayload = await getDestinyEndgame(
+          {
+            membershipType: summary.account.membershipType,
+            membershipId: summary.account.membershipId,
+            characters: summary.characters,
+            modes
+          },
+          env,
+          ctx
+        );
+      } catch (error) {
+        endgameError = error.message || '队伍成员高难活动数据读取失败';
+      }
+    }
+
+    const stats = { ...(summary.stats || {}) };
+    if (endgamePayload?.statsPatch?.raid) stats.raid = endgamePayload.statsPatch.raid;
+    if (endgamePayload?.statsPatch?.dungeon) stats.dungeon = endgamePayload.statsPatch.dungeon;
+    return {
+      membershipId: member.membershipId,
+      membershipType: summary.account.membershipType,
+      status: member.status,
+      statusLabel: transitoryStatusLabel(member.status),
+      source: member.source,
+      account: summary.account,
+      profile: summary.profile,
+      characters: summary.characters,
+      stats,
+      endgame: endgamePayload?.endgame || {},
+      cache: {
+        ...(summary.cache || {}),
+        ...(endgamePayload?.cache || {})
+      },
+      warnings: endgameError ? [endgameError] : [],
+      elapsedMs: Date.now() - startedAt
+    };
+  } catch (error) {
+    return {
+      membershipId: member.membershipId,
+      membershipType: member.membershipType || anchorAccount.membershipType,
+      status: member.status,
+      statusLabel: transitoryStatusLabel(member.status),
+      source: member.source,
+      error: error.message || '队伍成员资料读取失败',
+      elapsedMs: Date.now() - startedAt
+    };
+  }
+}
+
+async function getPublicCareerSummaryByMembership(membership, env, ctx) {
+  const membershipId = cleanText(membership?.membershipId);
+  const preferredType = cleanText(membership?.membershipType || '');
+  if (!membershipId) throw httpError(400, 'INVALID_MEMBERSHIP_ID', '缺少 Destiny membershipId');
+
+  const cacheKey = [
+    'summary-membership',
+    CACHE_VERSION,
+    env.BUNGIE_LOCALE || 'zh-chs',
+    preferredType || 'any',
+    membershipId
+  ].join(':');
+  const cached = await getWorkerCachedJson(cacheKey, summaryCacheTtlSeconds(env), async () => {
+    const profileResult = await fetchPublicProfileByMembership(membershipId, preferredType, env);
+    let statsResponse = {};
+    try {
+      const stats = await bungieFetch(
+        `/Platform/Destiny2/${profileResult.membershipType}/Account/${membershipId}/Stats/`,
+        { method: 'GET' },
+        env
+      );
+      statsResponse = stats.Response || {};
+    } catch {
+      statsResponse = {};
+    }
+    const userInfo = profileResult.profileResponse.profile?.data?.userInfo || {};
+    const resolvedMembership = {
+      ...membership,
+      ...userInfo,
+      membershipType: profileResult.membershipType,
+      membershipId
+    };
+    const parsedName = parsedNameFromMembership(resolvedMembership);
+    const summary = summarizeCareer(parsedName, resolvedMembership, [resolvedMembership], profileResult.profileResponse, statsResponse);
+    summary.queriedName = parsedName.displayNameCode
+      ? `${parsedName.displayName}#${String(parsedName.displayNameCode).padStart(4, '0')}`
+      : displayMembershipName(resolvedMembership);
+    return summary;
+  }, env, ctx);
+
+  return {
+    ...cached.value,
+    cache: {
+      ...(cached.value.cache || {}),
+      summary: cached.status,
+      summaryCachedAt: cached.cachedAt,
+      summaryTtlSeconds: cached.ttlSeconds
+    }
+  };
+}
+
+async function fetchPublicProfileByMembership(membershipId, preferredType, env) {
+  const candidates = Array.from(new Set([preferredType, 3, 2, 1, 6, 4].filter((item) => item !== '' && item != null).map(String)));
+  let lastError = null;
+  for (const membershipType of candidates) {
+    try {
+      const payload = await bungieFetch(
+        `/Platform/Destiny2/${membershipType}/Profile/${membershipId}/?components=100,200`,
+        { method: 'GET' },
+        env
+      );
+      if (payload.Response?.profile?.data) {
+        return {
+          membershipType,
+          profileResponse: payload.Response || {}
+        };
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || httpError(404, 'PLAYER_PROFILE_NOT_FOUND', '没有找到该队伍成员的公开资料');
+}
+
+function parsedNameFromMembership(membership) {
+  const displayName = cleanText(membership.bungieGlobalDisplayName || membership.displayName || membership.membershipId || 'Guardian');
+  const displayNameCode = Number(membership.bungieGlobalDisplayNameCode || membership.displayNameCode || 0);
+  return {
+    displayName,
+    displayNameCode
+  };
+}
+
+async function summarizeTransitoryActivity(activity, env, ctx) {
+  const hash = cleanText(
+    activity?.currentActivityHash ||
+    activity?.activityHash ||
+    activity?.referenceId ||
+    activity?.directorActivityHash ||
+    activity?.activityDetails?.referenceId ||
+    activity?.activityDetails?.directorActivityHash ||
+    ''
+  );
+  let definition = null;
+  if (hash) {
+    try {
+      definition = await resolveActivityDefinition(hash, env, ctx);
+    } catch {
+      definition = fallbackActivityDefinition(hash);
+    }
+  }
+  const startTime = parseTime(activity?.startTime);
+  return {
+    hash,
+    name: definition && definition.source !== 'fallback' ? definition.name : '',
+    image: definition?.image || '',
+    startTime,
+    elapsedSeconds: startTime ? Math.max(0, Math.round((Date.now() - new Date(startTime).getTime()) / 1000)) : 0,
+    score: Number(activity?.score || 0),
+    numberOfPlayers: Number(activity?.numberOfPlayers || 0),
+    numberOfOpponents: Number(activity?.numberOfOpponents || 0),
+    rawAvailable: Boolean(activity && Object.keys(activity).length)
+  };
+}
+
+function normalizeJoinability(joinability) {
+  if (!joinability || typeof joinability !== 'object') {
+    return {
+      openSlots: null,
+      privacySetting: null,
+      closedReasons: null,
+      label: '未知'
+    };
+  }
+  const openSlots = Number(joinability.openSlots || 0);
+  const closedReasons = Number(joinability.closedReasons || 0);
+  return {
+    openSlots,
+    privacySetting: Number(joinability.privacySetting || 0),
+    closedReasons,
+    label: openSlots > 0 && !closedReasons ? '可加入' : closedReasons ? '不可加入' : '无空位'
+  };
+}
+
+function fireteamMemberAccount(summary) {
+  return {
+    displayName: summary.account?.displayName || '',
+    membershipType: summary.account?.membershipType || '',
+    membershipTypeName: summary.account?.membershipTypeName || '',
+    membershipId: summary.account?.membershipId || ''
+  };
+}
+
+function fireteamMessage(rawPartyMembers, members, transitoryError = '') {
+  if (transitoryError) return `Bungie 当前队伍状态读取失败，先展示被查询玩家本人：${transitoryError}`;
+  if (!rawPartyMembers.length) return 'Bungie 当前队伍状态未公开，先展示被查询玩家本人。';
+  if (members.length <= 1) return '当前只检测到该玩家本人，可能未在公开队伍或状态不可见。';
+  const failed = members.filter((member) => member.error).length;
+  if (failed) return `已检测到 ${members.length} 名成员，其中 ${failed} 名成员公开资料读取失败。`;
+  return `已检测到 ${members.length} 名当前队伍成员。`;
+}
+
+function transitoryStatusLabel(status) {
+  if (status == null) return '';
+  const number = Number(status);
+  const map = {
+    0: '未知',
+    1: '离线',
+    2: '在线',
+    3: '在线',
+    4: '在线',
+    5: '在线',
+    6: '在线',
+    7: '在线',
+    8: '在线',
+    9: '游戏中'
+  };
+  return map[number] || `状态 ${number}`;
+}
+
+async function searchBungiePlayersByPrefix(query, limit, env) {
+  const maxPages = Math.min(Math.max(Number(env.PLAYER_SEARCH_MAX_PAGES || 4), 1), 10);
+  const items = [];
+  const seen = new Set();
+  let hasMore = false;
+  let pagesScanned = 0;
+
+  for (let page = 0; page < maxPages && items.length < limit; page += 1) {
+    const search = await bungieFetch(
+      `/Platform/User/Search/GlobalName/${page}/`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ displayNamePrefix: query })
+      },
+      env
+    );
+    const response = search.Response || {};
+    const results = Array.isArray(response.searchResults) ? response.searchResults : [];
+    pagesScanned += 1;
+    hasMore = Boolean(response.hasMore);
+
+    for (const result of results) {
+      const item = normalizePlayerSearchResult(result);
+      if (!item) continue;
+      const key = `${item.bungieName}:${item.membershipId || ''}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push(item);
+      if (items.length >= limit) break;
+    }
+
+    if (!hasMore) break;
+  }
+
+  return {
+    items,
+    pagesScanned,
+    hasMore: hasMore || items.length >= limit
+  };
 }
 
 async function getDestinySummary(body, env, ctx) {
@@ -1095,9 +1517,9 @@ async function bungieFetch(pathname, options, env) {
 }
 
 async function requestText(url, options, env) {
-  const { maxBytes = Number(env.HEYBOX_MAX_BYTES || 2_000_000), ...fetchOptions } = options || {};
+  const { maxBytes = Number(env.HEYBOX_MAX_BYTES || 2_000_000), timeoutMs: requestTimeoutMs, ...fetchOptions } = options || {};
   const controller = new AbortController();
-  const timeoutMs = Number(env.REQUEST_TIMEOUT_MS || 15000);
+  const timeoutMs = Number(requestTimeoutMs || env.REQUEST_TIMEOUT_MS || 15000);
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
@@ -1834,6 +2256,45 @@ function displayMembershipName(item) {
   }
   if (item.displayNameCode) return `${item.displayName}#${item.displayNameCode}`;
   return item.displayName || item.membershipId;
+}
+
+function normalizePlayerSearchResult(item) {
+  const memberships = Array.isArray(item?.destinyMemberships) ? item.destinyMemberships : [];
+  if (!memberships.length) return null;
+
+  const selected = selectMembership(memberships);
+  const displayName = cleanText(item.bungieGlobalDisplayName || selected.bungieGlobalDisplayName || selected.displayName);
+  const displayNameCode = Number(item.bungieGlobalDisplayNameCode || selected.bungieGlobalDisplayNameCode || 0);
+  if (!displayName || !displayNameCode) return null;
+
+  const bungieName = `${displayName}#${String(displayNameCode).padStart(4, '0')}`;
+  return {
+    bungieName,
+    displayName,
+    displayNameCode,
+    membershipType: selected.membershipType,
+    membershipTypeName: membershipTypeName(selected.membershipType),
+    membershipId: selected.membershipId,
+    displayMembershipName: selected.displayName || '',
+    crossSaveOverride: selected.crossSaveOverride || 0,
+    isPublic: selected.isPublic !== false,
+    icon: bungieAssetUrl(selected.iconPath),
+    linkedAccounts: memberships.map((membership) => ({
+      displayName: membership.displayName || '',
+      membershipType: membership.membershipType,
+      membershipTypeName: membershipTypeName(membership.membershipType),
+      membershipId: membership.membershipId,
+      crossSaveOverride: membership.crossSaveOverride || 0,
+      isPublic: membership.isPublic !== false,
+      icon: bungieAssetUrl(membership.iconPath)
+    }))
+  };
+}
+
+function bungieAssetUrl(pathname) {
+  const path = cleanText(pathname);
+  if (!path) return '';
+  return path.startsWith('http') ? path : `https://www.bungie.net${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 function membershipTypeName(type) {

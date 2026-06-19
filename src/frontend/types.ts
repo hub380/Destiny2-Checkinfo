@@ -56,11 +56,60 @@ export interface CareerSummaryDto extends JsonRecord {
   detailError?: string;
 }
 
+export interface PlayerSearchItemDto extends JsonRecord {
+  bungieName: string;
+  displayName?: string;
+  displayNameCode?: number;
+  membershipType?: number;
+  membershipTypeName?: string;
+  membershipId?: string;
+  displayMembershipName?: string;
+  icon?: string;
+  linkedAccounts?: JsonRecord[];
+}
+
+export interface PlayerSearchDto extends JsonRecord {
+  query?: string;
+  page?: number;
+  hasMore?: boolean;
+  items?: PlayerSearchItemDto[];
+  cache?: JsonRecord;
+}
+
 export interface EndgameDto extends JsonRecord {
   endgame?: JsonRecord;
   statsPatch?: JsonRecord;
   cache?: JsonRecord;
   warnings?: string[];
+}
+
+export interface FireteamMemberLookupDto extends JsonRecord {
+  membershipId?: string;
+  membershipType?: number | string;
+  status?: number | string | null;
+  statusLabel?: string;
+  source?: string;
+  account?: JsonRecord;
+  profile?: JsonRecord;
+  characters?: CharacterDto[];
+  stats?: JsonRecord;
+  endgame?: JsonRecord;
+  warnings?: string[];
+  error?: string;
+  elapsedMs?: number;
+}
+
+export interface FireteamLookupDto extends JsonRecord {
+  updatedAt?: string;
+  query?: string;
+  modes?: string[];
+  anchor?: JsonRecord;
+  currentActivity?: JsonRecord;
+  joinability?: JsonRecord;
+  members?: FireteamMemberLookupDto[];
+  summary?: JsonRecord;
+  message?: string;
+  cache?: JsonRecord;
 }
 
 export interface GearSearchDto extends JsonRecord {

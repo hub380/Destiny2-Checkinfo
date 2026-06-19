@@ -1,7 +1,7 @@
-import React, { FormEvent, useEffect, useState } from 'react';
+import React, { FormEvent, KeyboardEvent, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { getCareerDetails, getCareerSummary, getEndgame } from '../api';
-import type { CareerSummaryDto, CharacterDto } from '../types';
+import { getCareerDetails, getCareerSummary, getEndgame, searchPlayers } from '../api';
+import type { CareerSummaryDto, CharacterDto, PlayerSearchItemDto } from '../types';
 import { Header, MetricCard, MiniStat, Notice, SearchIcon, css, dateOnly, dateTime, formatMinutes, formatNumber, formatTime, privacyText, statDisplay, uiClasses, winRate } from '../ui';
 import '../global.css';
 import styles from './career.module.css';
@@ -14,6 +14,11 @@ function CareerPage() {
   const [career, setCareer] = useState<CareerSummaryDto | null>(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState(false);
+  const [playerSuggestions, setPlayerSuggestions] = useState<PlayerSearchItemDto[]>([]);
+  const [playerSearchNotice, setPlayerSearchNotice] = useState('');
+  const [playerSearchLoading, setPlayerSearchLoading] = useState(false);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -24,9 +29,91 @@ function CareerPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const value = query.trim();
+    if (!value || value.includes('#') || value.length < 2) {
+      setPlayerSuggestions([]);
+      setPlayerSearchNotice('');
+      setPlayerSearchLoading(false);
+      setActiveSuggestionIndex(0);
+      return;
+    }
+
+    let cancelled = false;
+    setSuggestionsOpen(true);
+    setPlayerSearchLoading(true);
+    setPlayerSearchNotice('');
+    const timer = window.setTimeout(() => {
+      searchPlayers(value)
+        .then((payload) => {
+          if (cancelled) return;
+          const items = payload.items || [];
+          setPlayerSuggestions(items);
+          setActiveSuggestionIndex(0);
+          setPlayerSearchNotice(items.length ? '' : '没有匹配的棒鸡玩家');
+        })
+        .catch((err: any) => {
+          if (cancelled) return;
+          setPlayerSuggestions([]);
+          setPlayerSearchNotice(err.message || '玩家搜索失败');
+        })
+        .finally(() => {
+          if (!cancelled) setPlayerSearchLoading(false);
+        });
+    }, 280);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    await runQuery(query);
+    const value = query.trim();
+    if (value && !value.includes('#')) {
+      const items = await refreshPlayerSuggestions(value);
+      setSuggestionsOpen(true);
+      setNotice(items.length ? '请选择一个完整的棒鸡 ID 后查询' : '没有匹配的棒鸡玩家');
+      setError(!items.length);
+      return;
+    }
+    setSuggestionsOpen(false);
+    await runQuery(value);
+  }
+
+  async function refreshPlayerSuggestions(value: string) {
+    if (value.length < 2) return [];
+    setPlayerSearchLoading(true);
+    try {
+      const payload = await searchPlayers(value);
+      const items = payload.items || [];
+      setPlayerSuggestions(items);
+      setActiveSuggestionIndex(0);
+      setPlayerSearchNotice(items.length ? '' : '没有匹配的棒鸡玩家');
+      return items;
+    } catch (err: any) {
+      setPlayerSearchNotice(err.message || '玩家搜索失败');
+      return [];
+    } finally {
+      setPlayerSearchLoading(false);
+    }
+  }
+
+  function onSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      setSuggestionsOpen(false);
+      return;
+    }
+    if (!suggestionsOpen || !playerSuggestions.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveSuggestionIndex((index) => Math.min(index + 1, playerSuggestions.length - 1));
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveSuggestionIndex((index) => Math.max(index - 1, 0));
+    }
   }
 
   async function runQuery(rawName: string) {
@@ -39,6 +126,7 @@ function CareerPage() {
     setNotice('');
     setError(false);
     setCareer(null);
+    setSuggestionsOpen(false);
     try {
       const summary = await getCareerSummary(bungieName);
       setCareer({ ...summary, detailLoading: true, endgameLoading: { raid: true, dungeon: true, pvp: true } });
@@ -65,6 +153,15 @@ function CareerPage() {
       setNotice(err.message);
       setError(true);
     }
+  }
+
+  async function selectPlayer(player: PlayerSearchItemDto) {
+    if (!player.bungieName) return;
+    setQuery(player.bungieName);
+    setPlayerSuggestions([]);
+    setPlayerSearchNotice('');
+    setSuggestionsOpen(false);
+    await runQuery(player.bungieName);
   }
 
   async function loadEndgameMode(baseRequest: any, mode: 'raid' | 'dungeon' | 'pvp') {
@@ -94,13 +191,31 @@ function CareerPage() {
               <p>{career?.updatedAt ? `更新 ${formatTime(career.updatedAt)}` : '输入棒鸡 ID 查询公开玩家生涯'}</p>
             </div>
           </div>
-          <form className={cn('career-search career-page-search')} onSubmit={onSubmit}>
-            <input value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" spellCheck={false} placeholder="输入棒鸡 ID：名称#数字代码" />
-            <button type="submit">
-              <SearchIcon />
-              查询
-            </button>
-          </form>
+          <div className={cn('player-search-box')}>
+            <form className={cn('career-search career-page-search')} onSubmit={onSubmit}>
+              <input value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => setSuggestionsOpen(true)} onKeyDown={onSearchKeyDown} autoComplete="off" spellCheck={false} placeholder="搜索棒鸡名称，或输入 名称#数字代码" />
+              <button type="submit">
+                <SearchIcon />
+                查询
+              </button>
+            </form>
+            {suggestionsOpen && (playerSearchLoading || playerSearchNotice || playerSuggestions.length > 0) ? (
+              <div className={cn('player-search-results')} role="listbox">
+                {playerSearchLoading ? <div className={cn('player-search-state')}>搜索玩家中</div> : null}
+                {!playerSearchLoading && playerSearchNotice ? <div className={cn('player-search-state')}>{playerSearchNotice}</div> : null}
+                {!playerSearchLoading ? playerSuggestions.map((player, index) => (
+                  <button type="button" className={cn(`player-search-item ${index === activeSuggestionIndex ? 'selected' : ''}`)} key={`${player.bungieName}-${player.membershipId}`} onMouseEnter={() => setActiveSuggestionIndex(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => void selectPlayer(player)} role="option" aria-selected={index === activeSuggestionIndex}>
+                    {player.icon ? <img src={player.icon} alt="" /> : <span className={cn('player-search-fallback')}>{(player.displayName || player.bungieName).slice(0, 1)}</span>}
+                    <span>
+                      <b>{player.bungieName}</b>
+                      <small>{player.membershipTypeName || 'Destiny'} · {player.displayMembershipName || player.membershipId}</small>
+                    </span>
+                    <em>{player.isPublic === false ? '隐私' : '公开'}</em>
+                  </button>
+                )) : null}
+              </div>
+            ) : null}
+          </div>
           <Notice message={notice} error={error} />
         </section>
         <section className={cn('career-detail-root')}>

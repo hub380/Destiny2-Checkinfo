@@ -1,4 +1,4 @@
-import type { CareerSummaryDto, EndgameDto, FireteamsResponseDto, GearSearchDto, GuideDetailDto, GuideIndexDto, JsonRecord } from './types';
+import type { CareerSummaryDto, EndgameDto, FireteamLookupDto, FireteamsResponseDto, GearSearchDto, GuideDetailDto, GuideIndexDto, JsonRecord, PlayerSearchDto } from './types';
 
 export async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options);
@@ -21,12 +21,20 @@ export function getCareerSummary(bungieName: string) {
   return postJson<CareerSummaryDto>('/api/destiny/summary', { bungieName });
 }
 
+export function searchPlayers(query: string) {
+  return postJson<PlayerSearchDto>('/api/destiny/player-search', { query, limit: 30 });
+}
+
 export function getCareerDetails(body: JsonRecord) {
   return postJson<JsonRecord>('/api/destiny/details', body);
 }
 
 export function getEndgame(body: JsonRecord) {
   return postJson<EndgameDto>('/api/destiny/endgame', body);
+}
+
+export function getFireteamLookup(body: JsonRecord) {
+  return postJson<FireteamLookupDto>('/api/destiny/fireteam', body);
 }
 
 export function searchGear(query: string) {

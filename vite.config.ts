@@ -19,6 +19,7 @@ export default defineConfig({
         index: resolve(rootDir, 'index.html'),
         career: resolve(rootDir, 'career.html'),
         gear: resolve(rootDir, 'gear.html'),
+        fireteam: resolve(rootDir, 'fireteam.html'),
         guides: resolve(rootDir, 'guides.html')
       },
       output: {

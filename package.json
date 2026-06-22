@@ -9,6 +9,7 @@
     "frontend:dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "gear:index": "node scripts/build-gear-index.js",
+    "gear:publish-r2": "node scripts/gear-publish-r2.js",
     "activity:index": "node scripts/build-activity-index.js",
     "guides:validate": "node scripts/guides-validate.js",
     "guides:upload": "node scripts/guides-upload.js",

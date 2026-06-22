@@ -2,6 +2,9 @@ name = "destiny2-fireteam-dashboard"
 main = "src/worker.js"
 compatibility_date = "2026-06-12"
 
+[triggers]
+crons = ["17 6 * * 2"]
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
@@ -22,11 +25,14 @@ PVP_HISTORY_PAGE_LIMIT = "80"
 PVP_HISTORY_PAGE_SIZE = "250"
 ACTIVITY_DEFINITION_CACHE_TTL_SECONDS = "31536000"
 ACTIVITY_DEFINITION_CONCURRENCY = "4"
-GEAR_INDEX_CACHE_TTL_SECONDS = "604800"
+GEAR_INDEX_CACHE_TTL_SECONDS = "86400"
 GEAR_MANIFEST_MAX_BYTES = "80000000"
 GEAR_MANIFEST_TIMEOUT_MS = "30000"
+GEAR_CACHE_STATUS_TTL_SECONDS = "604800"
+GEAR_CACHE_CHECK_TIMEOUT_MS = "10000"
 R2_SNAPSHOT_PREFIX = "career-snapshots"
 R2_GUIDE_PREFIX = "guides"
+R2_GEAR_PREFIX = "gear-cache"
 GUIDE_INDEX_CACHE_TTL_SECONDS = "300"
 
 # Optional cache bindings. KV is recommended for player JSON cache.

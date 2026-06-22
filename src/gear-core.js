@@ -26,21 +26,23 @@ export async function getGearSearch(body, deps) {
   const kind = normalizeGearKind(body?.kind || body?.type || 'all');
   const limit = clampNumber(body?.limit, 1, 120, 60);
   const cached = await getGearIndex(deps);
+  const index = cached.value;
   const terms = normalizeText(query);
+  const armorSetBonusHashes = armorSetBonusHashSet(index);
 
-  const candidates = cached.value.items.filter((item) => {
+  const candidates = index.items.filter((item) => {
     if (kind !== 'all' && item.kind !== kind) return false;
     return item.searchText.includes(terms) || String(item.hash) === query;
   });
 
   const items = candidates
-    .sort((a, b) => scoreGearItem(a, terms, query) - scoreGearItem(b, terms, query) || a.name.localeCompare(b.name, 'zh-CN'))
+    .sort((a, b) => compareGearItems(a, b, terms, query, armorSetBonusHashes))
     .slice(0, limit)
-    .map(publicGearItem);
+    .map((item) => publicGearItem(enrichGearSearchItem(item, index, armorSetBonusHashes)));
 
   return {
     updatedAt: cached.cachedAt || new Date().toISOString(),
-    manifestVersion: cached.value.manifestVersion,
+    manifestVersion: index.manifestVersion,
     query,
     kind,
     total: candidates.length,
@@ -225,7 +227,7 @@ export async function buildGearIndex(deps) {
     }
 
     if (isArmor(definition)) {
-      const item = makeArmorItem(definition);
+      const item = makeArmorItem(definition, itemSetByItemHash);
       records.push(item);
       armors.push(makeArmorRecord(definition, item, items, itemSetByItemHash, statDefs));
       continue;
@@ -474,7 +476,8 @@ function makeWeaponItem(definition, damageTypes, craftingInfoByHash = new Map(),
   return item;
 }
 
-function makeArmorItem(definition) {
+function makeArmorItem(definition, itemSetByItemHash = new Map()) {
+  const setBonus = itemSetByItemHash.get(Number(definition.hash)) || null;
   const item = {
     kind: 'armor',
     hash: Number(definition.hash),
@@ -484,7 +487,9 @@ function makeArmorItem(definition) {
     slot: armorSlotLabel(definition),
     className: classTypeLabel(definition.classType),
     tier: definition.inventory?.tierTypeName || '',
-    description: cleanText(displayDescription(definition))
+    description: cleanText(displayDescription(definition)),
+    hasSetBonus: hasUsableSetBonus(setBonus),
+    setBonusName: setBonus?.name || ''
   };
   item.searchText = makeSearchText(item);
   return item;
@@ -797,6 +802,14 @@ async function bungieFetchJson(pathOrUrl, deps) {
   }
 }
 
+function compareGearItems(a, b, normalizedQuery, rawQuery, armorSetBonusHashes) {
+  return (
+    scoreGearItem(a, normalizedQuery, rawQuery) - scoreGearItem(b, normalizedQuery, rawQuery) ||
+    armorSetBonusRank(a, armorSetBonusHashes) - armorSetBonusRank(b, armorSetBonusHashes) ||
+    a.name.localeCompare(b.name, 'zh-CN')
+  );
+}
+
 function scoreGearItem(item, normalizedQuery, rawQuery) {
   if (String(item.hash) === rawQuery) return 0;
   if (normalizeText(item.name) === normalizedQuery) return 1;
@@ -804,6 +817,44 @@ function scoreGearItem(item, normalizedQuery, rawQuery) {
   if (item.kind === 'weapon') return 3;
   if (item.kind === 'armor') return 4;
   return 5;
+}
+
+function armorSetBonusHashSet(index) {
+  return new Set(
+    (index.armors || [])
+      .filter((armor) => hasUsableSetBonus(armor.setBonus))
+      .map((armor) => Number(armor.hash))
+      .filter(Number.isFinite)
+  );
+}
+
+function armorSetBonusRank(item, armorSetBonusHashes) {
+  if (item.kind !== 'armor') return 0;
+  return hasArmorSetBonus(item, armorSetBonusHashes) ? 0 : 1;
+}
+
+function hasArmorSetBonus(item, armorSetBonusHashes) {
+  return Boolean(item?.hasSetBonus || armorSetBonusHashes.has(Number(item?.hash)));
+}
+
+function hasUsableSetBonus(setBonus) {
+  return Boolean(setBonus && Array.isArray(setBonus.perks) && setBonus.perks.length);
+}
+
+function enrichGearSearchItem(item, index, armorSetBonusHashes) {
+  if (item.kind !== 'armor' || item.hasSetBonus || !armorSetBonusHashes.has(Number(item.hash))) return item;
+  const armor = (index.armors || []).find((entry) => Number(entry.hash) === Number(item.hash));
+  if (!hasUsableSetBonus(armor?.setBonus)) {
+    return {
+      ...item,
+      hasSetBonus: true
+    };
+  }
+  return {
+    ...item,
+    hasSetBonus: true,
+    setBonusName: armor.setBonus.name || ''
+  };
 }
 
 function publicGearItem(item) {

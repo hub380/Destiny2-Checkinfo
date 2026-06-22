@@ -1,4 +1,5 @@
 import { getGearItem, getGearSearch, getPerkWeapons } from './gear-core.js';
+import { getGearCacheStatus, loadR2GearIndex, runGearCacheCheck } from './gear-cache-core.js';
 import { getGuideDetail, getGuidesIndex } from './guides-core.js';
 import { getCachedR2Json, getGuideMediaObject, writeCachedR2Json } from './r2-store.js';
 
@@ -80,6 +81,10 @@ export async function handleAppRequest(request, env = {}, ctx = {}, options = {}
         return json(await getPerkWeapons(body, workerGearDeps(env, ctx)));
       }
 
+      if (url.pathname === '/api/gear/cache-status' && request.method === 'GET') {
+        return json(await getGearCacheStatus(env));
+      }
+
       if (url.pathname === '/api/destiny/summary' && request.method === 'POST') {
         const body = await readJsonBody(request);
         return json(await getDestinySummary(body, env, ctx));
@@ -125,6 +130,22 @@ export async function handleAppRequest(request, env = {}, ctx = {}, options = {}
     );
     }
   }
+
+export async function handleScheduled(controller, env = {}, ctx = {}) {
+  const task = runGearCacheCheck(env, ctx, {
+    cron: controller?.cron || '',
+    scheduledTime: controller?.scheduledTime || null
+  }).catch((error) => ({
+    checkedAt: new Date().toISOString(),
+    ok: false,
+    error: {
+      code: error.code || 'GEAR_CACHE_CHECK_FAILED',
+      message: error.message || 'Gear cache check failed'
+    }
+  }));
+  if (ctx?.waitUntil) ctx.waitUntil(task);
+  return task;
+}
 
 function json(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -1475,6 +1496,8 @@ function workerGearDeps(env, ctx) {
     maxBytes: positiveNumber(env.GEAR_MANIFEST_MAX_BYTES, 80_000_000),
     cacheTtlSeconds: positiveNumber(env.GEAR_INDEX_CACHE_TTL_SECONDS, 604800),
     loadStaticGearIndex: async () => {
+      const r2Index = await loadR2GearIndex(env);
+      if (r2Index) return r2Index;
       if (!env.ASSETS?.fetch) return null;
       const response = await env.ASSETS.fetch(new Request(`https://assets.local/data/gear-index-${locale}.json`));
       if (response.status === 404) return null;

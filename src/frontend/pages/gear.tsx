@@ -126,6 +126,7 @@ function GearResultCard({ item, onOpen }: { item: JsonRecord; onOpen: () => void
         </div>
         {meta.length ? <div className={cn('gear-tags')}>{meta.map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}</div> : null}
         {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
+        {primarySourceLabel(item) ? <p className={cn('gear-source-line')}>来源：{primarySourceLabel(item)}</p> : null}
         <div className={cn('gear-card-foot')}>
           <b>{action}</b>
         </div>
@@ -203,6 +204,7 @@ function ArmorDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord })
           {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
         </div>
       </div>
+      <SourceHints hints={detail.sourceHints || item.sourceHints || []} />
       {setBonus ? <ArmorSetBonus setBonus={setBonus} /> : <div className={cn('detail-loading')}>这件护甲没有公开的两件 / 四件套效果</div>}
       {intrinsicPerks.length ? <div className={cn('perk-columns armor-intrinsics')}><div className={cn('perk-column')}><h4>护甲特性</h4>{intrinsicPerks.map((perk: JsonRecord) => <PerkCard perk={perk} key={perk.hash || perk.name} />)}</div></div> : null}
     </section>
@@ -360,6 +362,12 @@ function gearMeta(item: JsonRecord) {
   if (item.kind === 'armor') return [item.slot, item.className, item.tier, item.type].filter(Boolean);
   if (item.kind === 'perk') return [item.enhanced ? '强化 Perk' : '普通 Perk', item.type, '点击反查武器'].filter(Boolean);
   return [item.type].filter(Boolean);
+}
+
+function primarySourceLabel(item: JsonRecord) {
+  const hints = Array.isArray(item.sourceHints) ? item.sourceHints : [];
+  const first = hints.find((hint) => hint?.text);
+  return first?.text || item.source || '';
 }
 
 function gearKindLabel(kind: string) {

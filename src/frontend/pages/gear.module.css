@@ -237,6 +237,14 @@
   overflow-wrap: anywhere;
 }
 
+.gear-source-line {
+  margin: 8px 0 0;
+  color: #446760;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .gear-card-foot {
   margin-top: 8px;
   display: flex;

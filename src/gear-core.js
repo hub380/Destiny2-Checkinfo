@@ -32,7 +32,7 @@ export async function getGearSearch(body, deps) {
 
   const candidates = index.items.filter((item) => {
     if (kind !== 'all' && item.kind !== kind) return false;
-    return item.searchText.includes(terms) || String(item.hash) === query;
+    return item.searchText.includes(terms) || sourceSearchText(item).includes(terms) || String(item.hash) === query;
   });
 
   const items = candidates
@@ -227,7 +227,7 @@ export async function buildGearIndex(deps) {
     }
 
     if (isArmor(definition)) {
-      const item = makeArmorItem(definition, itemSetByItemHash);
+      const item = makeArmorItem(definition, itemSetByItemHash, collectibles, rewardSources, vendors);
       records.push(item);
       armors.push(makeArmorRecord(definition, item, items, itemSetByItemHash, statDefs));
       continue;
@@ -476,8 +476,9 @@ function makeWeaponItem(definition, damageTypes, craftingInfoByHash = new Map(),
   return item;
 }
 
-function makeArmorItem(definition, itemSetByItemHash = new Map()) {
+function makeArmorItem(definition, itemSetByItemHash = new Map(), collectibles = {}, rewardSources = {}, vendors = {}) {
   const setBonus = itemSetByItemHash.get(Number(definition.hash)) || null;
+  const sourceHints = buildSourceHints(definition, collectibles, rewardSources, vendors, null);
   const item = {
     kind: 'armor',
     hash: Number(definition.hash),
@@ -489,7 +490,8 @@ function makeArmorItem(definition, itemSetByItemHash = new Map()) {
     tier: definition.inventory?.tierTypeName || '',
     description: cleanText(displayDescription(definition)),
     hasSetBonus: hasUsableSetBonus(setBonus),
-    setBonusName: setBonus?.name || ''
+    setBonusName: setBonus?.name || '',
+    sourceHints
   };
   item.searchText = makeSearchText(item);
   return item;
@@ -563,7 +565,8 @@ function makeArmorRecord(definition, item, items, itemSetByItemHash, statDefs) {
     tier: item.tier,
     stats: formatStats(definition, statDefs),
     setBonus: itemSetByItemHash.get(item.hash) || null,
-    intrinsicPerks: armorIntrinsicPerks(definition, items)
+    intrinsicPerks: armorIntrinsicPerks(definition, items),
+    sourceHints: item.sourceHints || []
   };
 }
 
@@ -805,6 +808,9 @@ async function bungieFetchJson(pathOrUrl, deps) {
 function compareGearItems(a, b, normalizedQuery, rawQuery, armorSetBonusHashes) {
   return (
     scoreGearItem(a, normalizedQuery, rawQuery) - scoreGearItem(b, normalizedQuery, rawQuery) ||
+    sourceMatchRank(a, normalizedQuery) - sourceMatchRank(b, normalizedQuery) ||
+    nameContainsRank(a, normalizedQuery) - nameContainsRank(b, normalizedQuery) ||
+    gearKindRank(a) - gearKindRank(b) ||
     armorSetBonusRank(a, armorSetBonusHashes) - armorSetBonusRank(b, armorSetBonusHashes) ||
     a.name.localeCompare(b.name, 'zh-CN')
   );
@@ -814,9 +820,26 @@ function scoreGearItem(item, normalizedQuery, rawQuery) {
   if (String(item.hash) === rawQuery) return 0;
   if (normalizeText(item.name) === normalizedQuery) return 1;
   if (normalizeText(item.name).startsWith(normalizedQuery)) return 2;
-  if (item.kind === 'weapon') return 3;
-  if (item.kind === 'armor') return 4;
-  return 5;
+  return 3;
+}
+
+function sourceMatchRank(item, normalizedQuery) {
+  if (!normalizedQuery) return 1;
+  const text = sourceSearchText(item);
+  if (!text) return 1;
+  return text.includes(normalizedQuery) ? 0 : 1;
+}
+
+function nameContainsRank(item, normalizedQuery) {
+  if (!normalizedQuery) return 1;
+  return normalizeText(item?.name || '').includes(normalizedQuery) ? 0 : 1;
+}
+
+function gearKindRank(item) {
+  if (item.kind === 'weapon') return 0;
+  if (item.kind === 'armor') return 1;
+  if (item.kind === 'perk') return 2;
+  return 3;
 }
 
 function armorSetBonusHashSet(index) {
@@ -868,9 +891,17 @@ function publicGearDetail(item, index) {
     return record ? publicWeaponRecord(record, index) : null;
   }
   if (item.kind === 'armor') {
-    return (index.armors || []).find((armor) => armor.hash === item.hash) || null;
+    const record = (index.armors || []).find((armor) => armor.hash === item.hash) || null;
+    return record ? publicArmorRecord(record) : null;
   }
   return null;
+}
+
+function publicArmorRecord(record) {
+  return {
+    ...record,
+    sourceHints: Array.isArray(record.sourceHints) ? record.sourceHints : []
+  };
 }
 
 function publicWeaponRecord(record, index, matchedHashes = new Set()) {
@@ -1060,7 +1091,17 @@ function imageUrl(value) {
 }
 
 function makeSearchText(item) {
-  return normalizeText([item.name, item.type, item.weaponType, item.ammo, item.element, item.slot, item.className, item.tier, item.description, item.hash].filter(Boolean).join(' '));
+  return normalizeText([item.name, item.type, item.weaponType, item.ammo, item.element, item.slot, item.className, item.tier, item.description, item.source, sourceSearchText(item), item.hash].filter(Boolean).join(' '));
+}
+
+function sourceSearchText(item) {
+  const hints = Array.isArray(item?.sourceHints) ? item.sourceHints : [];
+  return normalizeText(
+    hints
+      .flatMap((hint) => [hint?.text, hint?.description, hint?.label])
+      .filter(Boolean)
+      .join(' ')
+  );
 }
 
 function normalizeText(value) {

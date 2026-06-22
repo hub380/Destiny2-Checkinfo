@@ -135,12 +135,35 @@
 
 .career-result.empty {
   min-height: 180px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   color: var(--muted);
   border: 1px dashed var(--line);
   border-radius: 8px;
   background: var(--surface-2);
+}
+
+.career-result.empty.loading {
+  border-style: solid;
+  color: var(--text);
+}
+
+.career-result.empty.loading::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(44, 115, 107, 0.22);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: career-loading-spin 0.8s linear infinite;
+}
+
+@keyframes career-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .career-account-head {

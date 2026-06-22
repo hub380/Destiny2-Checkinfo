@@ -17,6 +17,7 @@ function CareerPage() {
   const [playerSuggestions, setPlayerSuggestions] = useState<PlayerSearchItemDto[]>([]);
   const [playerSearchNotice, setPlayerSearchNotice] = useState('');
   const [playerSearchLoading, setPlayerSearchLoading] = useState(false);
+  const [careerSearchLoading, setCareerSearchLoading] = useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
 
@@ -125,11 +126,13 @@ function CareerPage() {
     }
     setNotice('');
     setError(false);
+    setCareerSearchLoading(true);
     setCareer(null);
     setSuggestionsOpen(false);
     try {
       const summary = await getCareerSummary(bungieName);
       setCareer({ ...summary, detailLoading: true, endgameLoading: { raid: true, dungeon: true, pvp: true } });
+      setCareerSearchLoading(false);
       const baseRequest = {
         membershipType: summary.account.membershipType,
         membershipId: summary.account.membershipId,
@@ -150,6 +153,7 @@ function CareerPage() {
       ]);
       setNotice('');
     } catch (err: any) {
+      setCareerSearchLoading(false);
       setNotice(err.message);
       setError(true);
     }
@@ -194,9 +198,9 @@ function CareerPage() {
           <div className={cn('player-search-box')}>
             <form className={cn('career-search career-page-search')} onSubmit={onSubmit}>
               <input value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => setSuggestionsOpen(true)} onKeyDown={onSearchKeyDown} autoComplete="off" spellCheck={false} placeholder="搜索棒鸡名称，或输入 名称#数字代码" />
-              <button type="submit">
+              <button type="submit" disabled={careerSearchLoading}>
                 <SearchIcon />
-                查询
+                {careerSearchLoading ? '查询中' : '查询'}
               </button>
             </form>
             {suggestionsOpen && (playerSearchLoading || playerSearchNotice || playerSuggestions.length > 0) ? (
@@ -219,7 +223,9 @@ function CareerPage() {
           <Notice message={notice} error={error} />
         </section>
         <section className={cn('career-detail-root')}>
-          {career ? <CareerDetail career={career} /> : <div className={cn('career-result empty')}>暂无查询结果</div>}
+          {career ? <CareerDetail career={career} /> : careerSearchLoading ? (
+            <div className={cn('career-result empty loading')} role="status" aria-live="polite">正在查询玩家生涯</div>
+          ) : <div className={cn('career-result empty')}>暂无查询结果</div>}
         </section>
       </main>
     </div>

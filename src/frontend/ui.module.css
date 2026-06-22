@@ -296,6 +296,16 @@
   border-color: #303533;
 }
 
+.career-search button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.career-search button:disabled:hover {
+  background: var(--text);
+  border-color: var(--text);
+}
+
 .notice {
   margin-bottom: 12px;
   padding: 10px 12px;

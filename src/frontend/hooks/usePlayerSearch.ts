@@ -1,6 +1,6 @@
 import { KeyboardEvent, useEffect, useState } from 'react';
-import { searchPlayers } from '../lib/api';
-import type { PlayerSearchItemDto } from '../lib/types';
+import { searchPlayers } from '@frontend/lib/api';
+import type { PlayerSearchItemDto } from '@frontend/lib/types';
 
 const SEARCH_DEBOUNCE_MS = 280;
 const MIN_PREFIX_LENGTH = 2;

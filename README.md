@@ -25,10 +25,24 @@ Destiny2 Checkinfo 是一个面向《命运 2》玩家的 Web 工具，目标是
 本地启动：
 
 ```powershell
-Copy-Item .env.example .env
+# 1. 环境变量（首次或更新模板后）
+Copy-Item .env.example .env -ErrorAction SilentlyContinue
+# 编辑 .env，填入 BUNGIE_API_KEY（棒鸡开发者后台申请）
+
+# 2. 依赖与静态数据（首次）
 npm install
 npm run activity:index
 npm run gear:index
+
+# 3. 开发模式（推荐：热更新 + API 联调）
+npm run dev
+```
+
+开发模式会在 **5173** 提供页面、**5174** 提供 `/api/*`（Vite 自动代理）。
+
+生产预览（构建后本地静态服务）：
+
+```powershell
 npm run build
 npm start
 ```
@@ -39,20 +53,43 @@ npm start
 http://localhost:5173
 ```
 
-前端开发（热更新 + API 联调）：
+### 环境变量说明
 
-```powershell
-npm run dev
-```
+本地 API 与 `server/index.js` 会读取根目录 `.env`。与 `wrangler.toml` / Worker 线上环境对齐时，可参考 `.env.example` 中的分组：
 
-Vite 在 `5173` 提供页面，`5174` 提供 `/api/*`。生产预览仍使用 `npm run build` + `npm start`。
+| 分组 | 示例变量 | 用途 |
+|------|----------|------|
+| Bungie | `BUNGIE_API_KEY`、`BUNGIE_LOCALE` | 公开玩家查询、装备 Manifest |
+| Heybox | `HEYBOX_SOURCE_URL`、`HEYBOX_MAX_BYTES` | 小黑盒组队列表（代码侧 heybox） |
+| 缓存 TTL | `*_CACHE_TTL_SECONDS` | 本地内存/KV 缓存时长 |
+| R2 前缀 | `R2_GEAR_PREFIX`、`R2_GUIDE_PREFIX` | 与 Cloudflare R2 对象路径一致 |
+
+`.env` 不要提交到 Git；Worker 部署使用 `wrangler secret put BUNGIE_API_KEY` 与 `wrangler.toml` 中的 `[vars]`。
 
 常用页面：
 
-- `/`：组队信息与简版玩家生涯查询
+- `/`（`index.html`）：小黑盒组队与简版玩家生涯
 - `/career.html`：玩家生涯详情
 - `/gear.html`：装备、Perk、来源提示查询
+- `/fireteam.html`：棒鸡当前队伍与成员对比
 - `/guides.html`：攻略 / 资讯库
+
+相关接口（稳定路径）：
+
+- `/api/heybox/teams` — 小黑盒组队列表（别名：`/api/fireteams`）
+- `/api/destiny/summary` — 玩家生涯摘要
+- `/api/destiny/details` — 锻造 / 成就等详情
+- `/api/destiny/endgame` — Raid / 地牢 / PvP 历史
+- `/api/destiny/player-search` — 棒鸡名称前缀搜索
+- `/api/destiny/fireteam` — Bungie 当前队伍查询
+- `/api/gear/search`、`/api/gear/item`、`/api/gear/perk-weapons`
+- `/api/guides`、`/api/guides/:slug`
+
+命名约定（代码侧）：
+
+- **heybox** — 小黑盒组队数据源（UI 文案仍用「小黑盒」）
+- **bungie / destiny** — 棒鸡公开 API 与生涯逻辑
+- **fireteam**（API `/api/destiny/fireteam`）— 仅指 Bungie 当前队伍，与 heybox 组队列表区分
 
 ## 当前分支迭代变更
 
@@ -83,11 +120,13 @@ Vite 在 `5173` 提供页面，`5174` 提供 `/api/*`。生产预览仍使用 `n
 
 相关接口保持稳定：
 
-- `/api/fireteams`
+- `/api/heybox/teams`（兼容 `/api/fireteams`）
 - `/api/destiny/summary`
 - `/api/destiny/details`
 - `/api/destiny/endgame`
-- `/api/destiny/career`
+- `/api/destiny/player-search`
+- `/api/destiny/fireteam`
+- `/api/destiny/career`（聚合摘要 + 终局，前端优先用拆分接口）
 - `/api/gear/search`
 - `/api/gear/item`
 - `/api/gear/perk-weapons`
@@ -182,9 +221,10 @@ public/                静态资源与构建出的 data/*.json
 
 命名约定：
 
-- `pages/<route>.html` ↔ `src/frontend/pages/<name>/`（页面名与 HTML 文件名一致）
+- `pages/<route>.html` ↔ `src/frontend/pages/<route>/`（`index.html` 对应 `pages/index/`）
 - `scripts/<领域>/<动作>.js`（如 `guides/validate.js`、`gear/publish-r2.js`）
 - npm script：`领域:动作`（如 `guides:validate`、`gear:index`、`codegen:destiny`）
+- 集成数据：**heybox**（小黑盒）、**destiny**（棒鸡 API）；环境变量 `HEYBOX_*`、`BUNGIE_*`、`R2_*_PREFIX`
 
 ## `src/frontend` 目录结构
 
@@ -202,8 +242,8 @@ src/frontend/
     motion/        FadeIn、StaggerList、LoadingPulse
   hooks/           各页面数据 hooks
   pages/
-    home/          index.tsx（入口）、HomePage.tsx、home.module.css
-    career/        CareerPage、career + crafting 样式
+    index/           index.html 入口、HomePage.tsx、home.module.css
+    career/          CareerPage、career + career-crafting 样式
     gear/          GearPage、gear.module.css
     fireteam/      FireteamPage、fireteam.module.css
     guides/        GuidesPage、guides.module.css
@@ -218,10 +258,11 @@ src/frontend/
 
 ## 开发和部署补充
 
-本地前端开发：
+日常开发使用 `npm run dev`（见上文「本地启动」）。单独启动前端或 API：
 
 ```powershell
-npm run frontend:dev
+npm run frontend:dev   # 仅 Vite，需另开 api:dev 或已有 API
+npm run api:dev        # 仅本地 API（5174）
 ```
 
 构建：

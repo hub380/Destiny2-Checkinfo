@@ -1,12 +1,11 @@
-import { normalizeXiaoheiheHomePayload } from './heybox.js';
-import { tryParseJson } from '../utils/index.js';
+import { normalizeHeyboxHomePayload } from './heybox.js';
+import { tryParseJson, parseJsonEnv } from '../utils/index.js';
 import { requestText } from '../bungie/index.js';
 import { httpError } from '../http/index.js';
-import { parseJsonEnv } from '../utils/index.js';
 
 const DEFAULT_HEYBOX_SOURCE_URL = 'https://api.xiaoheihe.cn/game/common_team_v2/home?appid=1085660';
 
-const SAMPLE_FIRETEAMS = [
+const SAMPLE_HEYBOX_TEAMS = [
   {
     id: 'demo-1',
     source: 'demo',
@@ -22,7 +21,8 @@ const SAMPLE_FIRETEAMS = [
   }
 ];
 
-export async function getFireteams(env) {
+/** Fetch小黑盒组队列表（Heybox feed）。 */
+export async function getHeyboxTeams(env) {
   const configuredUrl = env.HEYBOX_SOURCE_URL || DEFAULT_HEYBOX_SOURCE_URL;
   const method = (env.HEYBOX_SOURCE_METHOD || 'GET').toUpperCase();
   const headers = parseJsonEnv(env.HEYBOX_SOURCE_HEADERS, {});
@@ -33,7 +33,7 @@ export async function getFireteams(env) {
       headers: {
         accept: 'application/json,text/html;q=0.9,*/*;q=0.8',
         'accept-language': 'zh-CN,zh;q=0.9,en;q=0.6',
-        'user-agent': 'Mozilla/5.0 Destiny2FireteamDashboard/1.0',
+        'user-agent': 'Mozilla/5.0 Destiny2Checkinfo/1.0',
         ...headers
       },
       body: method === 'GET' || method === 'HEAD' ? undefined : env.HEYBOX_SOURCE_BODY
@@ -51,17 +51,20 @@ export async function getFireteams(env) {
       source: 'demo',
       updatedAt: new Date().toISOString(),
       warning: '小黑盒接口没有返回 JSON，当前显示演示数据。',
-      items: SAMPLE_FIRETEAMS
+      items: SAMPLE_HEYBOX_TEAMS
     };
   }
 
-  const items = normalizeXiaoheiheHomePayload(payload, configuredUrl);
+  const items = normalizeHeyboxHomePayload(payload, configuredUrl);
   return {
     source: 'heybox',
     sourceUrl: configuredUrl,
-    parser: 'xiaoheihe-common-team-v2',
+    parser: 'heybox-common-team-v2',
     updatedAt: new Date().toISOString(),
     warning: payload.status && payload.status !== 'ok' ? payload.msg || '小黑盒接口返回异常状态。' : undefined,
     items
   };
 }
+
+/** @deprecated Use `getHeyboxTeams`. */
+export const getFireteams = getHeyboxTeams;

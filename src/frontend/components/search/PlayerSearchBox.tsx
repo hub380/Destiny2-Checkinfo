@@ -34,9 +34,20 @@ export function PlayerSearchBox({
 }: PlayerSearchBoxProps) {
   const showResults = search.open && (search.loading || search.notice || search.suggestions.length > 0);
 
+  async function handleSubmit(event: FormEvent) {
+    const trimmed = query.trim();
+    if (search.open && search.suggestions.length > 0 && trimmed && !trimmed.includes('#')) {
+      event.preventDefault();
+      const player = search.suggestions[search.activeIndex];
+      if (player) await onSelectPlayer(player);
+      return;
+    }
+    await onSubmit(event);
+  }
+
   return (
     <div className={cn(`box ${wide ? 'boxWide' : ''}`)}>
-      <form className={cn(`${formClassName} form`)} onSubmit={onSubmit}>
+      <form className={cn(`${formClassName} form`)} onSubmit={handleSubmit}>
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}

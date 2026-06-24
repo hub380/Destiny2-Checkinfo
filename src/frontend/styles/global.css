@@ -7,6 +7,7 @@
   --muted: #66706d;
   --line: #d9ded7;
   --green: #2f8069;
+  --accent: #2f8069;
   --green-2: #e3f1ec;
   --amber: #bd7f23;
   --amber-2: #fff1d8;
@@ -77,6 +78,10 @@
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {

@@ -1,6 +1,6 @@
 import { getGearItem, getGearSearch, getPerkWeapons, getGearCacheStatus, workerGearDeps } from '#lib/gear/index.js';
 import { json, corsHeaders, readJsonBody } from '#lib/http/index.js';
-import { getFireteams } from '#lib/integrations/index.js';
+import { getHeyboxTeams } from '#lib/integrations/index.js';
 import { getGuides, getGuide, getGuideMedia } from '#lib/guides/index.js';
 import {
   getDestinyCareer,
@@ -26,8 +26,12 @@ const routes = [
       })
   },
   {
+    match: (url, method) => url.pathname === '/api/heybox/teams' && method === 'GET',
+    handle: async ({ env }) => json(await getHeyboxTeams(env))
+  },
+  {
     match: (url, method) => url.pathname === '/api/fireteams' && method === 'GET',
-    handle: async ({ env }) => json(await getFireteams(env))
+    handle: async ({ env }) => json(await getHeyboxTeams(env))
   },
   {
     match: (url, method) => url.pathname === '/api/guides' && method === 'GET',

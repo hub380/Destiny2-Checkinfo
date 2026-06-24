@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getGuide, getGuides } from '../lib/api';
-import type { GuideDetailDto, GuideIndexDto, GuideSummaryDto } from '../lib/types';
-import { readUrlSearchParam } from './useMountUrlParam';
+import { getGuide, getGuides } from '@frontend/lib/api';
+import type { GuideDetailDto, GuideIndexDto, GuideSummaryDto } from '@frontend/lib/types';
+import { readUrlSearchParam } from '@frontend/lib/url';
 
 export function useGuidesLibrary() {
   const [index, setIndex] = useState<GuideIndexDto | null>(null);

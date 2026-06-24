@@ -213,7 +213,7 @@ function gearLocale(env) {
 }
 
 function gearPrefix(env) {
-  return trimSlashes(env.R2_GEAR_PREFIX || env.GEAR_R2_PREFIX || DEFAULT_GEAR_PREFIX);
+  return trimSlashes(env.R2_GEAR_PREFIX || DEFAULT_GEAR_PREFIX);
 }
 
 function trimSlashes(value) {

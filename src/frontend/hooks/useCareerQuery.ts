@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
-import { getCareerDetails, getCareerSummary, getEndgame } from '../lib/api';
-import { mergeEndgameCareer, type EndgameMode } from '../lib/career-merge';
-import type { CareerSummaryDto } from '../lib/types';
+import { getCareerDetails, getCareerSummary, getEndgame } from '@frontend/lib/api';
+import { mergeEndgameCareer, type EndgameMode } from '@frontend/lib/career-merge';
+import type { CareerSummaryDto } from '@frontend/lib/types';
 
 type UseCareerQueryOptions = {
   modes?: EndgameMode[];

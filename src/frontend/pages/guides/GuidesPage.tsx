@@ -39,7 +39,7 @@ export function GuidesPage() {
 
   return (
     <AppShell title="Destiny 2 攻略/资讯" subtitle="Raid、地牢、地图与机制资料库" current="guides">
-      <FadeIn className={cn('guides-layout')}>
+      <FadeIn variant="page" className={cn('guides-layout')}>
         <section className={cn('panel guides-list-panel panelEnter')}>
           <div className={cn('panel-header')}>
             <div>

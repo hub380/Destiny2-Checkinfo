@@ -1,24 +1,28 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
+import { PlayerSearchBox } from '@frontend/components/search';
 import { getConfig } from '@frontend/lib/api';
 import {
   AppShell,
   CopyIcon,
   FadeIn,
   GitHubBranchLink,
-  LoadingPulse,
   Notice,
+  PageEmpty,
+  PageLoading,
+  PageSection,
   RefreshIcon,
   SearchIcon,
   StaggerList,
   createPageCn,
+  formatBungieName,
   formatMinutes,
   formatTime,
   relativeTime,
   staggerStyle,
   statDisplay
 } from '@frontend/ui';
-import { useCareerQuery, useFireteamFeed } from '@frontend/hooks';
-import type { CareerSummaryDto, FireteamDto } from '@frontend/lib/types';
+import { useHeyboxFeed, useCareerQuery, usePlayerSearch } from '@frontend/hooks';
+import type { CareerSummaryDto, FireteamDto, PlayerSearchItemDto } from '@frontend/lib/types';
 import '@frontend/styles/global.css';
 import styles from './home.module.css';
 const REFRESH_SECONDS = 30;
@@ -36,10 +40,11 @@ export function HomePage() {
     countdown,
     refresh: refreshFireteams,
     reportNotice
-  } = useFireteamFeed(REFRESH_SECONDS);
+  } = useHeyboxFeed(REFRESH_SECONDS);
   const [filter, setFilter] = useState('');
   const [toast, setToast] = useState('');
   const [careerQuery, setCareerQuery] = useState('');
+  const playerSearch = usePlayerSearch(careerQuery);
   const { career, loading: careerLoading, error: careerError, query: runCareerQuery } = useCareerQuery({
     modes: ['raid', 'dungeon'],
     includeDetails: false
@@ -86,9 +91,36 @@ export function HomePage() {
     event.preventDefault();
     const bungieName = careerQuery.trim();
     if (!bungieName) return;
+    if (!bungieName.includes('#')) {
+      const items = await playerSearch.refreshSuggestions(bungieName);
+      playerSearch.setOpen(true);
+      if (!items.length) return;
+      return;
+    }
+    playerSearch.clearSuggestions();
     setCareerNotice('Raid / 地牢完整历史加载中，基础资料已先展示。');
     const result = await runCareerQuery(bungieName);
     setCareerNotice(result.ok ? '' : result.error || '查询失败');
+  }
+
+  async function selectCareerPlayer(player: PlayerSearchItemDto) {
+    if (!player.bungieName) return;
+    setCareerQuery(player.bungieName);
+    playerSearch.clearSuggestions();
+    setCareerNotice('Raid / 地牢完整历史加载中，基础资料已先展示。');
+    const result = await runCareerQuery(player.bungieName);
+    setCareerNotice(result.ok ? '' : result.error || '查询失败');
+  }
+
+  function pickFireteamUser(username: string) {
+    setCareerQuery(username);
+    if (!username.includes('#')) {
+      setCareerNotice('小黑盒用户名可能不是棒鸡 ID，请补全 名称#数字代码 或从下拉选择玩家。');
+      playerSearch.setOpen(false);
+      return;
+    }
+    setCareerNotice('');
+    void runCareerQuery(username);
   }
 
   const isDemo = payload?.source === 'demo';
@@ -129,8 +161,8 @@ export function HomePage() {
         </div>
       }
     >
-      <FadeIn className={cn('layout')}>
-        <section className={cn('panel fireteams-panel panelEnter')}>
+      <FadeIn variant="page" className={cn('layout')}>
+        <PageSection id="fireteams" className={cn('panel fireteams-panel')}>
           <div className={cn('panel-header')}>
             <div>
               <h2>组队信息</h2>
@@ -150,46 +182,43 @@ export function HomePage() {
                   item={item}
                   index={index}
                   onCopy={copyJoinCommand}
-                  onPickUser={(username) => setCareerQuery(username)}
+                  onPickUser={pickFireteamUser}
                 />
               ))
             ) : (
-              <div className={cn('career-result empty')}>没有匹配的组队信息</div>
+              <PageEmpty>没有匹配的组队信息</PageEmpty>
             )}
           </StaggerList>
-        </section>
+        </PageSection>
 
-        <aside className={cn('panel career-panel panelEnter')}>
+        <PageSection className={cn('panel career-panel')}>
           <div className={cn('panel-header stacked')}>
             <div>
               <h2>棒鸡玩家生涯</h2>
-              <p>{career?.updatedAt ? `更新 ${formatTime(career.updatedAt)}` : '公开玩家查询'}</p>
+              <p>{career?.updatedAt ? `更新 ${formatTime(career.updatedAt)}` : '公开玩家查询 · 侧栏为简版预览'}</p>
             </div>
           </div>
-          <form className={cn('career-search searchFocus')} onSubmit={queryCareer}>
-            <input
-              value={careerQuery}
-              onChange={(event) => setCareerQuery(event.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="输入棒鸡 ID：名称#数字代码"
-            />
-            <button type="submit">
-              <SearchIcon />
-              查询
-            </button>
-          </form>
+          <PlayerSearchBox
+            query={careerQuery}
+            onQueryChange={setCareerQuery}
+            search={playerSearch}
+            onSubmit={queryCareer}
+            onSelectPlayer={selectCareerPlayer}
+            submitting={careerLoading}
+            formClassName="career-search"
+            placeholder="搜索棒鸡名称，或输入 名称#数字代码"
+          />
           <Notice message={careerNotice || careerError} error={Boolean(careerError)} />
           {career ? (
             <FadeIn variant="detail" className={cn('contentSwap')}>
               <CompactCareer career={career} />
             </FadeIn>
           ) : careerLoading ? (
-            <LoadingPulse className={cn('career-result empty')}>查询基础资料中</LoadingPulse>
+            <PageLoading>查询基础资料中</PageLoading>
           ) : (
-            <div className={cn('career-result empty')}>暂无查询结果</div>
+            <PageEmpty>输入玩家名称开始查询</PageEmpty>
           )}
-        </aside>
+        </PageSection>
       </FadeIn>
     </AppShell>
   );
@@ -246,6 +275,11 @@ function CompactCareer({ career }: { career: CareerSummaryDto }) {
   const dungeon = career.endgame?.dungeon || stats.dungeon || {};
   const raidTotal = raid.total || raid;
   const dungeonTotal = dungeon.total || dungeon;
+  const careerLinkQuery = formatBungieName(
+    career.account?.displayName as string,
+    career.account?.displayNameCode as number,
+    career.queriedName || (career.account?.bungieName as string)
+  );
   return (
     <div className={cn('career-result')}>
       <div className={cn('account-head')}>
@@ -274,6 +308,11 @@ function CompactCareer({ career }: { career: CareerSummaryDto }) {
           </div>
         ))}
       </StaggerList>
+      {careerLinkQuery ? (
+        <a className={cn('view-full-link')} href={`/career.html?q=${encodeURIComponent(careerLinkQuery)}`}>
+          查看完整生涯（PvP · 锻造 · 详细历史）→
+        </a>
+      ) : null}
     </div>
   );
 }

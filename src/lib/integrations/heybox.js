@@ -1,18 +1,18 @@
 import { cleanText, extractDestinyName } from '../utils/index.js';
 import { parseTime, stableId } from '../utils/index.js';
 
-export function normalizeXiaoheiheHomePayload(payload, sourceUrl) {
+export function normalizeHeyboxHomePayload(payload, sourceUrl) {
   const list = payload?.result?.team_list;
   if (!Array.isArray(list)) return [];
 
   return list
     .filter((item) => item && !item.is_room_delete)
-    .map((item, index) => mapXiaoheiheTeam(item, index, sourceUrl))
+    .map((item, index) => mapHeyboxTeam(item, index, sourceUrl))
     .filter(Boolean)
     .sort((a, b) => Number(a.expired) - Number(b.expired) || new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 }
 
-export function mapXiaoheiheTeam(item, index, sourceUrl) {
+export function mapHeyboxTeam(item, index, sourceUrl) {
   const content = cleanText(item.content_text || '');
   const tagTexts = Array.isArray(item.tags) ? item.tags.map((tag) => cleanText(tag.desc)).filter(Boolean) : [];
   const lightTags = tagTexts.filter((tag) => /^光等/.test(tag));
@@ -32,7 +32,7 @@ export function mapXiaoheiheTeam(item, index, sourceUrl) {
     author: item.user?.username || '',
     username,
     joinCommand: username ? `/j ${username}` : '',
-    slots: parseXiaoheiheSlots(content),
+    slots: parseHeyboxSlots(content),
     link: sourceUrl,
     createdAt: parseTime(item.modify_at) || null,
     tags,
@@ -46,7 +46,7 @@ export function stateLabel(displayState) {
   return { online: '在线', chat: '可聊天' }[displayState] || '';
 }
 
-export function parseXiaoheiheSlots(content) {
+export function parseHeyboxSlots(content) {
   const eq = String(content || '').match(/(\d{1,2})\s*=\s*(\d{1,2})/);
   if (eq) {
     const current = Number(eq[1]);
@@ -58,3 +58,10 @@ export function parseXiaoheiheSlots(content) {
   if (slash) return { current: Number(slash[1]), max: Number(slash[2]) };
   return null;
 }
+
+/** @deprecated Use `normalizeHeyboxHomePayload`. */
+export const normalizeXiaoheiheHomePayload = normalizeHeyboxHomePayload;
+/** @deprecated Use `mapHeyboxTeam`. */
+export const mapXiaoheiheTeam = mapHeyboxTeam;
+/** @deprecated Use `parseHeyboxSlots`. */
+export const parseXiaoheiheSlots = parseHeyboxSlots;

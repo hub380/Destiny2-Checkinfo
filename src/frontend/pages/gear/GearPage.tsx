@@ -3,8 +3,10 @@ import { useGearSearch } from '@frontend/hooks';
 import {
   AppShell,
   FadeIn,
-  LoadingPulse,
   Notice,
+  PageEmpty,
+  PageLoading,
+  PageSection,
   SearchIcon,
   StaggerList,
   createPageCn,
@@ -33,8 +35,8 @@ export function GearPage() {
 
   return (
     <AppShell title="Destiny 2 装备搜索" subtitle="统一搜索武器、护甲、Perk 与可出武器" current="gear">
-      <FadeIn className={cn('layout gear-layout')}>
-        <section className={cn('panel gear-panel panelEnter')}>
+      <FadeIn variant="page" className={cn('layout gear-layout')}>
+        <PageSection className={cn('panel gear-panel')}>
           <div className={cn('panel-header')}>
             <div>
               <h2>装备搜索</h2>
@@ -53,7 +55,11 @@ export function GearPage() {
           <Notice message={notice} error={error} />
           <div className={cn(`gear-result ${payload ? '' : 'empty'}`)}>
             {!payload ? (
-              detail?.loading ? <LoadingPulse className={cn('detail-loading')}>{detail.message}</LoadingPulse> : '输入装备或 Perk 名称开始查询'
+              detail?.loading ? (
+                <PageLoading className={cn('detail-loading')}>{detail.message}</PageLoading>
+              ) : (
+                <PageEmpty>输入装备或 Perk 名称开始查询</PageEmpty>
+              )
             ) : (
               <>
                 <div className={cn('gear-summary')}>
@@ -67,7 +73,7 @@ export function GearPage() {
               </>
             )}
           </div>
-        </section>
+        </PageSection>
       </FadeIn>
     </AppShell>
   );

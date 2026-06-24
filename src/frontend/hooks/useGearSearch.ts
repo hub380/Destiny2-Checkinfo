@@ -1,8 +1,8 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { getGearItem, getPerkWeapons, searchGear } from '../lib/api';
-import type { GearSearchDto, JsonRecord } from '../lib/types';
-import { formatNumber } from '../lib/format';
-import { readUrlSearchParam } from './useMountUrlParam';
+import { getGearItem, getPerkWeapons, searchGear } from '@frontend/lib/api';
+import type { GearSearchDto, JsonRecord } from '@frontend/lib/types';
+import { formatNumber } from '@frontend/lib/format';
+import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
 
 export function useGearSearch() {
   const [query, setQuery] = useState(() => readUrlSearchParam('q') || '');
@@ -24,6 +24,7 @@ export function useGearSearch() {
     setPayload(null);
     setDetail({ loading: true, message: '首次加载索引可能需要几秒' });
     setSubtitle('装备索引查询中');
+    writeUrlSearchParam('q', value);
     try {
       const data = await searchGear(value);
       setPayload(data);

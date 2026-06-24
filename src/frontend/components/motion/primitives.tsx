@@ -4,12 +4,18 @@ import { css, motionClasses } from '@frontend/lib/cn';
 type FadeInProps = {
   children: ReactNode;
   className?: string;
-  variant?: 'layout' | 'panel' | 'detail';
+  variant?: 'layout' | 'panel' | 'detail' | 'page';
 };
 
 export function FadeIn({ children, className, variant = 'layout' }: FadeInProps) {
   const motionClass =
-    variant === 'panel' ? motionClasses.panelEnter : variant === 'detail' ? motionClasses.detailEnter : motionClasses.layoutEnter;
+    variant === 'panel'
+      ? motionClasses.panelEnter
+      : variant === 'detail'
+        ? motionClasses.detailEnter
+        : variant === 'page'
+          ? motionClasses.pageEnter
+          : motionClasses.layoutEnter;
   return <div className={css(motionClasses, `${motionClass} ${className || ''}`)}>{children}</div>;
 }
 

@@ -1,3 +1,7 @@
+.pageEnter {
+  animation: d2-fade-in-up var(--duration-slow) var(--ease-out);
+}
+
 .layoutEnter {
   animation: d2-fade-in-up var(--duration-slow) var(--ease-out);
 }

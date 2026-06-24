@@ -1,5 +1,5 @@
 {
-  "name": "destiny2-fireteam-dashboard",
+  "name": "destiny2-checkinfo",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,6 @@
     "start": "node server/index.js",
     "dev": "concurrently -k -n api,web -c blue,green \"npm run api:dev\" \"npm run frontend:dev\"",
     "api:dev": "cross-env PORT=5174 node server/index.js",
-    "dev:server": "node server/index.js",
     "frontend:dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "lint": "eslint .",

@@ -3,7 +3,9 @@ import { PlayerSearchBox } from '@frontend/components/search';
 import {
   AppShell,
   FadeIn,
-  LoadingPulse,
+  PageEmpty,
+  PageLoading,
+  PageSection,
   MetricCard,
   MiniStat,
   Notice,
@@ -17,11 +19,12 @@ import {
   statDisplay,
   winRate
 } from '@frontend/ui';
-import { useCareerQuery, readUrlSearchParam, useMountUrlParam, usePlayerSearch } from '@frontend/hooks';
+import { useCareerQuery, useMountUrlParam, usePlayerSearch } from '@frontend/hooks';
+import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
 import type { CareerSummaryDto, CharacterDto, PlayerSearchItemDto } from '@frontend/lib/types';
 import '@frontend/styles/global.css';
 import styles from './career.module.css';
-import craftingStyles from './crafting.module.css';
+import craftingStyles from './career-crafting.module.css';
 
 const cn = createPageCn(styles, [craftingStyles]);
 
@@ -41,6 +44,7 @@ export function CareerPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const value = query.trim();
+    if (!value) return;
     if (value && !value.includes('#')) {
       const items = await playerSearch.refreshSuggestions(value);
       playerSearch.setOpen(true);
@@ -48,6 +52,7 @@ export function CareerPage() {
       return;
     }
     playerSearch.clearSuggestions();
+    writeUrlSearchParam('q', value);
     await runCareerQuery(value);
   }
 
@@ -55,6 +60,7 @@ export function CareerPage() {
     if (!player.bungieName) return;
     setQuery(player.bungieName);
     playerSearch.clearSuggestions();
+    writeUrlSearchParam('q', player.bungieName);
     await runCareerQuery(player.bungieName);
   }
 
@@ -66,8 +72,8 @@ export function CareerPage() {
 
   return (
     <AppShell title="Destiny 2 玩家生涯" subtitle="公开生涯 · Raid / 地牢 · PvP · 锻造进度" current="career">
-      <FadeIn className={cn('career-page')}>
-        <section className={cn('panel career-query-panel panelEnter')}>
+      <FadeIn variant="page" className={cn('career-page')}>
+        <PageSection className={cn('panel career-query-panel')}>
           <div className={cn('panel-header')}>
             <div>
               <h2>玩家查询</h2>
@@ -85,18 +91,16 @@ export function CareerPage() {
             formClassName="career-search career-page-search"
           />
           <Notice message={notice} error={noticeError} />
-        </section>
+        </PageSection>
         <section className={cn('career-detail-root')}>
           {career ? (
             <FadeIn variant="detail" className={cn('contentSwap')}>
               <CareerDetail career={career} />
             </FadeIn>
           ) : loading ? (
-            <LoadingPulse className={cn('career-result empty loading')}>
-              正在查询玩家生涯
-            </LoadingPulse>
+            <PageLoading className={cn('career-result loading')}>正在查询玩家生涯</PageLoading>
           ) : (
-            <div className={cn('career-result empty')}>暂无查询结果</div>
+            <PageEmpty className={cn('career-result')}>输入玩家名称开始查询</PageEmpty>
           )}
         </section>
       </FadeIn>

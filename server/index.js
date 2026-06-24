@@ -48,7 +48,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Destiny 2 Fireteam Dashboard running at http://localhost:${PORT}`);
+  console.log(`Destiny 2 Checkinfo running at http://localhost:${PORT}`);
 });
 
 function toWebRequest(req, url) {

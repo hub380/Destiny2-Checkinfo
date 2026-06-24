@@ -13,8 +13,22 @@ export function getConfig() {
   return fetchJson<JsonRecord>('/api/config-public');
 }
 
+export function getHeyboxTeams() {
+  return fetchJson<FireteamsResponseDto>('/api/heybox/teams');
+}
+
+/** @deprecated Use `getHeyboxTeams`. */
 export function getFireteams() {
-  return fetchJson<FireteamsResponseDto>('/api/fireteams');
+  return getHeyboxTeams();
+}
+
+export function getBungieFireteamLookup(body: JsonRecord) {
+  return postJson<FireteamLookupDto>('/api/destiny/fireteam', body);
+}
+
+/** @deprecated Use `getBungieFireteamLookup`. */
+export function getFireteamLookup(body: JsonRecord) {
+  return getBungieFireteamLookup(body);
 }
 
 export function getCareerSummary(bungieName: string) {
@@ -31,10 +45,6 @@ export function getCareerDetails(body: JsonRecord) {
 
 export function getEndgame(body: JsonRecord) {
   return postJson<EndgameDto>('/api/destiny/endgame', body);
-}
-
-export function getFireteamLookup(body: JsonRecord) {
-  return postJson<FireteamLookupDto>('/api/destiny/fireteam', body);
 }
 
 export function searchGear(query: string) {

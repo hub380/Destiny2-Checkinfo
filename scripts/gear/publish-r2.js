@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const bucket = process.env.R2_BUCKET || 'destiny2-checkinfo-data';
-const prefix = trimSlashes(process.env.R2_GEAR_PREFIX || process.env.GEAR_R2_PREFIX || 'gear-cache');
+const prefix = trimSlashes(process.env.R2_GEAR_PREFIX || 'gear-cache');
 const locale = String(process.env.BUNGIE_LOCALE || 'zh-chs').toLowerCase();
 const rootDir = resolve('.');
 const indexPath = resolve(rootDir, process.env.GEAR_INDEX_FILE || `public/data/gear-index-${locale}.json`);

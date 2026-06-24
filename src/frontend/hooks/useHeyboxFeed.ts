@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getFireteams } from '../lib/api';
-import type { FireteamDto, FireteamsResponseDto } from '../lib/types';
+import { getHeyboxTeams } from '@frontend/lib/api';
+import type { FireteamDto, FireteamsResponseDto } from '@frontend/lib/types';
 
-export function useFireteamFeed(refreshSeconds = 30) {
+export function useHeyboxFeed(refreshSeconds = 30) {
   const [items, setItems] = useState<FireteamDto[]>([]);
   const [payload, setPayload] = useState<FireteamsResponseDto | null>(null);
   const [notice, setNotice] = useState('');
@@ -13,13 +13,14 @@ export function useFireteamFeed(refreshSeconds = 30) {
   const nextRefreshAt = useRef<number | undefined>(undefined);
   const refreshTimer = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
+
   const refresh = useCallback(async () => {
     if (loadingRef.current) return;
     loadingRef.current = true;
     setLoading(true);
     setNotice('');
     try {
-      const data = await getFireteams();
+      const data = await getHeyboxTeams();
       setPayload(data);
       setItems(Array.isArray(data.items) ? data.items : []);
       if (data.warning) {
@@ -79,3 +80,6 @@ export function useFireteamFeed(refreshSeconds = 30) {
     reportNotice
   };
 }
+
+/** @deprecated Use `useHeyboxFeed`. */
+export const useFireteamFeed = useHeyboxFeed;

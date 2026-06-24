@@ -58,6 +58,27 @@ export function privacyText(value: unknown): string {
   return '公开组件';
 }
 
+export function formatBungieName(
+  displayName?: string,
+  displayNameCode?: number | string | null,
+  bungieName?: string
+): string {
+  if (bungieName?.trim()) return bungieName.trim();
+  if (!displayName?.trim()) return '';
+  if (displayNameCode != null && displayNameCode !== '') {
+    return `${displayName}#${String(displayNameCode).padStart(4, '0')}`;
+  }
+  return displayName;
+}
+
+export function formatSeconds(value: unknown): string {
+  const seconds = Number(value || 0);
+  if (!Number.isFinite(seconds) || seconds <= 0) return '-';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} 分钟`;
+  return `${(minutes / 60).toFixed(1)} 小时`;
+}
+
 export function relativeTime(value?: string): string {
   if (!value) return '';
   const diff = Date.now() - new Date(value).getTime();

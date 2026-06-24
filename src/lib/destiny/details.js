@@ -1,15 +1,15 @@
-import { cleanText, mapWithConcurrency } from '../utils/index.js';
-import { httpError, positiveNumber } from '../http/index.js';
-import { bungieFetch, numberStat, percentStat } from '../bungie/index.js';
+import { httpError } from '../http/index.js';
 import {
   getWorkerCachedJson,
-  summaryCacheTtlSeconds,
-  activityDefinitionConcurrency
+  summaryCacheTtlSeconds
 } from '../cache/index.js';
 import { CACHE_VERSION } from '../shared/index.js';
-import { itemDefinitionCache } from './state.js';
-import { privacyLabel, hasFailures } from './privacy.js';
+import { bungieFetch } from '../bungie/index.js';
+import { privacyLabel } from './privacy.js';
 import { resolveDetailsTarget } from './targets.js';
+import { summarizeRecords } from './details-records.js';
+import { summarizeCrafting } from './details-crafting.js';
+
 export async function getDestinyDetails(body, env, ctx) {
   if (!env.BUNGIE_API_KEY) {
     throw httpError(400, 'BUNGIE_API_KEY_MISSING', '请先配置 BUNGIE_API_KEY 后查询棒鸡公开玩家生涯');
@@ -82,223 +82,12 @@ export async function summarizeDestinyDetails(membership, profileResponse, env, 
   };
 }
 
-export function summarizeRecords(records, privacy) {
-  const allRecords = Object.values(records.records || {});
-  const visibleRecords = allRecords.filter((record) => (Number(record.state || 0) & 16) === 0);
-  const completedRecords = visibleRecords.filter((record) => (Number(record.state || 0) & 4) === 0);
-  const redeemedRecords = visibleRecords.filter((record) => (Number(record.state || 0) & 1) !== 0);
-  return {
-    privacy: privacyLabel(privacy),
-    score: numberStat(records.score || 0),
-    activeScore: numberStat(records.activeScore || records.score || 0),
-    legacyScore: numberStat(records.legacyScore || 0),
-    lifetimeScore: numberStat(records.lifetimeScore || 0),
-    recordCount: numberStat(visibleRecords.length),
-    completedRecords: numberStat(completedRecords.length),
-    redeemedRecords: numberStat(redeemedRecords.length),
-    completionRate: percentStat(numberStat(completedRecords.length), numberStat(visibleRecords.length))
-  };
-}
-
-export async function summarizeCrafting(characterCraftables, env, ctx, profileRecords = {}) {
-  const aggregate = new Map();
-  for (const [characterId, component] of Object.entries(characterCraftables || {})) {
-    for (const [hash, craftable] of Object.entries(component?.craftables || {})) {
-      const item = aggregate.get(hash) || {
-        hash,
-        visible: false,
-        unlocked: false,
-        failedRequirementCount: 0,
-        socketCount: 0,
-        plugCount: 0,
-        unlockedPlugCount: 0,
-        characterIds: new Set()
-      };
-      const visible = Boolean(craftable.visible);
-      const recipeUnlocked = visible && !hasFailures(craftable.failedRequirementIndexes);
-      const sockets = Array.isArray(craftable.sockets) ? craftable.sockets : [];
-      let plugCount = 0;
-      let unlockedPlugCount = 0;
-      for (const socket of sockets) {
-        for (const plug of socket.plugs || []) {
-          plugCount += 1;
-          if (!hasFailures(plug.failedRequirementIndexes)) unlockedPlugCount += 1;
-        }
-      }
-
-      item.visible = item.visible || visible;
-      item.unlocked = item.unlocked || recipeUnlocked;
-      item.failedRequirementCount = Math.max(item.failedRequirementCount, Array.isArray(craftable.failedRequirementIndexes) ? craftable.failedRequirementIndexes.length : 0);
-      item.socketCount = Math.max(item.socketCount, sockets.length);
-      item.plugCount = Math.max(item.plugCount, plugCount);
-      item.unlockedPlugCount = Math.max(item.unlockedPlugCount, unlockedPlugCount);
-      item.characterIds.add(characterId);
-      aggregate.set(hash, item);
-    }
-  }
-
-  const entries = Array.from(aggregate.values()).filter((item) => item.visible);
-  const enriched = await enrichCraftableItems(entries, env, ctx, profileRecords);
-  const unlocked = entries.filter((item) => item.unlocked).length;
-  const plugCount = entries.reduce((sum, item) => sum + item.plugCount, 0);
-  const unlockedPlugCount = entries.reduce((sum, item) => sum + item.unlockedPlugCount, 0);
-
-  return {
-    total: numberStat(entries.length),
-    unlocked: numberStat(unlocked),
-    locked: numberStat(Math.max(0, entries.length - unlocked)),
-    completionRate: percentStat(numberStat(unlocked), numberStat(entries.length)),
-    plugTotal: numberStat(plugCount),
-    plugUnlocked: numberStat(unlockedPlugCount),
-    plugCompletionRate: percentStat(numberStat(unlockedPlugCount), numberStat(plugCount)),
-    items: enriched
-  };
-}
-
-export async function enrichCraftableItems(items, env, ctx, profileRecords = {}) {
-  const selected = items
-    .sort((a, b) => Number(a.unlocked) - Number(b.unlocked) || b.unlockedPlugCount - a.unlockedPlugCount || Number(a.hash) - Number(b.hash))
-    .slice(0, 260);
-  const definitions = await getInventoryItemDefinitions(selected.map((item) => item.hash), env, ctx);
-  return selected.map((item) => {
-    const definition = definitions.get(String(item.hash)) || {};
-    const craftingInfo = definition.craftingInfo || {};
-    const pattern = craftingPatternProgress(craftingInfo, profileRecords, item.unlocked);
-    return {
-      hash: item.hash,
-      name: cleanText(definition.displayProperties?.name) || `瑁呭 ${item.hash}`,
-      type: definition.itemTypeDisplayName || '',
-      icon: inventoryItemIcon(definition),
-      tier: definition.inventory?.tierTypeName || '',
-      source: cleanText(craftingInfo.source) || '鍏朵粬鏉ユ簮',
-      sourceHash: craftingInfo.sourceHash || 0,
-      patternRecordHash: craftingInfo.patternRecordHash || 0,
-      patternObjectiveHash: craftingInfo.patternObjectiveHash || 0,
-      pattern,
-      visible: Boolean(item.visible),
-      unlocked: Boolean(item.unlocked),
-      failedRequirementCount: numberStat(item.failedRequirementCount),
-      socketCount: numberStat(item.socketCount),
-      plugCount: numberStat(item.plugCount),
-      unlockedPlugCount: numberStat(item.unlockedPlugCount),
-      plugCompletionRate: percentStat(numberStat(item.unlockedPlugCount), numberStat(item.plugCount)),
-      characterCount: numberStat(item.characterIds.size)
-    };
-  });
-}
-
-export async function getInventoryItemDefinitions(hashes, env, ctx) {
-  const uniqueHashes = Array.from(new Set(hashes.filter(Boolean).map(String)));
-  const staticItems = await loadStaticGearItems(env, ctx);
-  const byHash = new Map(staticItems.map((item) => [String(item.hash), item]));
-  const entries = uniqueHashes.map((hash) => {
-      if (itemDefinitionCache.has(hash)) return [hash, itemDefinitionCache.get(hash)];
-      const item = byHash.get(hash);
-      const definition = item
-        ? {
-            displayProperties: {
-              name: item.name,
-              icon: item.icon || ''
-            },
-            itemTypeDisplayName: item.weaponType || item.type || '',
-            inventory: {
-              tierTypeName: item.tier || ''
-            },
-            craftingInfo: {
-              source: item.source || '',
-              sourceHash: item.sourceHash || 0,
-              patternRecordHash: item.patternRecordHash || 0,
-              patternObjectiveHash: item.patternObjectiveHash || 0,
-              outputItemHash: item.outputItemHash || 0,
-              outputCollectibleHash: item.outputCollectibleHash || 0,
-              watermark: item.watermark || ''
-            }
-          }
-        : {};
-      itemDefinitionCache.set(hash, definition);
-      return [hash, definition];
-  });
-
-  const missing = entries
-    .filter(([, definition]) => !definition.displayProperties?.name)
-    .slice(0, 18)
-    .map(([hash]) => hash);
-  const fetched = await mapWithConcurrency(missing, activityDefinitionConcurrency(env), async (hash) => {
-    try {
-      const payload = await bungieFetch(
-        `/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${hash}/?lc=${encodeURIComponent(env.BUNGIE_LOCALE || 'zh-chs')}`,
-        { method: 'GET' },
-        env
-      );
-      const definition = payload.Response || {};
-      itemDefinitionCache.set(hash, definition);
-      return [hash, definition];
-    } catch {
-      return [hash, itemDefinitionCache.get(hash) || {}];
-    }
-  });
-
-  return new Map(
-    entries.map(([hash, definition]) => {
-      const fallback = fetched.find(([itemHash]) => itemHash === hash);
-      return fallback || [hash, definition];
-    })
-  );
-}
-
-export async function loadStaticGearItems(env, ctx) {
-  if (!env.ASSETS?.fetch) return [];
-  const locale = env.BUNGIE_LOCALE || 'zh-chs';
-  const cacheKey = ['static-gear-items', CACHE_VERSION, locale].join(':');
-  const cached = await getWorkerCachedJson(
-    cacheKey,
-    positiveNumber(env.GEAR_INDEX_CACHE_TTL_SECONDS, 604800),
-    async () => {
-      const response = await env.ASSETS.fetch(new Request(`https://assets.local/data/gear-index-${locale}.json`));
-      if (!response.ok) return [];
-      const index = await response.json();
-      return [
-        ...(index.items || []).filter((item) => item.kind === 'weapon'),
-        ...(index.craftables || [])
-      ];
-    },
-    env,
-    ctx,
-    { memoryOnly: true }
-  );
-  return cached.value || [];
-}
-
-export function inventoryItemIcon(definition) {
-  const icon = definition.displayProperties?.icon || '';
-  if (!icon) return '';
-  return icon.startsWith('http') ? icon : `https://www.bungie.net${icon}`;
-}
-
-export function craftingPatternProgress(craftingInfo, profileRecords, unlocked) {
-  const recordHash = craftingInfo.patternRecordHash ? String(craftingInfo.patternRecordHash) : '';
-  const objectiveHash = craftingInfo.patternObjectiveHash ? String(craftingInfo.patternObjectiveHash) : '';
-  const record = recordHash ? profileRecords?.[recordHash] : null;
-  const objective = (record?.objectives || []).find((entry) => String(entry.objectiveHash) === objectiveHash) || record?.objectives?.[0] || null;
-  if (!objective) {
-    const fallback = unlocked ? 1 : 0;
-    return {
-      current: numberStat(fallback),
-      required: numberStat(unlocked ? 1 : 0),
-      complete: Boolean(unlocked),
-      label: unlocked ? '1/1' : '-',
-      percent: unlocked ? 100 : 0
-    };
-  }
-
-  const required = Math.max(0, Number(objective.completionValue || 0));
-  const current = Math.max(0, Math.min(required || Number(objective.progress || 0), Number(objective.progress || 0)));
-  const complete = Boolean(objective.complete) || (required > 0 && current >= required);
-  return {
-    current: numberStat(current),
-    required: numberStat(required),
-    complete,
-    label: required > 0 ? `${current}/${required}` : '-',
-    percent: required > 0 ? Math.max(0, Math.min(100, (current / required) * 100)) : 0
-  };
-}
+export { summarizeRecords } from './details-records.js';
+export {
+  summarizeCrafting,
+  enrichCraftableItems,
+  getInventoryItemDefinitions,
+  loadStaticGearItems,
+  inventoryItemIcon,
+  craftingPatternProgress
+} from './details-crafting.js';

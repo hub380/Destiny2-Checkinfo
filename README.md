@@ -16,7 +16,7 @@ Destiny2 Checkinfo 是一个面向《命运 2》玩家的 Web 工具，目标是
 - 搜索武器、护甲、Perk，并查看武器 Perk 池、普通 / 强化差异、护甲套装效果。
 - 支持 Perk 反查可出武器。
 - 基于棒鸡 Manifest 提供武器来源提示，作为参考信息，不视为精确掉落表。
-- 预留攻略 / 资讯库页面，后续用于整理地图、Raid、地牢机制、图文和外部视频内容。
+- 攻略 / 资讯库：从 R2 读取索引与详情，支持分类筛选、深链 `?slug=`、图文与外部视频占位（需 `guides:upload` 后才有内容）。
 
 线上地址：
 
@@ -76,7 +76,7 @@ http://localhost:5173
 
 相关接口（稳定路径）：
 
-- `/api/heybox/teams` — 小黑盒组队列表（别名：`/api/fireteams`）
+- `/api/heybox/teams` — 小黑盒组队列表
 - `/api/destiny/summary` — 玩家生涯摘要
 - `/api/destiny/details` — 锻造 / 成就等详情
 - `/api/destiny/endgame` — Raid / 地牢 / PvP 历史
@@ -91,47 +91,43 @@ http://localhost:5173
 - **bungie / destiny** — 棒鸡公开 API 与生涯逻辑
 - **fireteam**（API `/api/destiny/fireteam`）— 仅指 Bungie 当前队伍，与 heybox 组队列表区分
 
-## 当前分支迭代变更
+## 当前分支与近期架构
 
 当前开发分支：
 
-- [feature/pvp-history-career-layout](https://github.com/hub380/Destiny2-Checkinfo/tree/feature/pvp-history-career-layout)
+- [refactor/architecture-root-layout](https://github.com/hub380/Destiny2-Checkinfo/tree/refactor/architecture-root-layout)
 
-与主分支对比：
+与 `main` 对比：
 
-- [main...feature/pvp-history-career-layout](https://github.com/hub380/Destiny2-Checkinfo/compare/main...feature/pvp-history-career-layout)
+- [main...refactor/architecture-root-layout](https://github.com/hub380/Destiny2-Checkinfo/compare/main...refactor/architecture-root-layout)
 
-当前分支主要迭代：
+本分支在功能迭代之外，重点做了前端可维护性与 URL 行为统一：
 
-- 前端重构为 Vite + React + TypeScript 多页面构建，保留 `/`、`/career.html`、`/gear.html`、`/guides.html`。
-- 样式拆成 CSS Modules，降低单文件样式维护压力。
-- 后端统一聚合 `/api/*` 数据，前端只消费整理后的 DTO。
-- 玩家生涯从组队页拆出独立页面，同时保留组队页内简版查询。
-- Raid / 地牢按具体活动展示，并支持变体、Solo、无暇等标记。
-- PvP 加入分模式数据展示。
-- 加入锻造进度，并改为更适合大数据量展示的弹窗 / 分组结构。
-- 装备搜索合并武器、护甲、Perk 查询入口。
-- 加入 Perk 反查武器能力。
-- 加入普通 / 强化 Perk 差异展示。
-- 加入武器来源提示，过滤 hash、Manifest 版本号、发布分组等噪点。
-- 活动名称和图片加入静态活动索引、KV 缓存和按需补漏逻辑，减少 `活动 数字代码` 的显示。
-- 接入 Cloudflare KV、R2，R2 用于玩家大型历史快照和攻略内容。
-- 新增攻略 / 资讯库骨架，支持 R2 中的攻略索引、详情、媒体和外部视频占位。
+| 领域 | 说明 |
+|------|------|
+| 页面入口 | `pages/*.html` → `src/frontend/pages/<name>/`，多页独立 bundle |
+| 生涯查询 | `useCareerSearchFlow` 统一首页简版与 `career.html` 完整查询 |
+| URL 同步 | `useUrlQueryParam` / `useUrlQuerySync` / `useUrlParamsSync`（装备 `q+hash`、攻略 `q+category+slug`） |
+| 玩家搜索 | `resolveBungieNameSubmit` 统一「无 `#` 先搜玩家」提交流程 |
+| 页面拆分 | Career（信息 / 终局 / 锻造）、Gear（列表 / 详情视图）子组件 |
+| 后端拆分 | `summary-stats.js`、`summary-search.js`、`endgame-history.js`、`endgame-format.js` |
+| 命名统一 | 集成层 heybox 命名；移除 `getFireteams`、`useFireteamFeed` 等废弃别名 |
+| 体验 | 暗色模式对比度、锻造弹窗 a11y、剪贴板 `copyToClipboard`、图片 `lazy`、隐藏 tab 时暂停组队刷新 |
+| 测试 | Vitest 约 21 项（格式化、生涯合并、玩家提交、endgame 格式化、heybox 解析等） |
 
-相关接口保持稳定：
+功能层面仍包含（相对 `main`）：
 
-- `/api/heybox/teams`（兼容 `/api/fireteams`）
-- `/api/destiny/summary`
-- `/api/destiny/details`
-- `/api/destiny/endgame`
-- `/api/destiny/player-search`
-- `/api/destiny/fireteam`
-- `/api/destiny/career`（聚合摘要 + 终局，前端优先用拆分接口）
-- `/api/gear/search`
-- `/api/gear/item`
-- `/api/gear/perk-weapons`
-- `/api/guides`
-- `/api/guides/:slug`
+- Vite + React + TypeScript 多页面；CSS Modules + 共享 `ui` / `motion` 令牌。
+- 独立 `career.html`、`gear.html`、`fireteam.html`、`guides.html`；首页保留组队 + 简版生涯。
+- Raid / 地牢活动级历史、PvP 分模式、锻造进度弹窗、装备统一搜索与 Perk 反查、来源提示。
+- Cloudflare KV / R2；攻略内容管线 `content/guides/` → `guides:validate` → `guides:upload`。
+
+相关接口（稳定路径）：
+
+- `/api/heybox/teams`
+- `/api/destiny/summary`、`/details`、`/endgame`、`/player-search`、`/fireteam`、`/career`
+- `/api/gear/search`、`/item`、`/perk-weapons`
+- `/api/guides`、`/api/guides/:slug`、媒体 `/api/guides/:slug/media/*`
 
 ## 项目起源和出发点
 
@@ -187,8 +183,15 @@ src/lib/
   utils/           文本、时间、环境变量、并发控制
   shared/          跨域常量（如 CACHE_VERSION）
   storage/         R2 读写（生涯快照、攻略对象）
-  integrations/    小黑盒组队、Heybox 数据解析
-  destiny/         玩家生涯、组队、终局、详情等领域 API
+  integrations/    小黑盒组队（heybox-feed.js、heybox.js）
+  destiny/         玩家生涯、组队、终局、详情
+    summary.js           生涯摘要入口（re-export stats / search）
+    summary-stats.js     统计字段格式化
+    summary-search.js    棒鸡名称前缀搜索
+    endgame.js           终局 API 入口
+    endgame-history.js   活动历史拉取与聚合
+    endgame-format.js    Raid / 地牢 / PvP 展示结构
+    fireteam.js、details.js、career.js、activities.js …
   gear/            装备索引构建、搜索、Perk 反查、Worker 依赖注入
   guides/          攻略索引、详情与媒体代理
 ```
@@ -232,21 +235,23 @@ public/                静态资源与构建出的 data/*.json
 
 ```text
 src/frontend/
-  styles/          global.css、ui.module.css（布局基座）、motion.module.css（动效）
-  ui/              barrel：重导出 lib + components（页面统一 `from '@frontend/ui'`）
-  lib/             api、types、cn、format、constants、career-merge
+  styles/          global.css、ui.module.css、各页 module.css
+  ui/              barrel：重导出 lib + components
+  lib/             api、types、url、format、clipboard、player-search-submit、career-merge
   components/
-    layout/        AppShell、Header、Notice、MetricCard、MiniStat
+    layout/        AppShell、Header、Notice、MetricCard、PageState …
     search/        PlayerSearchBox
-    icons/         SVG 图标
-    motion/        FadeIn、StaggerList、LoadingPulse
-  hooks/           各页面数据 hooks
+    icons/、motion/
+  hooks/
+    useCareerSearchFlow、useCareerQuery、useUrlQueryParam
+    useHeyboxFeed、useBungieFireteamLookup、useGearSearch、useGuidesLibrary
+    usePlayerSearch、useUrlPopstate
   pages/
-    index/           index.html 入口、HomePage.tsx、home.module.css
-    career/          CareerPage、career + career-crafting 样式
-    gear/          GearPage、gear.module.css
-    fireteam/      FireteamPage、fireteam.module.css
-    guides/        GuidesPage、guides.module.css
+    index/           HomePage（组队 + 简版生涯）
+    career/          CareerPage + CareerInfo/Endgame/Crafting 子组件
+    gear/            GearPage + GearDetailViews、gear-labels
+    fireteam/        FireteamPage
+    guides/          GuidesPage
 ```
 
 约定：
@@ -265,10 +270,12 @@ npm run frontend:dev   # 仅 Vite，需另开 api:dev 或已有 API
 npm run api:dev        # 仅本地 API（5174）
 ```
 
-构建：
+构建与检查：
 
 ```powershell
 npm run build
+npm run test
+npm run lint
 ```
 
 更新活动静态索引：
@@ -283,12 +290,14 @@ npm run activity:index
 npm run gear:index
 ```
 
-攻略 / 资讯内容源放在 `content/guides/`。先校验再上传到 R2：
+攻略 / 资讯内容源放在 `content/guides/`（示例见 `example-raid-mechanics/`）。**索引为空时攻略页会显示「攻略库暂无内容」**，需校验并上传：
 
 ```powershell
 npm run guides:validate
 npm run guides:upload
 ```
+
+本地开发若未配置 R2，API 仍可能返回空索引；线上 Worker 需配置 `R2_GUIDE_PREFIX` 与对应 bucket。
 
 Cloudflare Worker 本地调试：
 
@@ -316,6 +325,16 @@ npm run worker:deploy
 - KV：用于热点玩家查询、活动定义、装备索引等 JSON 缓存。
 - R2：用于玩家大型历史快照、攻略 JSON、封面、图片和媒体元数据。
 - Worker Cache：用于边缘短期缓存。
+
+## 后续可优化方向（非阻塞）
+
+| 优先级 | 项 | 说明 |
+|--------|-----|------|
+| P1 | 攻略内容 | 运行 `guides:validate` + `guides:upload`；配置 R2 / `R2_GUIDE_PREFIX`，否则线上攻略库为空属预期 |
+| P2 | Hook 集成测试 | 可补 `useGuidesLibrary` / `useGearSearch` 的 React 测试防 popstate 回归（URL 读写已有 `tests/url.test.js`） |
+| P3 | 真虚拟滚动 | 首页组队 / 攻略列表现为分页式「显示更多」；条数极大时可换 windowing 库 |
+
+质量门禁建议：`npm run test`、`npm run build`、`npm run lint` 在 PR 前跑一遍。
 
 ## 开源协议
 

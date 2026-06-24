@@ -44,7 +44,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
     --bg: #121614;
     --surface: #1a1f1c;
@@ -90,6 +90,53 @@
       radial-gradient(circle at 88% 100%, rgba(212, 160, 74, 0.06), transparent 36%),
       var(--bg);
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121614;
+  --surface: #1a1f1c;
+  --surface-2: #222824;
+  --surface-elevated: #2a3230;
+  --surface-hover: #323a38;
+  --text: #e8ece9;
+  --text-body: #d4dce0;
+  --text-chip: #c8d0cd;
+  --muted: #9aa5a0;
+  --line: #2f3834;
+  --green: #4cb896;
+  --accent: #4cb896;
+  --green-2: #1a2e27;
+  --green-border: #3d5c4f;
+  --border-focus: #4a7a68;
+  --border-hover: #3d4a45;
+  --border-muted: #4a5450;
+  --amber: #d4a04a;
+  --amber-2: #2e2418;
+  --amber-border: #6b5030;
+  --amber-text: #e8c88a;
+  --red: #e07070;
+  --red-border: #6b4040;
+  --red-surface: #3a2525;
+  --avatar-bg: #3a4240;
+  --disabled-bg: #252b29;
+  --disabled-text: #7a8580;
+  --switch-off: #4a5450;
+  --switch-knob: #e8ece9;
+  --on-accent: #ffffff;
+  --btn-primary-bg: #3d9f7f;
+  --btn-primary-hover: #4cb896;
+  --topbar-bg: rgba(18, 22, 20, 0.92);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  --shadow-soft: rgba(0, 0, 0, 0.28);
+  --focus-ring: rgba(76, 184, 150, 0.2);
+}
+
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(76, 184, 150, 0.08), transparent 40%),
+    radial-gradient(circle at 88% 100%, rgba(212, 160, 74, 0.06), transparent 36%),
+    var(--bg);
 }
 
 @keyframes d2-fade-in {

@@ -30,10 +30,6 @@ const routes = [
     handle: async ({ env }) => json(await getHeyboxTeams(env))
   },
   {
-    match: (url, method) => url.pathname === '/api/fireteams' && method === 'GET',
-    handle: async ({ env }) => json(await getHeyboxTeams(env))
-  },
-  {
     match: (url, method) => url.pathname === '/api/guides' && method === 'GET',
     handle: async ({ env, ctx }) => json(await getGuides(env, ctx))
   },

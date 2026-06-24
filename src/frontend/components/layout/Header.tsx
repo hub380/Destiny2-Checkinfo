@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { css, uiClasses } from '@frontend/lib/cn';
 import { BRAND_LOGO } from '@frontend/lib/constants';
 import { GitHubBranchLink } from './GitHubBranchLink';
+import { ThemeToggle } from './ThemeToggle';
 
 const cn = (classNames: string | false | null | undefined) => css(uiClasses, classNames);
 
@@ -29,7 +30,10 @@ export function Header({ title, subtitle, current, toolbar }: HeaderProps) {
         <a href="/fireteam.html" className={cn(current === 'fireteam' ? 'current' : '')}>棒鸡队伍</a>
         <a href="/guides.html" className={cn(current === 'guides' ? 'current' : '')}>攻略/资讯</a>
       </nav>
-      {toolbar ?? <GitHubBranchLink />}
+      <div className={cn('header-actions')}>
+        <ThemeToggle />
+        {toolbar ?? <GitHubBranchLink />}
+      </div>
     </header>
   );
 }

@@ -1,5 +1,6 @@
 import React, { FormEvent, useState } from 'react';
 import { useGuidesLibrary } from '@frontend/hooks';
+import { useWindowedSlice } from '@frontend/hooks/useWindowedSlice';
 import { copyToClipboard } from '@frontend/lib/clipboard';
 import {
   AppShell,
@@ -18,6 +19,7 @@ import '@frontend/styles/global.css';
 import styles from './guides.module.css';
 
 const cn = createPageCn(styles);
+const GUIDE_LIST_PAGE_SIZE = 48;
 
 export function GuidesPage() {
   const {
@@ -38,6 +40,10 @@ export function GuidesPage() {
     closeGuide
   } = useGuidesLibrary();
   const [copyNotice, setCopyNotice] = useState('');
+  const { visible: windowedGuides, hasMore: hasMoreGuides, showMore: showMoreGuides } = useWindowedSlice(
+    visibleItems,
+    GUIDE_LIST_PAGE_SIZE
+  );
 
   const detailOpen = Boolean(detail || detailLoading);
 
@@ -99,26 +105,35 @@ export function GuidesPage() {
           {loading ? (
             <PageLoading className={cn('guide-list-loading')}>攻略索引加载中</PageLoading>
           ) : (
-            <StaggerList className={cn('guide-list')} stagger={visibleItems.length <= 24}>
-              {visibleItems.map((item) => (
-                <GuideCard
-                  key={item.slug}
-                  item={item}
-                  active={detail?.slug === item.slug}
-                  onOpen={() => void openGuide(item)}
-                />
-              ))}
-              {!visibleItems.length ? (
-                <PageEmpty className={cn('guides-empty')}>
-                  <b>{items.length ? '没有匹配的攻略' : '攻略库暂无内容'}</b>
-                  <span>
-                    {items.length
-                      ? '试试调整搜索词或分类筛选。'
-                      : '请运行 npm run guides:upload 上传攻略，或检查 R2 / 本地 guides 索引是否已配置。'}
-                  </span>
-                </PageEmpty>
+            <>
+              <StaggerList className={cn('guide-list')} stagger={windowedGuides.length <= 24}>
+                {windowedGuides.map((item) => (
+                  <GuideCard
+                    key={item.slug}
+                    item={item}
+                    active={detail?.slug === item.slug}
+                    onOpen={() => void openGuide(item)}
+                  />
+                ))}
+                {!windowedGuides.length ? (
+                  <PageEmpty className={cn('guides-empty')}>
+                    <b>{items.length ? '没有匹配的攻略' : '攻略库暂无内容'}</b>
+                    <span>
+                      {items.length
+                        ? '试试调整搜索词或分类筛选。'
+                        : '请运行 npm run guides:upload 上传攻略，或检查 R2 / 本地 guides 索引是否已配置。'}
+                    </span>
+                  </PageEmpty>
+                ) : null}
+              </StaggerList>
+              {hasMoreGuides ? (
+                <div className={cn('list-more')}>
+                  <button type="button" className={cn('list-more-button')} onClick={showMoreGuides}>
+                    显示更多（已显示 {windowedGuides.length} / {visibleItems.length}）
+                  </button>
+                </div>
               ) : null}
-            </StaggerList>
+            </>
           )}
         </section>
 

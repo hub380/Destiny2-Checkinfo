@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import { css, motionClasses, uiClasses } from '@frontend/lib/cn';
+import { initTheme } from '@frontend/hooks/useTheme';
 import { Header, type HeaderProps } from './Header';
+
+initTheme();
 
 type AppShellProps = HeaderProps & {
   children: ReactNode;

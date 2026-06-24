@@ -255,6 +255,33 @@
   background: var(--disabled-bg);
 }
 
+.list-more {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 4px;
+}
+
+.list-more-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  transition:
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.list-more-button:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+  background: var(--surface-hover);
+}
+
 .career-result.empty {
   min-height: 180px;
   display: grid;

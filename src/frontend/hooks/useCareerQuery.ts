@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
-import { getCareerDetails, getCareerSummary, getEndgame } from '@frontend/lib/api';
-import { mergeEndgameCareer, type EndgameMode } from '@frontend/lib/career-merge';
+import { getCareerDetails, getCareerSummary } from '@frontend/lib/api';
+import { type EndgameMode } from '@frontend/lib/career-merge';
+import { loadEndgameModesProgressive } from '@frontend/lib/endgame-tasks';
 import type { CareerSummaryDto } from '@frontend/lib/types';
 
 type UseCareerQueryOptions = {
@@ -50,28 +51,12 @@ export function useCareerQuery(options: UseCareerQueryOptions = {}) {
         characters: summary.characters
       };
 
-      const tasks: Promise<void>[] = modes.map(async (mode) => {
-        try {
-          const payload = await getEndgame({ ...baseRequest, mode });
-          if (queryIdRef.current !== queryId) return;
-          setCareer((current) => (current ? mergeEndgameCareer(current, payload, mode) : current));
-        } catch (err: unknown) {
-          if (queryIdRef.current !== queryId) return;
-          const message = err instanceof Error ? err.message : '活动历史加载失败';
-          setCareer((current) =>
-            current
-              ? {
-                  ...current,
-                  endgameLoading: {
-                    ...(current.endgameLoading && typeof current.endgameLoading === 'object' ? current.endgameLoading : {}),
-                    [mode]: false
-                  },
-                  endgameErrors: { ...(current.endgameErrors || {}), [mode]: message }
-                }
-              : current
-          );
-        }
-      });
+      const tasks: Promise<void>[] = [
+        loadEndgameModesProgressive(baseRequest, modes, {
+          isCancelled: () => queryIdRef.current !== queryId,
+          onUpdate: (updater) => setCareer((current) => (current ? updater(current) : current))
+        })
+      ];
 
       if (includeDetails) {
         tasks.push(

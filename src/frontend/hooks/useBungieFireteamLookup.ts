@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { getBungieFireteamLookup, getEndgame } from '@frontend/lib/api';
+import { getBungieFireteamLookup } from '@frontend/lib/api';
 import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
+import { loadEndgameForMembersSequential } from '@frontend/lib/endgame-tasks';
 import type { FireteamLookupDto, FireteamMemberLookupDto, PlayerSearchItemDto } from '@frontend/lib/types';
 import { resolveBungieNameSubmit } from '@frontend/lib/player-search-submit';
 import { usePlayerSearch } from './usePlayerSearch';
@@ -137,22 +138,28 @@ export function useBungieFireteamLookup() {
     );
 
     const load = async () => {
-      for (const member of members.slice(0, 6)) {
-        try {
-          const payload = await getEndgame({
-            membershipType: member.account?.membershipType,
-            membershipId: member.account?.membershipId,
-            characters: member.characters,
-            modes: ['raid', 'dungeon']
-          });
-          if (cancelled) return;
-          setLookup((current) => mergeMemberEndgame(current, member, payload as Record<string, unknown>));
-        } catch (err: unknown) {
-          if (cancelled) return;
-          const message = err instanceof Error ? err.message : '高难活动数据加载失败';
-          setLookup((current) => markMemberEndgameDone(current, member, message));
+      await loadEndgameForMembersSequential(
+        members,
+        6,
+        (member) =>
+          member.account?.membershipType && member.account?.membershipId && member.characters?.length
+            ? {
+                membershipType: member.account.membershipType,
+                membershipId: member.account.membershipId,
+                characters: member.characters,
+                modes: ['raid', 'dungeon']
+              }
+            : null,
+        {
+          isCancelled: () => cancelled,
+          onMemberSuccess: (member, payload) => {
+            setLookup((current) => mergeMemberEndgame(current, member, payload));
+          },
+          onMemberError: (member, message) => {
+            setLookup((current) => markMemberEndgameDone(current, member, message));
+          }
         }
-      }
+      );
     };
     void load();
 

@@ -1,17 +1,15 @@
-import { cleanText, normalizeText, uniqueNumbers } from './utils.js';
+import { cleanText } from './utils.js';
 import { hasUsableSetBonus } from './search.js';
 import {
   displayName,
   displayDescription,
   iconUrl,
-  imageUrl,
   isEnhancedPerk,
   ammoLabel,
   elementLabel,
   armorSlotLabel,
   classTypeLabel,
   isAdept,
-  baseWeaponName,
   makeSearchText
 } from './labels.js';
 import { buildSourceHints } from './sources.js';

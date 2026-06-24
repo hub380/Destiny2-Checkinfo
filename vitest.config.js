@@ -11,6 +11,9 @@ export default defineConfig({
       '@frontend': resolve(rootDir, 'src/frontend')
     }
   },
+  css: {
+    postcss: {}
+  },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.js']

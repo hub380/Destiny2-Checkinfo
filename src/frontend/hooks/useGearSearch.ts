@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { getGearItem, getPerkWeapons, searchGear } from '@frontend/lib/api';
 import type { GearSearchDto, JsonRecord } from '@frontend/lib/types';
 import {
@@ -28,7 +28,10 @@ export function useGearSearch() {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState(false);
   const payloadRef = useRef(payload);
-  payloadRef.current = payload;
+
+  useEffect(() => {
+    payloadRef.current = payload;
+  }, [payload]);
 
   const setQuery = useCallback((value: string) => {
     setQueryState(value);

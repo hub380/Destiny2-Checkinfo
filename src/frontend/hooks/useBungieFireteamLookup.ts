@@ -69,8 +69,14 @@ export function useBungieFireteamLookup() {
   const queryRef = useRef(query);
   const playerSearchRef = useRef(playerSearch);
   const inflightKeyRef = useRef<string | null>(null);
-  queryRef.current = query;
-  playerSearchRef.current = playerSearch;
+
+  useEffect(() => {
+    queryRef.current = query;
+  }, [query]);
+
+  useEffect(() => {
+    playerSearchRef.current = playerSearch;
+  }, [playerSearch]);
 
   const runQuery = useCallback(async (body: Record<string, unknown>) => {
     const bungieName = String(body.bungieName || queryRef.current || '').trim();

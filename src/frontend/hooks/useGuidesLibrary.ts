@@ -20,9 +20,18 @@ export function useGuidesLibrary() {
   const detailRef = useRef<GuideDetailDto | null>(null);
   const detailLoadingRef = useRef(false);
   const skipFilterUrlSyncRef = useRef(true);
-  indexRef.current = index;
-  detailRef.current = detail;
-  detailLoadingRef.current = detailLoading;
+
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
+
+  useEffect(() => {
+    detailRef.current = detail;
+  }, [detail]);
+
+  useEffect(() => {
+    detailLoadingRef.current = detailLoading;
+  }, [detailLoading]);
 
   const syncFiltersToUrl = useCallback((nextQuery: string, nextCategory: string) => {
     syncUrlParams({
@@ -80,7 +89,10 @@ export function useGuidesLibrary() {
   }, [openGuide]);
 
   const applyFromUrlRef = useRef(applyFromUrl);
-  applyFromUrlRef.current = applyFromUrl;
+
+  useEffect(() => {
+    applyFromUrlRef.current = applyFromUrl;
+  }, [applyFromUrl]);
 
   const loadIndex = useCallback(async () => {
     setLoading(true);

@@ -14,6 +14,8 @@
     "build": "tsc --noEmit && vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:unit": "vitest run tests/frontend.test.js tests/lib.test.js tests/url.test.js",
+    "test:sit": "vitest run tests/app.test.js",
     "test:watch": "vitest",
     "gear:index": "node scripts/data/build-gear-index.js",
     "gear:publish-r2": "node scripts/gear/publish-r2.js",
@@ -37,6 +39,7 @@
     "cross-env": "^10.1.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^17.7.0",
     "typescript-eslint": "^8.48.0",
     "vitest": "^4.0.8",
     "wrangler": "^4.0.0"

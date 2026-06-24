@@ -32,8 +32,11 @@ export function useUrlQueryParam(param: string) {
 /** Bootstrap + popstate handler for a single query param. */
 export function useUrlQuerySync(param: string, handler: (value: string, source: UrlQuerySource) => void) {
   const handlerRef = useRef(handler);
-  handlerRef.current = handler;
   const bootedRef = useRef(false);
+
+  useEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
 
   useEffect(() => {
     if (bootedRef.current) return;
@@ -59,9 +62,12 @@ export function useUrlParamsSync(
   options?: UrlParamsSyncOptions
 ) {
   const handlerRef = useRef(handler);
-  handlerRef.current = handler;
   const bootedRef = useRef(false);
   const paramsKey = params.join('\0');
+
+  useEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
 
   useEffect(() => {
     if (options?.skipMount) return;

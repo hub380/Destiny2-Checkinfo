@@ -1,4 +1,8 @@
 import type { PlayerSearchState } from '../hooks/usePlayerSearch';
+import {
+  COPY_BUNGIE_NAME_NO_MATCH,
+  COPY_BUNGIE_NAME_PICK
+} from './copy';
 
 export type BungieNameSubmitResult =
   | { status: 'ready'; bungieName: string }
@@ -22,9 +26,9 @@ export async function resolveBungieNameSubmit(
   return { status: 'needs_pick', count: items.length };
 }
 
-export function bungieNameSubmitHint(query: string, playerSearch: PlayerSearchActions, pickMessage = '请选择一个完整的棒鸡 ID 后查询') {
+export function bungieNameSubmitHint(query: string, playerSearch: PlayerSearchActions, pickMessage = COPY_BUNGIE_NAME_PICK) {
   const trimmed = query.trim();
   if (!trimmed || trimmed.includes('#')) return '';
   if (playerSearch.suggestions.length) return pickMessage;
-  return playerSearch.notice || '没有匹配的棒鸡玩家';
+  return playerSearch.notice || COPY_BUNGIE_NAME_NO_MATCH;
 }

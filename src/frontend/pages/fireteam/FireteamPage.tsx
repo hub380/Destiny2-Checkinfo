@@ -19,6 +19,12 @@ import {
   winRate
 } from '@frontend/ui';
 import { useBungieFireteamLookup } from '@frontend/hooks';
+import {
+  COPY_FIRETEAM_EMPTY_HINT,
+  COPY_FIRETEAM_EMPTY_TITLE,
+  COPY_FIRETEAM_IDLE_SUBTITLE,
+  COPY_FIRETEAM_LOADING
+} from '@frontend/lib/copy';
 import type { FireteamLookupDto, FireteamMemberLookupDto } from '@frontend/lib/types';
 import '@frontend/styles/global.css';
 import styles from './fireteam.module.css';
@@ -45,7 +51,7 @@ export function FireteamPage() {
           <div className={cn('panel-header')}>
             <div>
               <h2>棒鸡队伍</h2>
-              <p>{lookup?.updatedAt ? `更新 ${dateTime(lookup.updatedAt)}` : '输入玩家名称前缀选择棒鸡 ID，或直接输入 名称#数字代码'}</p>
+              <p>{lookup?.updatedAt ? `更新 ${dateTime(lookup.updatedAt)}` : COPY_FIRETEAM_IDLE_SUBTITLE}</p>
             </div>
           </div>
           <PlayerSearchBox
@@ -154,17 +160,18 @@ function MemberCard({ member }: { member: FireteamMemberLookupDto }) {
 }
 
 function EmptyState({ loading }: { loading: boolean }) {
+  if (loading) {
+    return (
+      <PageLoading className={cn('fireteam-idle panelEnter')}>
+        {COPY_FIRETEAM_LOADING}
+      </PageLoading>
+    );
+  }
   return (
-    <section className={cn('empty-state panelEnter')}>
-      {loading ? (
-        <PageLoading>
-          <h2>正在查询队伍</h2>
-        </PageLoading>
-      ) : (
-        <h2>选择一个玩家开始查询</h2>
-      )}
-      <p>当前队伍依赖 Bungie 的临时公开状态；如果玩家未在线、隐私受限或数据未同步，可能只显示被查询玩家本人。</p>
-    </section>
+    <PageEmpty className={cn('fireteam-idle panelEnter')}>
+      <b className={cn('fireteam-idle-title')}>{COPY_FIRETEAM_EMPTY_TITLE}</b>
+      <p className={cn('fireteam-idle-hint')}>{COPY_FIRETEAM_EMPTY_HINT}</p>
+    </PageEmpty>
   );
 }
 

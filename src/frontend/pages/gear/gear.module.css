@@ -23,53 +23,6 @@
   scroll-margin-top: 96px;
 }
 
-.gear-search {
-  display: block;
-  margin-bottom: 12px;
-}
-
-.gear-query {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-2);
-  gap: 8px;
-  padding: 6px;
-  min-width: 0;
-}
-
-.gear-query input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  min-height: 38px;
-  color: var(--text);
-  padding: 0 8px;
-  min-width: 0;
-}
-
-.gear-query button {
-  flex: 0 0 auto;
-  min-height: 36px;
-  border: 1px solid var(--text);
-  border-radius: 8px;
-  background: var(--text);
-  color: var(--on-accent);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 0 11px;
-  font-weight: 720;
-}
-
-.gear-query button:hover {
-  background: #303533;
-  border-color: #303533;
-}
-
 .gear-result.empty {
   min-height: 180px;
   display: grid;
@@ -643,28 +596,8 @@
   }
 }
 
-.gear-kind-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.gear-kind-tabs button {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
+.gear-kind-tabs .chip-tab {
   border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.gear-kind-tabs button.active {
-  border-color: var(--green);
-  background: var(--green-2);
-  color: var(--green);
 }
 
 .gear-card.active {

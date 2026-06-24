@@ -24,7 +24,6 @@
 
 .current-activity-card,
 .member-card,
-.empty-state,
 .empty-card {
   min-width: 0;
   border: 1px solid var(--line);
@@ -184,25 +183,26 @@
   color: var(--amber-text);
 }
 
-.empty-state {
+.fireteam-idle {
   min-height: 260px;
   display: grid;
   place-items: center;
   align-content: center;
   gap: 8px;
   padding: 24px;
-  text-align: center;
 }
 
-.empty-state h2 {
+.fireteam-idle-title {
+  display: block;
   margin: 0;
-  font-size: 22px;
+  font-size: 18px;
+  font-weight: 760;
+  color: var(--text);
 }
 
-.empty-state p {
+.fireteam-idle-hint {
   max-width: 640px;
   margin: 0;
-  color: var(--muted);
   font-size: 14px;
   line-height: 1.6;
 }

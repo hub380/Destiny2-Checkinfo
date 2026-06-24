@@ -3,6 +3,11 @@ import { PlayerSearchBox } from '@frontend/components/search';
 import type { PlayerSearchState } from '@frontend/hooks';
 import { FadeIn, Notice, PageEmpty, PageLoading, PageSection, formatTime } from '@frontend/ui';
 import type { CareerSummaryDto } from '@frontend/lib/types';
+import {
+  COPY_BUNGIE_NAME_EMPTY,
+  COPY_BUNGIE_NAME_PLACEHOLDER,
+  COPY_HOME_CAREER_IDLE
+} from '@frontend/lib/copy';
 import { CompactCareerPanel } from './CompactCareerPanel';
 import { cn } from './home-cn';
 
@@ -34,7 +39,7 @@ export function HomeCareerSection({
       <div className={cn('panel-header stacked')}>
         <div>
           <h2>棒鸡玩家生涯</h2>
-          <p>{career?.updatedAt ? `更新 ${formatTime(career.updatedAt)}` : '公开玩家查询 · 侧栏为简版预览'}</p>
+          <p>{career?.updatedAt ? `更新 ${formatTime(career.updatedAt)}` : COPY_HOME_CAREER_IDLE}</p>
         </div>
       </div>
       <PlayerSearchBox
@@ -45,7 +50,7 @@ export function HomeCareerSection({
         onSelectPlayer={onSelectPlayer}
         submitting={loading}
         formClassName="career-search"
-        placeholder="搜索棒鸡名称，或输入 名称#数字代码"
+        placeholder={COPY_BUNGIE_NAME_PLACEHOLDER}
       />
       <Notice message={noticeMessage} error={noticeError} />
       {career ? (
@@ -55,7 +60,7 @@ export function HomeCareerSection({
       ) : loading ? (
         <PageLoading>查询基础资料中</PageLoading>
       ) : (
-        <PageEmpty>输入玩家名称开始查询</PageEmpty>
+        <PageEmpty>{COPY_BUNGIE_NAME_EMPTY}</PageEmpty>
       )}
     </PageSection>
   );

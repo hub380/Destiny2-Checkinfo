@@ -2,6 +2,7 @@ import type { FormEvent } from 'react';
 import { useId } from 'react';
 import type { PlayerSearchItemDto } from '@frontend/lib/types';
 import { css, uiClasses } from '@frontend/lib/cn';
+import { COPY_BUNGIE_NAME_PLACEHOLDER } from '@frontend/lib/copy';
 import type { PlayerSearchState } from '@frontend/hooks';
 import { SearchIcon } from '../icons';
 import searchStyles from './player-search.module.css';
@@ -27,7 +28,7 @@ export function PlayerSearchBox({
   onSubmit,
   onSelectPlayer,
   search,
-  placeholder = '搜索棒鸡名称，或输入 名称#数字代码',
+  placeholder = COPY_BUNGIE_NAME_PLACEHOLDER,
   submitLabel = '查询',
   submitting = false,
   wide = false,

@@ -51,29 +51,6 @@
   min-width: 0;
 }
 
-.category-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.category-tabs button {
-  min-height: 32px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--muted);
-  padding: 0 10px;
-  font-weight: 800;
-}
-
-.category-tabs button.active {
-  color: var(--green);
-  border-color: var(--green-border);
-  background: var(--green-2);
-}
-
 .guide-list {
   display: grid;
   gap: 10px;

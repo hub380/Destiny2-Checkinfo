@@ -11,6 +11,10 @@ import {
   StaggerList,
   formatNumber
 } from '@frontend/ui';
+import {
+  COPY_GEAR_EMPTY,
+  COPY_GEAR_PLACEHOLDER
+} from '@frontend/lib/copy';
 import type { JsonRecord } from '@frontend/lib/types';
 import '@frontend/styles/global.css';
 import { GearDetailSlot } from './GearDetailViews';
@@ -65,18 +69,22 @@ export function GearPage() {
               <p>{subtitle}</p>
             </div>
           </div>
-          <form className={cn('gear-search')} onSubmit={onSubmit}>
-            <div className={cn('gear-query searchFocus')}>
-              <input value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" spellCheck={false} placeholder="灾变 / 诱导推销 / 狂野飞禽" />
-              <button type="submit">
-                <SearchIcon />
-                查询
-              </button>
-            </div>
+          <form className={cn('career-search searchFocus')} onSubmit={onSubmit}>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={COPY_GEAR_PLACEHOLDER}
+            />
+            <button type="submit">
+              <SearchIcon />
+              查询
+            </button>
           </form>
           <Notice message={notice} error={error} />
           {payload ? (
-            <div className={cn('gear-kind-tabs')} role="tablist" aria-label="装备类型">
+            <div className={cn('chip-tabs gear-kind-tabs')} role="tablist" aria-label="装备类型">
               {[
                 { value: 'all', label: '全部' },
                 { value: 'weapon', label: '武器' },
@@ -88,7 +96,7 @@ export function GearPage() {
                   type="button"
                   role="tab"
                   aria-selected={kindFilter === tab.value}
-                  className={cn(kindFilter === tab.value ? 'active' : '')}
+                  className={cn(`chip-tab ${kindFilter === tab.value ? 'active' : ''}`)}
                   onClick={() => setKindFilter(tab.value)}
                 >
                   {tab.label}
@@ -101,7 +109,7 @@ export function GearPage() {
               detail?.loading ? (
                 <PageLoading className={cn('detail-loading')}>{detail.message}</PageLoading>
               ) : (
-                <PageEmpty>输入装备或 Perk 名称开始查询</PageEmpty>
+                <PageEmpty>{COPY_GEAR_EMPTY}</PageEmpty>
               )
             ) : (
               <>

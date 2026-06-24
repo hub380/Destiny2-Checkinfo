@@ -1,6 +1,10 @@
 import { FormEvent, useCallback, useRef, useState } from 'react';
 import { getGearItem, getPerkWeapons, searchGear } from '@frontend/lib/api';
 import type { GearSearchDto, JsonRecord } from '@frontend/lib/types';
+import {
+  COPY_GEAR_IDLE_SUBTITLE,
+  COPY_GEAR_REQUIRED
+} from '@frontend/lib/copy';
 import { formatNumber } from '@frontend/lib/format';
 import { syncUrlParams } from '@frontend/lib/url';
 import { useUrlParamsSync } from './useUrlQueryParam';
@@ -20,7 +24,7 @@ export function useGearSearch() {
   const [payload, setPayload] = useState<GearSearchDto | null>(null);
   const [detail, setDetail] = useState<JsonRecord | null>(null);
   const [activeHash, setActiveHash] = useState('');
-  const [subtitle, setSubtitle] = useState('输入名称查询，点击结果查看详情');
+  const [subtitle, setSubtitle] = useState(COPY_GEAR_IDLE_SUBTITLE);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState(false);
   const payloadRef = useRef(payload);
@@ -33,7 +37,7 @@ export function useGearSearch() {
   const runSearch = useCallback(async (rawQuery: string, options?: RunSearchOptions) => {
     const value = rawQuery.trim();
     if (!value) {
-      setNotice('请输入武器、护甲或 Perk 名称。');
+      setNotice(COPY_GEAR_REQUIRED);
       setError(true);
       return;
     }
@@ -125,7 +129,7 @@ export function useGearSearch() {
       } else {
         setPayload(null);
         setDetail(null);
-        setSubtitle('输入名称查询，点击结果查看详情');
+        setSubtitle(COPY_GEAR_IDLE_SUBTITLE);
       }
     },
     [openItemByHash, runSearch]

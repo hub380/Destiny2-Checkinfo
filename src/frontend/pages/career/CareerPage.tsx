@@ -10,6 +10,11 @@ import {
   formatTime
 } from '@frontend/ui';
 import { useCareerSearchFlow } from '@frontend/hooks';
+import {
+  COPY_BUNGIE_NAME_EMPTY,
+  COPY_CAREER_IDLE_SUBTITLE,
+  COPY_CAREER_LOADING
+} from '@frontend/lib/copy';
 import '@frontend/styles/global.css';
 import { CareerDetail } from './CareerDetailSection';
 import { cn } from './career-cn';
@@ -37,7 +42,7 @@ export function CareerPage() {
           <div className={cn('panel-header')}>
             <div>
               <h2>玩家查询</h2>
-              <p>{career?.updatedAt ? `更新 ${formatTime(career.updatedAt)}` : '输入棒鸡 ID 查询公开玩家生涯'}</p>
+              <p>{career?.updatedAt ? `更新 ${formatTime(career.updatedAt)}` : COPY_CAREER_IDLE_SUBTITLE}</p>
             </div>
           </div>
           <PlayerSearchBox
@@ -58,9 +63,9 @@ export function CareerPage() {
               <CareerDetail career={career} />
             </FadeIn>
           ) : loading ? (
-            <PageLoading className={cn('career-result loading')}>正在查询玩家生涯</PageLoading>
+            <PageLoading className={cn('career-result loading')}>{COPY_CAREER_LOADING}</PageLoading>
           ) : (
-            <PageEmpty className={cn('career-result')}>输入玩家名称开始查询</PageEmpty>
+            <PageEmpty className={cn('career-result')}>{COPY_BUNGIE_NAME_EMPTY}</PageEmpty>
           )}
         </section>
       </FadeIn>

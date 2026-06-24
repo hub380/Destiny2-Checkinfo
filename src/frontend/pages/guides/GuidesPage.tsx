@@ -3,6 +3,14 @@ import { useGuidesLibrary } from '@frontend/hooks';
 import { useWindowedSlice } from '@frontend/hooks/useWindowedSlice';
 import { copyToClipboard } from '@frontend/lib/clipboard';
 import {
+  COPY_GUIDES_DETAIL_EMPTY_HINT,
+  COPY_GUIDES_DETAIL_EMPTY_TITLE,
+  COPY_GUIDES_FILTER_EMPTY,
+  COPY_GUIDES_INDEX_EMPTY_HINT,
+  COPY_GUIDES_INDEX_EMPTY_TITLE,
+  COPY_GUIDES_SEARCH_PLACEHOLDER
+} from '@frontend/lib/copy';
+import {
   AppShell,
   CopyIcon,
   FadeIn,
@@ -71,12 +79,12 @@ export function GuidesPage() {
 
           <form className={cn('guide-search')} onSubmit={onSearch}>
             <SearchIcon />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="搜索 Raid、地牢、地图、机制" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder={COPY_GUIDES_SEARCH_PLACEHOLDER} />
           </form>
 
-          <div className={cn('category-tabs')} role="tablist" aria-label="攻略分类">
+          <div className={cn('chip-tabs')} role="tablist" aria-label="攻略分类">
             <button
-              className={cn(category === 'all' ? 'active' : '')}
+              className={cn(`chip-tab ${category === 'all' ? 'active' : ''}`)}
               type="button"
               role="tab"
               aria-selected={category === 'all'}
@@ -88,7 +96,7 @@ export function GuidesPage() {
             {categories.map((item) => (
               <button
                 key={item.value}
-                className={cn(category === item.value ? 'active' : '')}
+                className={cn(`chip-tab ${category === item.value ? 'active' : ''}`)}
                 type="button"
                 role="tab"
                 aria-selected={category === item.value}
@@ -117,12 +125,14 @@ export function GuidesPage() {
                 ))}
                 {!windowedGuides.length ? (
                   <PageEmpty className={cn('guides-empty')}>
-                    <b>{items.length ? '没有匹配的攻略' : '攻略库暂无内容'}</b>
-                    <span>
-                      {items.length
-                        ? '试试调整搜索词或分类筛选。'
-                        : '请运行 npm run guides:upload 上传攻略，或检查 R2 / 本地 guides 索引是否已配置。'}
-                    </span>
+                    {items.length ? (
+                      <b>{COPY_GUIDES_FILTER_EMPTY}</b>
+                    ) : (
+                      <>
+                        <b>{COPY_GUIDES_INDEX_EMPTY_TITLE}</b>
+                        <span>{COPY_GUIDES_INDEX_EMPTY_HINT}</span>
+                      </>
+                    )}
                   </PageEmpty>
                 ) : null}
               </StaggerList>
@@ -153,8 +163,17 @@ export function GuidesPage() {
             </FadeIn>
           ) : (
             <PageEmpty className={cn('empty-state detail-empty')}>
-              <b>选择一篇攻略</b>
-              <span>这里会展示章节、机制步骤、图片和外部视频引用。</span>
+              {items.length ? (
+                <>
+                  <b>{COPY_GUIDES_DETAIL_EMPTY_TITLE}</b>
+                  <span>{COPY_GUIDES_DETAIL_EMPTY_HINT}</span>
+                </>
+              ) : (
+                <>
+                  <b>{COPY_GUIDES_INDEX_EMPTY_TITLE}</b>
+                  <span>{COPY_GUIDES_INDEX_EMPTY_HINT}</span>
+                </>
+              )}
             </PageEmpty>
           )}
         </section>

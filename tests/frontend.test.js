@@ -46,7 +46,7 @@ describe('resolveBungieNameSubmit', () => {
         setOpen: () => undefined,
         refreshSuggestions: async () => []
       })
-    ).toBe('请选择一个完整的棒鸡 ID 后查询');
+    ).toBe('请选择一个完整的棒鸡名称后查询');
   });
 });
 

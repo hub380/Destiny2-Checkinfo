@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { getCareerDetails, getCareerSummary } from '@frontend/lib/api';
 import { type EndgameMode } from '@frontend/lib/career-merge';
 import { loadEndgameModesProgressive } from '@frontend/lib/endgame-tasks';
+import { COPY_BUNGIE_NAME_REQUIRED } from '@frontend/lib/copy';
 import type { CareerSummaryDto } from '@frontend/lib/types';
 
 type UseCareerQueryOptions = {
@@ -22,7 +23,7 @@ export function useCareerQuery(options: UseCareerQueryOptions = {}) {
   const query = useCallback(async (rawName: string): Promise<{ ok: boolean; error?: string }> => {
     const bungieName = rawName.trim();
     if (!bungieName) {
-      const message = '请输入棒鸡名称，格式为 名称#数字代码';
+      const message = COPY_BUNGIE_NAME_REQUIRED;
       setError(message);
       setCareer(null);
       return { ok: false, error: message };

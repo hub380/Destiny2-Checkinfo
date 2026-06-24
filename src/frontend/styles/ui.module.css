@@ -95,6 +95,66 @@
   background: var(--green-2);
 }
 
+.chip-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.chip-tab {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-spring),
+    box-shadow var(--duration-fast) ease;
+}
+
+.chip-tab:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+  background: var(--surface-hover);
+  transform: translateY(-1px);
+}
+
+.chip-tab:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.chip-tab:focus-visible {
+  outline: 0;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.chip-tab.active {
+  color: var(--green);
+  border-color: var(--green-border);
+  background: var(--green-2);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--green-border) 65%, transparent);
+}
+
+.chip-tab.active:hover {
+  color: var(--green);
+  border-color: var(--green-border);
+  background: var(--green-2);
+  transform: translateY(-1px);
+}
+
+.chip-tab.active:active {
+  transform: translateY(0) scale(0.97);
+}
+
 .header-actions {
   display: flex;
   align-items: center;

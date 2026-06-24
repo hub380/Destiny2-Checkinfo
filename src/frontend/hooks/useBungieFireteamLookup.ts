@@ -3,6 +3,12 @@ import { getBungieFireteamLookup } from '@frontend/lib/api';
 import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
 import { loadEndgameForMembersSequential } from '@frontend/lib/endgame-tasks';
 import type { FireteamLookupDto, FireteamMemberLookupDto, PlayerSearchItemDto } from '@frontend/lib/types';
+import {
+  COPY_BUNGIE_NAME_NO_MATCH,
+  COPY_BUNGIE_NAME_PICK,
+  COPY_BUNGIE_NAME_REQUIRED,
+  COPY_BUNGIE_NAME_REQUIRED_PICK
+} from '@frontend/lib/copy';
 import { resolveBungieNameSubmit } from '@frontend/lib/player-search-submit';
 import { usePlayerSearch } from './usePlayerSearch';
 import { useUrlQuerySync } from './useUrlQueryParam';
@@ -55,7 +61,7 @@ function playerRequest(player: PlayerSearchItemDto) {
 export function useBungieFireteamLookup() {
   const [query, setQuery] = useState(() => readUrlSearchParam('q') || '');
   const [lookup, setLookup] = useState<FireteamLookupDto | null>(null);
-  const [notice, setNotice] = useState('输入玩家棒鸡 ID，查询该玩家当前公开队伍。');
+  const [notice, setNotice] = useState('');
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerSearchItemDto | null>(null);
@@ -69,7 +75,7 @@ export function useBungieFireteamLookup() {
   const runQuery = useCallback(async (body: Record<string, unknown>) => {
     const bungieName = String(body.bungieName || queryRef.current || '').trim();
     if (!bungieName && !body.membershipId) {
-      setNotice('请输入棒鸡名称，格式为 名称#数字代码。');
+      setNotice(COPY_BUNGIE_NAME_REQUIRED);
       setError(true);
       return;
     }
@@ -111,7 +117,7 @@ export function useBungieFireteamLookup() {
     else {
       inflightKeyRef.current = null;
       setLookup(null);
-      setNotice('输入玩家棒鸡 ID，查询该玩家当前公开队伍。');
+      setNotice('');
       setError(false);
     }
   });
@@ -177,7 +183,7 @@ export function useBungieFireteamLookup() {
     event.preventDefault();
     const value = query.trim();
     if (!value) {
-      setNotice('请输入棒鸡名称，格式为 名称#数字代码，或先输入前缀后选择玩家。');
+      setNotice(COPY_BUNGIE_NAME_REQUIRED_PICK);
       setError(true);
       return;
     }
@@ -191,12 +197,12 @@ export function useBungieFireteamLookup() {
       return;
     }
     if (resolved.status === 'needs_pick') {
-      setNotice('请选择一个完整的棒鸡 ID 后查询当前队伍。');
+      setNotice(COPY_BUNGIE_NAME_PICK);
       setError(false);
       return;
     }
     if (resolved.status === 'no_match') {
-      setNotice('没有匹配的棒鸡玩家。');
+      setNotice(COPY_BUNGIE_NAME_NO_MATCH);
       setError(true);
     }
   }

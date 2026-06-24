@@ -42,7 +42,7 @@
     "globals": "^17.7.0",
     "typescript-eslint": "^8.48.0",
     "vitest": "^4.0.8",
-    "wrangler": "^4.0.0"
+    "wrangler": "^4.104.0"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^6.0.2",
@@ -50,5 +50,10 @@
     "react-dom": "^19.2.7",
     "typescript": "~5.8.3",
     "vite": "^8.0.16"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "sharp": true,
+    "workerd": true
   }
 }

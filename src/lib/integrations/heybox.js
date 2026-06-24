@@ -58,10 +58,3 @@ export function parseHeyboxSlots(content) {
   if (slash) return { current: Number(slash[1]), max: Number(slash[2]) };
   return null;
 }
-
-/** @deprecated Use `normalizeHeyboxHomePayload`. */
-export const normalizeXiaoheiheHomePayload = normalizeHeyboxHomePayload;
-/** @deprecated Use `mapHeyboxTeam`. */
-export const mapXiaoheiheTeam = mapHeyboxTeam;
-/** @deprecated Use `parseHeyboxSlots`. */
-export const parseXiaoheiheSlots = parseHeyboxSlots;

@@ -1,6 +1,7 @@
-import React, { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { PlayerSearchBox } from '@frontend/components/search';
 import { getConfig } from '@frontend/lib/api';
+import { copyToClipboard } from '@frontend/lib/clipboard';
 import {
   AppShell,
   CopyIcon,
@@ -21,9 +22,8 @@ import {
   staggerStyle,
   statDisplay
 } from '@frontend/ui';
-import { useHeyboxFeed, useCareerQuery, useMountUrlParam, usePlayerSearch, useUrlPopstate } from '@frontend/hooks';
-import type { CareerSummaryDto, FireteamDto, PlayerSearchItemDto } from '@frontend/lib/types';
-import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
+import { useHeyboxFeed, useCareerSearchFlow } from '@frontend/hooks';
+import type { CareerSummaryDto, FireteamDto } from '@frontend/lib/types';
 import '@frontend/styles/global.css';
 import styles from './home.module.css';
 const REFRESH_SECONDS = 30;
@@ -44,24 +44,22 @@ export function HomePage() {
   } = useHeyboxFeed(REFRESH_SECONDS);
   const [filter, setFilter] = useState('');
   const [toast, setToast] = useState('');
-  const [careerQuery, setCareerQuery] = useState(() => readUrlSearchParam('q') || '');
-  const playerSearch = usePlayerSearch(careerQuery);
-  const { career, loading: careerLoading, error: careerError, query: runCareerQuery } = useCareerQuery({
+  const {
+    query: careerQuery,
+    setQuery: setCareerQuery,
+    career,
+    loading: careerLoading,
+    noticeMessage: careerNotice,
+    noticeError: careerError,
+    playerSearch,
+    onSubmit: queryCareer,
+    selectPlayer: selectCareerPlayer,
+    pickUsername: pickFireteamUser
+  } = useCareerSearchFlow({
     modes: ['raid', 'dungeon'],
-    includeDetails: false
+    includeDetails: false,
+    loadingNotice: 'Raid / 地牢完整历史加载中，基础资料已先展示。'
   });
-  const [careerNotice, setCareerNotice] = useState('');
-
-  useMountUrlParam('q', useCallback((value: string) => {
-    setCareerQuery(value);
-    void runCareerQuery(value);
-  }, [runCareerQuery]));
-
-  useUrlPopstate(useCallback(() => {
-    const value = readUrlSearchParam('q') || '';
-    setCareerQuery(value);
-    if (value) void runCareerQuery(value);
-  }, [runCareerQuery]));
 
   useEffect(() => {
     getConfig().catch((error) => {
@@ -81,61 +79,13 @@ export function HomePage() {
   }, [filter, items]);
 
   async function copyJoinCommand(command: string) {
-    try {
-      await navigator.clipboard.writeText(command);
-    } catch {
-      const input = document.createElement('textarea');
-      input.value = command;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand('copy');
-      input.remove();
-    }
+    await copyToClipboard(command);
     showToast(`已复制 ${command}`);
   }
 
   function showToast(message: string) {
     setToast(message);
     window.setTimeout(() => setToast(''), 1800);
-  }
-
-  async function queryCareer(event: FormEvent) {
-    event.preventDefault();
-    const bungieName = careerQuery.trim();
-    if (!bungieName) return;
-    if (!bungieName.includes('#')) {
-      const items = await playerSearch.refreshSuggestions(bungieName);
-      playerSearch.setOpen(true);
-      if (!items.length) return;
-      return;
-    }
-    playerSearch.clearSuggestions();
-    writeUrlSearchParam('q', bungieName);
-    setCareerNotice('Raid / 地牢完整历史加载中，基础资料已先展示。');
-    const result = await runCareerQuery(bungieName);
-    setCareerNotice(result.ok ? '' : result.error || '查询失败');
-  }
-
-  async function selectCareerPlayer(player: PlayerSearchItemDto) {
-    if (!player.bungieName) return;
-    setCareerQuery(player.bungieName);
-    playerSearch.clearSuggestions();
-    writeUrlSearchParam('q', player.bungieName);
-    setCareerNotice('Raid / 地牢完整历史加载中，基础资料已先展示。');
-    const result = await runCareerQuery(player.bungieName);
-    setCareerNotice(result.ok ? '' : result.error || '查询失败');
-  }
-
-  function pickFireteamUser(username: string) {
-    setCareerQuery(username);
-    if (!username.includes('#')) {
-      setCareerNotice('小黑盒用户名可能不是棒鸡 ID，请补全 名称#数字代码 或从下拉选择玩家。');
-      playerSearch.setOpen(false);
-      return;
-    }
-    setCareerNotice('');
-    writeUrlSearchParam('q', username);
-    void runCareerQuery(username);
   }
 
   const isDemo = payload?.source === 'demo';
@@ -223,7 +173,7 @@ export function HomePage() {
             formClassName="career-search"
             placeholder="搜索棒鸡名称，或输入 名称#数字代码"
           />
-          <Notice message={careerNotice || careerError} error={Boolean(careerError)} />
+          <Notice message={careerNotice} error={careerError} />
           {career ? (
             <FadeIn variant="detail" className={cn('contentSwap')}>
               <CompactCareer career={career} />
@@ -257,7 +207,7 @@ function FireteamCard({
     <article className={cn('fireteam-card cardHover staggerItem')} style={staggerStyle(index)}>
       <div className={cn('fireteam-main')}>
         <div className={cn('fireteam-head')}>
-          <img className={cn('team-avatar')} src={item.avatar || '/brand.svg'} alt="" />
+          <img className={cn('team-avatar')} src={item.avatar || '/brand.svg'} alt="" loading="lazy" decoding="async" />
           <div className={cn('fireteam-copy')}>
             <div className={cn('fireteam-title')}>
               <h3>{item.title || '未命名组队'}</h3>

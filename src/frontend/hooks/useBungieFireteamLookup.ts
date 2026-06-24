@@ -2,9 +2,9 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { getBungieFireteamLookup, getEndgame } from '@frontend/lib/api';
 import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
 import type { FireteamLookupDto, FireteamMemberLookupDto, PlayerSearchItemDto } from '@frontend/lib/types';
-import { useMountUrlParam } from './useMountUrlParam';
+import { resolveBungieNameSubmit } from '@frontend/lib/player-search-submit';
 import { usePlayerSearch } from './usePlayerSearch';
-import { useUrlPopstate } from './useUrlPopstate';
+import { useUrlQuerySync } from './useUrlQueryParam';
 
 function memberKey(member: FireteamMemberLookupDto) {
   return `${member.account?.membershipType || member.membershipType || ''}:${member.account?.membershipId || member.membershipId || ''}`;
@@ -104,25 +104,15 @@ export function useBungieFireteamLookup() {
     }
   }, []);
 
-  const applyUrlQuery = useCallback(
-    (value: string) => {
-      setQuery(value);
-      if (value) void runQuery({ bungieName: value });
-      else {
-        inflightKeyRef.current = null;
-        setLookup(null);
-        setNotice('输入玩家棒鸡 ID，查询该玩家当前公开队伍。');
-        setError(false);
-      }
-    },
-    [runQuery]
-  );
-
-  useMountUrlParam('q', applyUrlQuery);
-
-  useUrlPopstate(() => {
-    const value = readUrlSearchParam('q') || '';
-    applyUrlQuery(value);
+  useUrlQuerySync('q', (value) => {
+    setQuery(value);
+    if (value) void runQuery({ bungieName: value });
+    else {
+      inflightKeyRef.current = null;
+      setLookup(null);
+      setNotice('输入玩家棒鸡 ID，查询该玩家当前公开队伍。');
+      setError(false);
+    }
   });
 
   useEffect(() => {
@@ -188,14 +178,20 @@ export function useBungieFireteamLookup() {
       await runQuery(playerRequest(selectedPlayer));
       return;
     }
-    if (!value.includes('#')) {
-      const items = await playerSearch.refreshSuggestions(value);
-      playerSearch.setOpen(true);
-      setNotice(items.length ? '请选择一个完整的棒鸡 ID 后查询当前队伍。' : '没有匹配的棒鸡玩家。');
-      setError(!items.length);
+    const resolved = await resolveBungieNameSubmit(value, playerSearch);
+    if (resolved.status === 'ready') {
+      await runQuery({ bungieName: resolved.bungieName });
       return;
     }
-    await runQuery({ bungieName: value });
+    if (resolved.status === 'needs_pick') {
+      setNotice('请选择一个完整的棒鸡 ID 后查询当前队伍。');
+      setError(false);
+      return;
+    }
+    if (resolved.status === 'no_match') {
+      setNotice('没有匹配的棒鸡玩家。');
+      setError(true);
+    }
   }
 
   async function selectPlayer(player: PlayerSearchItemDto) {

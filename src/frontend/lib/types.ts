@@ -83,6 +83,105 @@ export interface EndgameDto extends JsonRecord {
   warnings?: string[];
 }
 
+export interface EndgameStatBlockDto extends JsonRecord {
+  clears?: StatDto | number | string;
+  attempts?: StatDto | number | string;
+  activitiesEntered?: StatDto | number | string;
+  completionRate?: StatDto | number | string;
+  kills?: StatDto | number | string;
+  deaths?: StatDto | number | string;
+  kd?: StatDto | number | string;
+  hours?: StatDto | number | string;
+  soloFlawlessClears?: StatDto | number | string;
+  activitiesWon?: StatDto | number | string;
+  opponentsDefeated?: StatDto | number | string;
+  kda?: StatDto | number | string;
+  efficiency?: StatDto | number | string;
+  secondsPlayed?: StatDto | number | string;
+  winRate?: StatDto | number | string;
+  total?: EndgameStatBlockDto;
+  activities?: EndgameActivityDto[];
+  subModes?: PvpSubModeDto[];
+}
+
+export interface EndgameActivityDto extends JsonRecord {
+  name?: string;
+  image?: string;
+  variantCount?: number;
+  variants?: EndgameVariantDto[];
+  clears?: StatDto | number | string;
+  attempts?: StatDto | number | string;
+  completionRate?: StatDto | number | string;
+  kd?: StatDto | number | string;
+  kills?: StatDto | number | string;
+  bestTime?: StatDto | number | string;
+  lastPlayed?: string;
+  soloClears?: StatDto;
+  soloFlawlessClears?: StatDto;
+}
+
+export interface EndgameVariantDto extends JsonRecord {
+  hash?: string | number;
+  name?: string;
+  clears?: StatDto | number | string;
+}
+
+export interface PvpSubModeDto extends JsonRecord {
+  modeId?: string | number;
+  label?: string;
+  lastPlayed?: string;
+  activitiesEntered?: StatDto | number | string;
+  winRate?: StatDto | number | string;
+  kd?: StatDto | number | string;
+  opponentsDefeated?: StatDto | number | string;
+  kills?: StatDto | number | string;
+}
+
+export interface CareerRecordsDto extends JsonRecord {
+  privacy?: string;
+  activeScore?: StatDto | number | string;
+  lifetimeScore?: StatDto | number | string;
+  legacyScore?: StatDto | number | string;
+  completedRecords?: StatDto | number | string;
+  recordCount?: StatDto | number | string;
+}
+
+export interface CraftingPatternDto extends JsonRecord {
+  label?: string;
+  percent?: number;
+  complete?: boolean;
+}
+
+export interface CraftingItemDto extends JsonRecord {
+  hash?: string | number;
+  name?: string;
+  icon?: string;
+  type?: string;
+  source?: string;
+  sourceHash?: string | number;
+  unlocked?: boolean;
+  pattern?: CraftingPatternDto;
+}
+
+export interface CraftingSummaryDto extends JsonRecord {
+  privacy?: string;
+  unlocked?: StatDto | number | string;
+  total?: StatDto | number | string;
+  completionRate?: StatDto | number | string;
+  plugUnlocked?: StatDto | number | string;
+  plugTotal?: StatDto | number | string;
+  plugCompletionRate?: StatDto | number | string;
+  items?: CraftingItemDto[];
+}
+
+export interface CraftingSourceGroupDto {
+  key: string;
+  source: string;
+  items: CraftingItemDto[];
+  complete: number;
+  total: number;
+}
+
 export interface FireteamMemberLookupDto extends JsonRecord {
   membershipId?: string;
   membershipType?: number | string;

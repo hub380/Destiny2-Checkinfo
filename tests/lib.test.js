@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { extractDestinyName, parseBungieName, parseJsonEnv } from '@lib/utils/index.js';
-import { mapXiaoheiheTeam, normalizeXiaoheiheHomePayload, parseXiaoheiheSlots } from '@lib/integrations/index.js';
+import { mapHeyboxTeam, normalizeHeyboxHomePayload, parseHeyboxSlots } from '@lib/integrations/index.js';
 import { selectMembership, formatEndgameTotal, normalizeEndgameActivityName, pvpModeLabel } from '@lib/bungie/index.js';
 
 describe('text-utils', () => {
@@ -16,8 +16,8 @@ describe('text-utils', () => {
 });
 
 describe('heybox-parser', () => {
-  it('maps xiaoheihe team rows', () => {
-    const item = mapXiaoheiheTeam(
+  it('maps heybox team rows', () => {
+    const item = mapHeyboxTeam(
       {
         content_text: '救赎边缘 3/6 缺治疗',
         game_id: 'Captain#1024',
@@ -35,7 +35,7 @@ describe('heybox-parser', () => {
   });
 
   it('normalizes payload list', () => {
-    const items = normalizeXiaoheiheHomePayload({
+    const items = normalizeHeyboxHomePayload({
       result: {
         team_list: [
           { content_text: '测试', game_id: 'A#1234', is_room_delete: false, remain_seconds: 10 },
@@ -48,8 +48,8 @@ describe('heybox-parser', () => {
   });
 
   it('parses slot patterns', () => {
-    expect(parseXiaoheiheSlots('2=4')).toEqual({ current: 2, max: 6 });
-    expect(parseXiaoheiheSlots('3/6')).toEqual({ current: 3, max: 6 });
+    expect(parseHeyboxSlots('2=4')).toEqual({ current: 2, max: 6 });
+    expect(parseHeyboxSlots('3/6')).toEqual({ current: 3, max: 6 });
   });
 });
 

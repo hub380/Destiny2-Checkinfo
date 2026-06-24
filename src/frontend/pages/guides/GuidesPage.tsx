@@ -1,5 +1,6 @@
 import React, { FormEvent, useState } from 'react';
 import { useGuidesLibrary } from '@frontend/hooks';
+import { copyToClipboard } from '@frontend/lib/clipboard';
 import {
   AppShell,
   CopyIcon,
@@ -32,6 +33,7 @@ export function GuidesPage() {
     error,
     categories,
     visibleItems,
+    items,
     openGuide,
     closeGuide
   } = useGuidesLibrary();
@@ -44,16 +46,7 @@ export function GuidesPage() {
   }
 
   async function copyGuideLink() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-    } catch {
-      const input = document.createElement('textarea');
-      input.value = window.location.href;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand('copy');
-      input.remove();
-    }
+    await copyToClipboard(window.location.href);
     setCopyNotice('链接已复制');
     window.setTimeout(() => setCopyNotice(''), 1800);
   }
@@ -117,8 +110,12 @@ export function GuidesPage() {
               ))}
               {!visibleItems.length ? (
                 <PageEmpty className={cn('guides-empty')}>
-                  <b>暂无攻略内容</b>
-                  <span>上传攻略后列表会自动出现。</span>
+                  <b>{items.length ? '没有匹配的攻略' : '攻略库暂无内容'}</b>
+                  <span>
+                    {items.length
+                      ? '试试调整搜索词或分类筛选。'
+                      : '请运行 npm run guides:upload 上传攻略，或检查 R2 / 本地 guides 索引是否已配置。'}
+                  </span>
                 </PageEmpty>
               ) : null}
             </StaggerList>
@@ -154,7 +151,7 @@ export function GuidesPage() {
 function GuideCard({ item, active, onOpen }: { item: GuideSummaryDto; active: boolean; onOpen: () => void }) {
   return (
     <button className={cn(`guide-card cardHover ${active ? 'active' : ''}`)} type="button" onClick={onOpen}>
-      {item.cover ? <img src={item.cover} alt="" /> : <span className={cn('cover-placeholder')}>{item.typeLabel || 'Guide'}</span>}
+      {item.cover ? <img src={item.cover} alt="" loading="lazy" decoding="async" /> : <span className={cn('cover-placeholder')}>{item.typeLabel || 'Guide'}</span>}
       <span className={cn('guide-card-body')}>
         <strong>{item.title}</strong>
         <em>{[item.activityName, item.difficulty, item.estimatedMinutes ? `${item.estimatedMinutes} 分钟` : ''].filter(Boolean).join(' · ')}</em>

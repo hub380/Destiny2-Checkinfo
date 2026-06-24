@@ -3,59 +3,15 @@ import {
   selectMembership,
   displayMembershipName,
   membershipTypeName,
-  bungieAssetUrl,
   className,
   raceName,
   genderName,
-  percentStat,
   bungieFetch
 } from '../bungie/index.js';
-import { httpError, positiveNumber } from '../http/index.js';
+import { httpError } from '../http/index.js';
 import { getWorkerCachedJson, summaryCacheTtlSeconds } from '../cache/index.js';
 import { CACHE_VERSION } from '../shared/index.js';
-export async function getDestinyPlayerSearch(body, env, ctx) {
-  if (!env.BUNGIE_API_KEY) {
-    throw httpError(400, 'BUNGIE_API_KEY_MISSING', '请先配置 BUNGIE_API_KEY 后搜索棒鸡玩家');
-  }
-
-  const query = cleanText(body?.query || body?.name || body?.displayName || '');
-  const limit = Math.min(Math.max(Number(body?.limit || 30), 1), 40);
-  if (!query) {
-    return {
-      query,
-      page: 0,
-      hasMore: false,
-      items: []
-    };
-  }
-
-  const cacheKey = [
-    'player-search',
-    CACHE_VERSION,
-    env.BUNGIE_LOCALE || 'zh-chs',
-    query.toLocaleLowerCase(),
-    limit
-  ].join(':');
-  const cached = await getWorkerCachedJson(cacheKey, positiveNumber(env.PLAYER_SEARCH_CACHE_TTL_SECONDS, 300), async () => {
-    const search = await searchBungiePlayersByPrefix(query, limit, env);
-    return {
-      query,
-      page: 0,
-      pagesScanned: search.pagesScanned,
-      hasMore: search.hasMore,
-      items: search.items
-    };
-  }, env, ctx, { memoryOnly: true });
-
-  return {
-    ...cached.value,
-    cache: {
-      status: cached.status,
-      cachedAt: cached.cachedAt,
-      ttlSeconds: cached.ttlSeconds
-    }
-  };
-}
+import { findModeBucket, pickEndgameStats, pickStats } from './summary-stats.js';
 
 export async function getPublicCareerSummaryByMembership(membership, env, ctx) {
   const membershipId = cleanText(membership?.membershipId);
@@ -137,47 +93,6 @@ export function parsedNameFromMembership(membership) {
   return {
     displayName,
     displayNameCode
-  };
-}
-
-export async function searchBungiePlayersByPrefix(query, limit, env) {
-  const maxPages = Math.min(Math.max(Number(env.PLAYER_SEARCH_MAX_PAGES || 4), 1), 10);
-  const items = [];
-  const seen = new Set();
-  let hasMore = false;
-  let pagesScanned = 0;
-
-  for (let page = 0; page < maxPages && items.length < limit; page += 1) {
-    const search = await bungieFetch(
-      `/Platform/User/Search/GlobalName/${page}/`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ displayNamePrefix: query })
-      },
-      env
-    );
-    const response = search.Response || {};
-    const results = Array.isArray(response.searchResults) ? response.searchResults : [];
-    pagesScanned += 1;
-    hasMore = Boolean(response.hasMore);
-
-    for (const result of results) {
-      const item = normalizePlayerSearchResult(result);
-      if (!item) continue;
-      const key = `${item.bungieName}:${item.membershipId || ''}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      items.push(item);
-      if (items.length >= limit) break;
-    }
-
-    if (!hasMore) break;
-  }
-
-  return {
-    items,
-    pagesScanned,
-    hasMore: hasMore || items.length >= limit
   };
 }
 
@@ -299,117 +214,16 @@ export function summarizeCareer(query, membership, memberships, profileResponse,
   };
 }
 
+// Re-export stat helpers for endgame and other modules.
+export {
+  findModeBucket,
+  normalizeStatModeKey,
+  pickEndgameStats,
+  pickStats,
+  decimalStat,
+  ratioStat,
+  secondsDisplayStat,
+  stat
+} from './summary-stats.js';
 
-export function findModeBucket(results, names) {
-  for (const name of names) {
-    if (results?.[name]?.allTime) return results[name].allTime;
-  }
-
-  const normalizedNames = new Set(names.map((name) => normalizeStatModeKey(name)));
-  for (const [key, value] of Object.entries(results || {})) {
-    if (normalizedNames.has(normalizeStatModeKey(key)) && value?.allTime) {
-      return value.allTime;
-    }
-  }
-  return {};
-}
-
-export function normalizeStatModeKey(value) {
-  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-export function pickEndgameStats(bucket) {
-  const base = pickStats(bucket);
-  const clears = base.activitiesCleared || base.activitiesWon;
-  return {
-    ...base,
-    clears,
-    completionRate: percentStat(clears, base.activitiesEntered)
-  };
-}
-
-export function pickStats(bucket) {
-  return {
-    activitiesEntered: stat(bucket, 'activitiesEntered'),
-    activitiesCleared: stat(bucket, 'activitiesCleared'),
-    activitiesWon: stat(bucket, 'activitiesWon'),
-    kills: stat(bucket, 'kills'),
-    deaths: stat(bucket, 'deaths'),
-    assists: stat(bucket, 'assists'),
-    kd: stat(bucket, 'killsDeathsRatio'),
-    kda: stat(bucket, 'killsDeathsAssists'),
-    efficiency: stat(bucket, 'efficiency'),
-    precisionKills: stat(bucket, 'precisionKills'),
-    resurrectionsPerformed: stat(bucket, 'resurrectionsPerformed'),
-    secondsPlayed: stat(bucket, 'secondsPlayed') || stat(bucket, 'totalActivityDurationSeconds')
-  };
-}
-
-export function decimalStat(value, digits = 2) {
-  const number = Number(value || 0);
-  return {
-    value: number,
-    displayValue: new Intl.NumberFormat('zh-CN', {
-      minimumFractionDigits: digits,
-      maximumFractionDigits: digits
-    }).format(number)
-  };
-}
-
-export function ratioStat(numerator, denominator) {
-  const top = Number(numerator || 0);
-  const bottom = Number(denominator || 0);
-  if (bottom <= 0) return top > 0 ? decimalStat(top, 2) : null;
-  return decimalStat(top / bottom, 2);
-}
-
-export function secondsDisplayStat(seconds) {
-  const value = Number(seconds || 0);
-  if (!value) return { value: 0, displayValue: '-' };
-  const hours = value / 3600;
-  if (hours >= 1) return { value, displayValue: `${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 }).format(hours)} 小时` };
-  const minutes = Math.round(value / 60);
-  return { value, displayValue: `${minutes} 分钟` };
-}
-
-export function stat(bucket, key) {
-  const entry = bucket?.[key];
-  if (!entry?.basic) return null;
-  return {
-    value: entry.basic.value,
-    displayValue: entry.basic.displayValue
-  };
-}
-
-export function normalizePlayerSearchResult(item) {
-  const memberships = Array.isArray(item?.destinyMemberships) ? item.destinyMemberships : [];
-  if (!memberships.length) return null;
-
-  const selected = selectMembership(memberships);
-  const displayName = cleanText(item.bungieGlobalDisplayName || selected.bungieGlobalDisplayName || selected.displayName);
-  const displayNameCode = Number(item.bungieGlobalDisplayNameCode || selected.bungieGlobalDisplayNameCode || 0);
-  if (!displayName || !displayNameCode) return null;
-
-  const bungieName = `${displayName}#${String(displayNameCode).padStart(4, '0')}`;
-  return {
-    bungieName,
-    displayName,
-    displayNameCode,
-    membershipType: selected.membershipType,
-    membershipTypeName: membershipTypeName(selected.membershipType),
-    membershipId: selected.membershipId,
-    displayMembershipName: selected.displayName || '',
-    crossSaveOverride: selected.crossSaveOverride || 0,
-    isPublic: selected.isPublic !== false,
-    icon: bungieAssetUrl(selected.iconPath),
-    linkedAccounts: memberships.map((membership) => ({
-      displayName: membership.displayName || '',
-      membershipType: membership.membershipType,
-      membershipTypeName: membershipTypeName(membership.membershipType),
-      membershipId: membership.membershipId,
-      crossSaveOverride: membership.crossSaveOverride || 0,
-      isPublic: membership.isPublic !== false,
-      icon: bungieAssetUrl(membership.iconPath)
-    }))
-  };
-}
+export { getDestinyPlayerSearch, searchBungiePlayersByPrefix, normalizePlayerSearchResult } from './summary-search.js';

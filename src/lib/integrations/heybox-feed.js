@@ -65,6 +65,3 @@ export async function getHeyboxTeams(env) {
     items
   };
 }
-
-/** @deprecated Use `getHeyboxTeams`. */
-export const getFireteams = getHeyboxTeams;

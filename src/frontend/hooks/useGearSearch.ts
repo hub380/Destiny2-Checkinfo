@@ -1,9 +1,11 @@
-import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FormEvent, useCallback, useRef, useState } from 'react';
 import { getGearItem, getPerkWeapons, searchGear } from '@frontend/lib/api';
 import type { GearSearchDto, JsonRecord } from '@frontend/lib/types';
 import { formatNumber } from '@frontend/lib/format';
-import { readUrlSearchParam, syncUrlParams } from '@frontend/lib/url';
-import { useUrlPopstate } from './useUrlPopstate';
+import { syncUrlParams } from '@frontend/lib/url';
+import { useUrlParamsSync } from './useUrlQueryParam';
+
+const URL_PARAMS = ['q', 'hash'] as const;
 
 type RunSearchOptions = {
   skipUrlWrite?: boolean;
@@ -14,14 +16,13 @@ type OpenItemOptions = {
 };
 
 export function useGearSearch() {
-  const [query, setQueryState] = useState(() => readUrlSearchParam('q') || '');
+  const [query, setQueryState] = useState('');
   const [payload, setPayload] = useState<GearSearchDto | null>(null);
   const [detail, setDetail] = useState<JsonRecord | null>(null);
-  const [activeHash, setActiveHash] = useState(() => readUrlSearchParam('hash') || '');
+  const [activeHash, setActiveHash] = useState('');
   const [subtitle, setSubtitle] = useState('输入名称查询，点击结果查看详情');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState(false);
-  const bootRef = useRef(false);
   const payloadRef = useRef(payload);
   payloadRef.current = payload;
 
@@ -108,39 +109,30 @@ export function useGearSearch() {
     [openItem]
   );
 
-  const applyFromUrl = useCallback(async () => {
-    const urlQ = readUrlSearchParam('q') || '';
-    const urlHash = readUrlSearchParam('hash') || '';
-    setQueryState(urlQ);
-    setActiveHash(urlHash);
+  const applyFromUrl = useCallback(
+    async (values: Record<string, string>) => {
+      const urlQ = values.q || '';
+      const urlHash = values.hash || '';
+      setQueryState(urlQ);
+      setActiveHash(urlHash);
 
-    if (urlQ) {
-      if (!payloadRef.current || payloadRef.current.query !== urlQ) {
-        await runSearch(urlQ, { skipUrlWrite: true });
+      if (urlQ) {
+        if (!payloadRef.current || payloadRef.current.query !== urlQ) {
+          await runSearch(urlQ, { skipUrlWrite: true });
+        }
+        if (urlHash) await openItemByHash(urlHash);
+        else setDetail(null);
+      } else {
+        setPayload(null);
+        setDetail(null);
+        setSubtitle('输入名称查询，点击结果查看详情');
       }
-      if (urlHash) await openItemByHash(urlHash);
-      else setDetail(null);
-    } else {
-      setPayload(null);
-      setDetail(null);
-      setSubtitle('输入名称查询，点击结果查看详情');
-    }
-  }, [openItemByHash, runSearch]);
+    },
+    [openItemByHash, runSearch]
+  );
 
-  useEffect(() => {
-    if (bootRef.current) return;
-    bootRef.current = true;
-    const initialQ = readUrlSearchParam('q');
-    const initialHash = readUrlSearchParam('hash');
-    if (initialQ) {
-      void runSearch(initialQ, { skipUrlWrite: true }).then(() => {
-        if (initialHash) void openItemByHash(initialHash);
-      });
-    }
-  }, [openItemByHash, runSearch]);
-
-  useUrlPopstate(() => {
-    void applyFromUrl();
+  useUrlParamsSync(URL_PARAMS, (values) => {
+    void applyFromUrl(values);
   });
 
   const onSubmit = useCallback(

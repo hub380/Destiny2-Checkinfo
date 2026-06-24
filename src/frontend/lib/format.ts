@@ -1,7 +1,10 @@
 import type { StatDto } from './types';
 
-export function statDisplay(stat: StatDto | undefined | null): string {
-  if (!stat) return '-';
+type StatLike = StatDto | number | string | undefined | null;
+
+export function statDisplay(stat: StatLike): string {
+  if (stat == null || stat === '') return '-';
+  if (typeof stat === 'number' || typeof stat === 'string') return formatNumber(stat);
   return String(stat.displayValue ?? formatNumber(stat.value));
 }
 

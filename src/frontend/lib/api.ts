@@ -17,18 +17,8 @@ export function getHeyboxTeams() {
   return fetchJson<FireteamsResponseDto>('/api/heybox/teams');
 }
 
-/** @deprecated Use `getHeyboxTeams`. */
-export function getFireteams() {
-  return getHeyboxTeams();
-}
-
 export function getBungieFireteamLookup(body: JsonRecord) {
   return postJson<FireteamLookupDto>('/api/destiny/fireteam', body);
-}
-
-/** @deprecated Use `getBungieFireteamLookup`. */
-export function getFireteamLookup(body: JsonRecord) {
-  return getBungieFireteamLookup(body);
 }
 
 export function getCareerSummary(bungieName: string) {

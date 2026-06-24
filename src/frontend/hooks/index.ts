@@ -1,8 +1,9 @@
 export { useCareerQuery } from './useCareerQuery';
-export { useHeyboxFeed, useFireteamFeed } from './useHeyboxFeed';
+export { useCareerSearchFlow } from './useCareerSearchFlow';
+export { useHeyboxFeed } from './useHeyboxFeed';
 export { useBungieFireteamLookup } from './useBungieFireteamLookup';
 export { useGearSearch } from './useGearSearch';
 export { useGuidesLibrary } from './useGuidesLibrary';
-export { useMountUrlParam } from './useMountUrlParam';
 export { useUrlPopstate } from './useUrlPopstate';
+export { useUrlQueryParam, useUrlQuerySync, useUrlParamsSync, readUrlParams } from './useUrlQueryParam';
 export { usePlayerSearch, type PlayerSearchState } from './usePlayerSearch';

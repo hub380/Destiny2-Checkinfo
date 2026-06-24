@@ -1,9 +1,6 @@
-export { getHeyboxTeams, getFireteams } from './heybox-feed.js';
+export { getHeyboxTeams } from './heybox-feed.js';
 export {
   normalizeHeyboxHomePayload,
   mapHeyboxTeam,
-  parseHeyboxSlots,
-  normalizeXiaoheiheHomePayload,
-  mapXiaoheiheTeam,
-  parseXiaoheiheSlots
+  parseHeyboxSlots
 } from './heybox.js';

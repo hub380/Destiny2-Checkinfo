@@ -1,18 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getGuide, getGuides } from '@frontend/lib/api';
 import type { GuideDetailDto, GuideIndexDto, GuideSummaryDto } from '@frontend/lib/types';
-import { pushUrlParams, readUrlSearchParam, syncUrlParams } from '@frontend/lib/url';
-import { useUrlPopstate } from './useUrlPopstate';
+import { syncUrlParams } from '@frontend/lib/url';
+import { readUrlParams, useUrlParamsSync } from './useUrlQueryParam';
+
+const GUIDE_URL_PARAMS = ['q', 'category', 'slug'] as const;
 
 export function useGuidesLibrary() {
   const [index, setIndex] = useState<GuideIndexDto | null>(null);
   const [detail, setDetail] = useState<GuideDetailDto | null>(null);
-  const [query, setQuery] = useState(() => readUrlSearchParam('q') || '');
-  const [category, setCategory] = useState(() => readUrlSearchParam('category') || 'all');
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('all');
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState(false);
+
+  const indexRef = useRef<GuideIndexDto | null>(null);
+  const detailRef = useRef<GuideDetailDto | null>(null);
+  const detailLoadingRef = useRef(false);
+  const skipFilterUrlSyncRef = useRef(true);
+  indexRef.current = index;
+  detailRef.current = detail;
+  detailLoadingRef.current = detailLoading;
 
   const syncFiltersToUrl = useCallback((nextQuery: string, nextCategory: string) => {
     syncUrlParams({
@@ -45,10 +55,11 @@ export function useGuidesLibrary() {
     syncUrlParams({ slug: null });
   }, []);
 
-  const applyFromUrl = useCallback(async () => {
-    const slug = readUrlSearchParam('slug');
-    const urlQuery = readUrlSearchParam('q') || '';
-    const urlCategory = readUrlSearchParam('category') || 'all';
+  const applyFromUrl = useCallback(async (values: Record<string, string>) => {
+    const slug = values.slug || '';
+    const urlQuery = values.q || '';
+    const urlCategory = values.category || 'all';
+    skipFilterUrlSyncRef.current = true;
     setQuery(urlQuery);
     setCategory(urlCategory);
 
@@ -56,16 +67,20 @@ export function useGuidesLibrary() {
       setDetail(null);
       return;
     }
-    if (detail?.slug === slug && !detailLoading) return;
-    const match = index?.items?.find((item) => item.slug === slug);
+    if (detailRef.current?.slug === slug && !detailLoadingRef.current) return;
+
+    const match = indexRef.current?.items?.find((item) => item.slug === slug);
     if (match) {
       await openGuide(match, { replace: true });
       return;
     }
-    if (index) {
+    if (indexRef.current) {
       await openGuide({ slug, title: slug } as GuideSummaryDto, { replace: true });
     }
-  }, [detail?.slug, detailLoading, index, openGuide]);
+  }, [openGuide]);
+
+  const applyFromUrlRef = useRef(applyFromUrl);
+  applyFromUrlRef.current = applyFromUrl;
 
   const loadIndex = useCallback(async () => {
     setLoading(true);
@@ -73,12 +88,9 @@ export function useGuidesLibrary() {
     setError(false);
     try {
       const payload = await getGuides();
+      indexRef.current = payload;
       setIndex(payload);
-      const slug = readUrlSearchParam('slug');
-      if (slug) {
-        const match = payload.items?.find((item) => item.slug === slug);
-        if (match) await openGuide(match, { replace: true });
-      }
+      await applyFromUrlRef.current(readUrlParams(GUIDE_URL_PARAMS));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '攻略索引加载失败';
       setNotice(message);
@@ -86,24 +98,29 @@ export function useGuidesLibrary() {
     } finally {
       setLoading(false);
     }
-  }, [openGuide]);
+  }, []);
 
   useEffect(() => {
     void loadIndex();
   }, [loadIndex]);
 
-  useUrlPopstate(() => {
-    void applyFromUrl();
-  });
+  useUrlParamsSync(GUIDE_URL_PARAMS, (values) => {
+    void applyFromUrlRef.current(values);
+  }, { skipMount: true });
 
   useEffect(() => {
     if (loading) return;
+    if (skipFilterUrlSyncRef.current) {
+      skipFilterUrlSyncRef.current = false;
+      return;
+    }
     const timer = window.setTimeout(() => syncFiltersToUrl(query, category), 200);
     return () => window.clearTimeout(timer);
   }, [category, loading, query, syncFiltersToUrl]);
 
   const setQueryAndUrl = useCallback(
     (value: string) => {
+      skipFilterUrlSyncRef.current = false;
       setQuery(value);
       syncFiltersToUrl(value, category);
     },
@@ -112,6 +129,7 @@ export function useGuidesLibrary() {
 
   const setCategoryAndUrl = useCallback(
     (value: string) => {
+      skipFilterUrlSyncRef.current = false;
       setCategory(value);
       syncFiltersToUrl(query, value);
     },

@@ -58,13 +58,21 @@ export function useHeyboxFeed(refreshSeconds = 30) {
     window.clearTimeout(refreshTimer.current);
     if (!autoRefresh || document.hidden) return;
     const delay = Math.max((nextRefreshAt.current ?? Date.now()) - Date.now(), 1000);
-    refreshTimer.current = window.setTimeout(() => void refresh(), delay);
+    refreshTimer.current = window.setTimeout(() => {
+      if (!document.hidden) void refresh();
+    }, delay);
     return () => window.clearTimeout(refreshTimer.current);
   }, [autoRefresh, payload?.updatedAt, refresh]);
 
   useEffect(() => {
     const onVisibilityChange = () => {
-      if (!document.hidden && autoRefresh) void refresh();
+      if (document.hidden) {
+        window.clearTimeout(refreshTimer.current);
+        return;
+      }
+      if (!autoRefresh) return;
+      const stale = Date.now() >= (nextRefreshAt.current ?? 0);
+      if (stale) void refresh();
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
@@ -88,6 +96,3 @@ export function useHeyboxFeed(refreshSeconds = 30) {
     reportNotice
   };
 }
-
-/** @deprecated Use `useHeyboxFeed`. */
-export const useFireteamFeed = useHeyboxFeed;

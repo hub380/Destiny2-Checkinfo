@@ -13,7 +13,8 @@ export {
   statDisplay,
   winRate
 } from './format';
-export { readUrlSearchParam, writeUrlSearchParam } from './url';
+export { readUrlSearchParam, writeUrlSearchParam, syncUrlParams, pushUrlParams } from './url';
+export { copyToClipboard } from './clipboard';
 export * from './api';
 export * from './types';
 export { mergeEndgameCareer, type EndgameMode } from './career-merge';

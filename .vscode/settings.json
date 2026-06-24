@@ -3,7 +3,9 @@
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "cSpell.words": [
         "Bungie",
+        "checkinfo",
         "codegen",
-        "fireteam"
+        "fireteam",
+        "topbar"
     ]
 }

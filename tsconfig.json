@@ -14,7 +14,9 @@
     "baseUrl": ".",
     "paths": {
       "@lib/*": ["./src/lib/*"],
-      "@frontend/*": ["./src/frontend/*"]
+      "@frontend/*": ["./src/frontend/*"],
+      "@frontend/lib": ["./src/frontend/lib/index.ts"],
+      "@frontend/lib/*": ["./src/frontend/lib/*"]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,

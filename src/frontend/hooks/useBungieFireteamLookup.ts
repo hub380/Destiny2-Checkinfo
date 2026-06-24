@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { getBungieFireteamLookup } from '@frontend/lib/api';
-import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
+import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib';
 import { loadEndgameForMembersSequential } from '@frontend/lib/endgame-tasks';
 import type { FireteamLookupDto, FireteamMemberLookupDto, PlayerSearchItemDto } from '@frontend/lib/types';
 import {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getGuide, getGuides } from '@frontend/lib/api';
 import type { GuideDetailDto, GuideIndexDto, GuideSummaryDto } from '@frontend/lib/types';
-import { syncUrlParams } from '@frontend/lib/url';
+import { syncUrlParams } from '@frontend/lib';
 import { readUrlParams, useUrlParamsSync } from './useUrlQueryParam';
 
 const GUIDE_URL_PARAMS = ['q', 'category', 'slug'] as const;

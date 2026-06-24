@@ -6,7 +6,7 @@ import {
   COPY_GEAR_REQUIRED
 } from '@frontend/lib/copy';
 import { formatNumber } from '@frontend/lib/format';
-import { syncUrlParams } from '@frontend/lib/url';
+import { syncUrlParams } from '@frontend/lib';
 import { useUrlParamsSync } from './useUrlQueryParam';
 
 const URL_PARAMS = ['q', 'hash'] as const;

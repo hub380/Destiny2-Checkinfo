@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readUrlSearchParam, syncUrlParams } from '@frontend/lib/url';
+import { readUrlSearchParam, syncUrlParams } from '@frontend/lib';
 import { readUrlParams } from '@frontend/hooks/useUrlQueryParam';
 
 function mockLocation(pathname, search) {

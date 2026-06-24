@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
+import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib';
 import { useUrlPopstate } from './useUrlPopstate';
 
 type UrlQuerySource = 'mount' | 'popstate' | 'user';

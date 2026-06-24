@@ -1,0 +1,69 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildGearIndex } from '../src/lib/gear/index.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(__dirname, '..', '..');
+loadEnvFile(path.join(rootDir, '.env'));
+
+const locale = process.env.BUNGIE_LOCALE || 'zh-chs';
+const outputDir = path.join(rootDir, 'public', 'data');
+const outputFile = path.join(outputDir, `gear-index-${locale}.json`);
+const maxBytes = Math.max(
+  positiveNumber(process.env.GEAR_MANIFEST_MAX_BYTES, 0),
+  positiveNumber(process.env.GEAR_INDEX_BUILD_MAX_BYTES, 500_000_000)
+);
+
+if (!process.env.BUNGIE_API_KEY) {
+  throw new Error('BUNGIE_API_KEY is required to build the gear index.');
+}
+
+mkdirSync(outputDir, { recursive: true });
+
+const startedAt = Date.now();
+const index = await buildGearIndex({
+  apiKey: process.env.BUNGIE_API_KEY,
+  locale,
+  timeoutMs: positiveNumber(process.env.GEAR_MANIFEST_TIMEOUT_MS, 60000),
+  maxBytes
+});
+
+const serialized = JSON.stringify(index);
+writeFileSync(outputFile, serialized);
+const bytes = Buffer.byteLength(serialized);
+const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+console.log(`Wrote ${path.relative(rootDir, outputFile)} (${formatBytes(bytes)}) in ${seconds}s`);
+console.log(`Items: ${index.items.length}, weapons: ${index.weapons.length}, manifest: ${index.manifestVersion || '-'}`);
+
+function loadEnvFile(filePath) {
+  if (!existsSync(filePath)) return;
+  const lines = readFileSync(filePath, 'utf8').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+    if (!match) continue;
+    const [, key, rawValue] = match;
+    if (process.env[key] !== undefined) continue;
+    process.env[key] = stripEnvQuotes(rawValue.trim());
+  }
+}
+
+function stripEnvQuotes(value) {
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}

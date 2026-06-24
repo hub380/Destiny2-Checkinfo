@@ -3,16 +3,26 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#lib/*": "./src/lib/*"
+  },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
+    "start": "node server/index.js",
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run api:dev\" \"npm run frontend:dev\"",
+    "api:dev": "cross-env PORT=5174 node server/index.js",
+    "dev:server": "node server/index.js",
     "frontend:dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
-    "gear:index": "node scripts/build-gear-index.js",
-    "gear:publish-r2": "node scripts/gear-publish-r2.js",
-    "activity:index": "node scripts/build-activity-index.js",
-    "guides:validate": "node scripts/guides-validate.js",
-    "guides:upload": "node scripts/guides-upload.js",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "gear:index": "node scripts/data/build-gear-index.js",
+    "gear:publish-r2": "node scripts/gear/publish-r2.js",
+    "activity:index": "node scripts/data/build-activity-index.js",
+    "guides:validate": "node scripts/guides/validate.js",
+    "guides:upload": "node scripts/guides/upload.js",
+    "codegen:destiny": "node scripts/codegen/split-destiny.mjs",
+    "codegen:gear": "node scripts/codegen/split-gear.mjs",
     "worker:dev": "wrangler dev",
     "worker:deploy": "wrangler deploy"
   },
@@ -20,9 +30,16 @@
     "node": ">=18"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "typescript-eslint": "^8.48.0",
+    "vitest": "^4.0.8",
     "wrangler": "^4.0.0"
   },
   "dependencies": {

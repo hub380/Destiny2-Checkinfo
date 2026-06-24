@@ -1,0 +1,17 @@
+export const BUNGIE_BASE_URL = 'https://www.bungie.net';
+export const WEAPON_CATEGORY = 1;
+export const ARMOR_CATEGORY = 20;
+export const KINETIC_WEAPON = 2;
+export const ENERGY_WEAPON = 3;
+export const POWER_WEAPON = 4;
+export const HELMET = 45;
+export const ARMS = 46;
+export const CHEST = 47;
+export const LEGS = 48;
+export const CLASS_ITEM = 49;
+export const ITEM_TYPE_ARMOR = 2;
+export const ITEM_TYPE_WEAPON = 3;
+export const TRAIT_CATEGORY = 3708671066;
+export const EMPTY_TRAIT_SOCKET = '空特征插槽';
+export const ADEPT_SUFFIX = '（专家）';
+export const GEAR_INDEX_VERSION = 'gear-index-v5-source-hints';

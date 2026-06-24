@@ -1,0 +1,439 @@
+.career-page {
+  width: min(1440px, 100%);
+  margin: 0 auto;
+  padding: 18px 22px 28px;
+  display: grid;
+  gap: 14px;
+  animation: d2-fade-in-up var(--duration-slow) var(--ease-out);
+}
+
+.career-query-panel,
+.career-profile-panel,
+.career-info-card,
+.career-endgame-card,
+.career-crafting-panel {
+  min-width: 0;
+  padding: 14px;
+}
+
+.career-profile-panel,
+.career-info-card,
+.career-endgame-card,
+.career-crafting-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.career-page-search {
+  max-width: none;
+}
+
+.career-detail-root {
+  display: grid;
+  gap: 14px;
+}
+
+.career-detail-root > * {
+  animation: d2-fade-in-up var(--duration-slow) var(--ease-out) backwards;
+}
+
+.career-detail-root > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.career-detail-root > *:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.career-detail-root > *:nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.career-detail-root > *:nth-child(4) {
+  animation-delay: 210ms;
+}
+
+.career-detail-root > *:nth-child(5) {
+  animation-delay: 280ms;
+}
+
+.career-result.empty {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.career-result.empty.loading {
+  border-style: solid;
+  color: var(--text);
+}
+
+.career-result.empty.loading::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(44, 115, 107, 0.22);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: career-loading-spin 0.8s linear infinite;
+}
+
+@keyframes career-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.career-account-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.career-account-head h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.career-account-head p,
+.career-account-meta span {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.career-account-meta {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  text-align: right;
+}
+
+.career-metric-grid,
+.career-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.career-section-grid,
+.career-section-wide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.career-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.career-card-head h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.career-card-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.career-mini-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.detail-loading {
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 13px;
+  animation: d2-pulse-soft 1.4s ease-in-out infinite;
+}
+
+.career-character-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.career-character {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.career-character img {
+  width: 54px;
+  height: 54px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: #dce1dc;
+}
+
+.career-character b,
+.career-character span,
+.career-character em {
+  display: block;
+}
+
+.career-character b {
+  font-size: 14px;
+}
+
+.career-character span,
+.career-character em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.career-character strong {
+  color: var(--amber);
+  font-size: 14px;
+}
+
+.pvp-history-card {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+}
+
+.pvp-mode-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.pvp-mode-row {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.pvp-mode-row b,
+.pvp-mode-row span {
+  display: block;
+}
+
+.pvp-mode-row b {
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.pvp-mode-row span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pvp-mode-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.endgame-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 10px;
+}
+
+.career-activity-grid {
+  display: grid;
+  gap: 9px;
+  max-height: 820px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.career-activity-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.career-activity-card > img {
+  width: 96px;
+  height: 58px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: #dce1dc;
+}
+
+.activity-detail-main {
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.activity-detail-main b,
+.activity-detail-main span {
+  display: block;
+}
+
+.activity-detail-main b {
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.activity-detail-main span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.career-activity-stats {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.activity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.activity-tags em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid #ebcc96;
+  background: var(--amber-2);
+  color: #7f5619;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.career-variant-list {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 5px;
+}
+
+.career-variant-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.career-variant-row span,
+.career-variant-row b {
+  font-size: 12px;
+}
+
+.career-variant-row span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  .career-page {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .career-metric-grid,
+  .career-section-grid,
+  .career-section-wide,
+  .endgame-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .career-activity-stats,
+  .pvp-mode-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 640px) {
+  .career-page {
+    padding: 12px;
+  }
+
+  .career-account-head,
+  .activity-detail-main {
+    display: grid;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .career-account-meta {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .career-mini-grid,
+  .career-activity-stats,
+  .pvp-mode-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .career-activity-card {
+    grid-template-columns: 1fr;
+  }
+
+  .career-activity-card > img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 7;
+  }
+
+  .career-character {
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+  }
+
+  .career-character img {
+    width: 46px;
+    height: 46px;
+  }
+}

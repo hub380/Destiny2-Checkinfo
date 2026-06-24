@@ -1,0 +1,253 @@
+.fireteam-page {
+  width: min(1440px, 100%);
+  margin: 0 auto;
+  padding: 18px 22px 28px;
+  display: grid;
+  gap: 14px;
+  animation: d2-fade-in-up var(--duration-slow) var(--ease-out);
+}
+
+.fireteam-query-panel {
+  padding: 14px;
+}
+
+.fireteam-search {
+  max-width: none;
+}
+
+.fireteam-overview {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.2fr) minmax(360px, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.current-activity-card,
+.member-card,
+.empty-state,
+.empty-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.current-activity-card {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  align-items: center;
+}
+
+.current-activity-card img,
+.activity-placeholder {
+  width: 220px;
+  height: 124px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #18231f, #405449);
+}
+
+.current-activity-card span,
+.current-activity-card p,
+.section-head span,
+.member-head p,
+.member-footer,
+.member-warning {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.current-activity-card h2 {
+  margin: 5px 0;
+  font-size: 24px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.current-activity-card p {
+  margin: 0;
+}
+
+.fireteam-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.member-section {
+  display: grid;
+  gap: 10px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+.member-card {
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.member-card.error {
+  border-color: #e2b5b5;
+}
+
+.member-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.member-head h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.member-head p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.member-head > span {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid #b7dccf;
+  border-radius: 999px;
+  background: var(--green-2);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.member-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.member-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.member-footer span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-footer a {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.member-footer a:hover {
+  text-decoration: underline;
+}
+
+.member-warning {
+  margin: 0;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ebcc96;
+  background: var(--amber-2);
+  color: #7f5619;
+}
+
+.empty-state {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+}
+
+.empty-state h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.empty-state p {
+  max-width: 640px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.empty-card {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 980px) {
+  .fireteam-page {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .fireteam-overview,
+  .current-activity-card,
+  .fireteam-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .current-activity-card img,
+  .activity-placeholder {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 7;
+  }
+}
+
+@media (max-width: 640px) {
+  .fireteam-page {
+    padding: 12px;
+  }
+
+  .member-grid,
+  .member-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .member-head,
+  .member-footer {
+    display: grid;
+    justify-items: start;
+  }
+}

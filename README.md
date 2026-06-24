@@ -39,6 +39,14 @@ npm start
 http://localhost:5173
 ```
 
+前端开发（热更新 + API 联调）：
+
+```powershell
+npm run dev
+```
+
+Vite 在 `5173` 提供页面，`5174` 提供 `/api/*`。生产预览仍使用 `npm run build` + `npm start`。
+
 常用页面：
 
 - `/`：组队信息与简版玩家生涯查询
@@ -127,6 +135,86 @@ http://localhost:5173
 - 小黑盒组队工具没有稳定公开接口文档，本项目不会提交私人 Cookie、私有凭据或绕过鉴权逻辑。
 - 公开玩家查询不需要 OAuth 登录；涉及个人账号敏感数据的能力，后续若加入会另行设计登录和权限边界。
 - 武器来源提示来自棒鸡 Manifest 的可读来源字段，只能作为参考，不保证等同于精确活动掉落表。
+
+## `src/lib` 目录结构
+
+后端共享逻辑集中在 `src/lib/`，按领域与基础设施分层：
+
+```text
+src/lib/
+  bungie/          Bungie API 客户端、玩家名解析、统计格式化（`index.js` barrel）
+  cache/           Worker 内存 / KV / R2 多层缓存与 TTL 配置
+  http/            HTTP 工具、JSON 响应与 CORS
+  utils/           文本、时间、环境变量、并发控制
+  shared/          跨域常量（如 CACHE_VERSION）
+  storage/         R2 读写（生涯快照、攻略对象）
+  integrations/    小黑盒组队、Heybox 数据解析
+  destiny/         玩家生涯、组队、终局、详情等领域 API
+  gear/            装备索引构建、搜索、Perk 反查、Worker 依赖注入
+  guides/          攻略索引、详情与媒体代理
+```
+
+入口约定：
+
+- Worker / 本地 API：`src/app/index.js`（路由在 `src/app/router.js`）
+- 后端 import 别名：`#lib/*` → `src/lib/*`（`package.json` `imports`，用于 Worker / `server/index.js`）
+- 前端 / 测试 import 别名：`@frontend/*` → `src/frontend/*`；`@lib/*` → `src/lib/*`（Vite / Vitest / tsconfig）
+- 各领域模块通过各目录下的 `index.js` 对外导出（含 `bungie`、`utils`、`http`、`cache`、`integrations`、`storage`、`shared`）
+- 装备 CLI：`npm run gear:index` 直接引用 `src/lib/gear/index.js` 的 `buildGearIndex`
+- 从单体文件重新切片（可选）：将快照放到 `src/lib/destiny-handlers.source.js` 或 `src/lib/gear/.gear-core.source.js`，再运行 `npm run codegen:destiny` / `npm run codegen:gear`
+
+## 仓库根目录结构
+
+根目录只保留配置、入口约定与构建产物目录；页面 HTML 与本地服务、CLI 脚本按职责分目录：
+
+```text
+pages/                 Vite 多页面 HTML 入口（构建后映射到 dist/*.html）
+server/index.js        本地静态资源 + /api 代理（生产预览用 npm start）
+scripts/
+  data/                静态数据索引构建（activity、gear）
+  guides/              攻略内容校验与 R2 上传
+  gear/                装备索引发布到 R2
+  codegen/             从单体快照重新切片 destiny / gear 模块
+src/                   Worker 应用、前端、共享 lib
+content/guides/        攻略 JSON 与媒体源文件
+public/                静态资源与构建出的 data/*.json
+```
+
+命名约定：
+
+- `pages/<route>.html` ↔ `src/frontend/pages/<name>/`（页面名与 HTML 文件名一致）
+- `scripts/<领域>/<动作>.js`（如 `guides/validate.js`、`gear/publish-r2.js`）
+- npm script：`领域:动作`（如 `guides:validate`、`gear:index`、`codegen:destiny`）
+
+## `src/frontend` 目录结构
+
+前端按 **样式 / 组件 / 页面 / 数据层** 分层，命名与后端 `@lib` 别名对称：
+
+```text
+src/frontend/
+  styles/          global.css、ui.module.css（布局基座）、motion.module.css（动效）
+  ui/              barrel：重导出 lib + components（页面统一 `from '@frontend/ui'`）
+  lib/             api、types、cn、format、constants、career-merge
+  components/
+    layout/        AppShell、Header、Notice、MetricCard、MiniStat
+    search/        PlayerSearchBox
+    icons/         SVG 图标
+    motion/        FadeIn、StaggerList、LoadingPulse
+  hooks/           各页面数据 hooks
+  pages/
+    home/          index.tsx（入口）、HomePage.tsx、home.module.css
+    career/        CareerPage、career + crafting 样式
+    gear/          GearPage、gear.module.css
+    fireteam/      FireteamPage、fireteam.module.css
+    guides/        GuidesPage、guides.module.css
+```
+
+约定：
+
+- 页面入口：各 `pages/<name>/index.tsx` 挂载对应 `*Page.tsx`；`pages/<name>.html` 引用 `/src/frontend/pages/<name>/index.tsx`
+- import 别名：`@frontend/*` → `src/frontend/*`（Vite + tsconfig）
+- 页面样式：`createPageCn(本地 module.css)` 自动合并 `styles/ui` + `styles/motion`
+- 布局：`AppShell` + `FadeIn` / `StaggerList` / `LoadingPulse` 统一动效
 
 ## 开发和部署补充
 

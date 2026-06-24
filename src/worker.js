@@ -1,4 +1,4 @@
-import { handleAppRequest, handleScheduled } from './app-core.js';
+import { handleAppRequest, handleScheduled } from './app/index.js';
 
 export default {
   fetch(request, env, ctx) {

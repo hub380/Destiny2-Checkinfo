@@ -1,26 +1,79 @@
-import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { existsSync, readdirSync, renameSync, rmSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
+const pageNames = ['index', 'career', 'gear', 'fireteam', 'guides'];
+
+/** Source HTML lives in pages/; public URLs stay /career.html etc. */
+function pageHtmlLayout(): Plugin {
+  return {
+    name: 'page-html-layout',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        const url = req.url?.split('?')[0] ?? '';
+        if (url === '/' || url === '/index.html') {
+          req.url = '/pages/index.html';
+        } else {
+          const match = url.match(/^\/([a-z]+)\.html$/);
+          if (match && pageNames.includes(match[1])) {
+            req.url = `/pages/${match[1]}.html`;
+          }
+        }
+        next();
+      });
+    },
+    closeBundle() {
+      const pagesDir = join(rootDir, 'dist/pages');
+      if (!existsSync(pagesDir)) return;
+      for (const name of readdirSync(pagesDir)) {
+        if (!name.endsWith('.html')) continue;
+        renameSync(join(pagesDir, name), join(rootDir, 'dist', name));
+      }
+      rmSync(pagesDir, { recursive: true, force: true });
+    }
+  };
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), pageHtmlLayout()],
   publicDir: 'public',
+  resolve: {
+    alias: {
+      '@lib': resolve(rootDir, 'src/lib'),
+      '@frontend': resolve(rootDir, 'src/frontend')
+    }
+  },
   css: {
     postcss: {}
+  },
+  server: {
+    port: 5173,
+    strictPort: true,
+    open: true,
+    hmr: true,
+    watch: {
+      ignored: ['**/.env', '**/.env.*', '**/*.body.js']
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5174',
+        changeOrigin: true
+      }
+    }
   },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        index: resolve(rootDir, 'index.html'),
-        career: resolve(rootDir, 'career.html'),
-        gear: resolve(rootDir, 'gear.html'),
-        fireteam: resolve(rootDir, 'fireteam.html'),
-        guides: resolve(rootDir, 'guides.html')
+        index: resolve(rootDir, 'pages/index.html'),
+        career: resolve(rootDir, 'pages/career.html'),
+        gear: resolve(rootDir, 'pages/gear.html'),
+        fireteam: resolve(rootDir, 'pages/fireteam.html'),
+        guides: resolve(rootDir, 'pages/guides.html')
       },
       output: {
         entryFileNames: 'assets/[name]-[hash].js',

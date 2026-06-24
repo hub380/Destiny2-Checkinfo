@@ -1,0 +1,68 @@
+.layoutEnter {
+  animation: d2-fade-in-up var(--duration-slow) var(--ease-out);
+}
+
+.panelEnter {
+  animation: d2-scale-in var(--duration-normal) var(--ease-out);
+}
+
+.detailEnter {
+  animation: d2-fade-in-up var(--duration-normal) var(--ease-out);
+}
+
+.listEnter > * {
+  animation: d2-fade-in-up var(--duration-slow) var(--ease-out) backwards;
+}
+
+.listEnter > *:nth-child(1) { animation-delay: 0ms; }
+.listEnter > *:nth-child(2) { animation-delay: 40ms; }
+.listEnter > *:nth-child(3) { animation-delay: 80ms; }
+.listEnter > *:nth-child(4) { animation-delay: 120ms; }
+.listEnter > *:nth-child(5) { animation-delay: 160ms; }
+.listEnter > *:nth-child(n + 6) { animation-delay: 200ms; }
+
+.staggerItem {
+  animation: d2-fade-in-up var(--duration-slow) var(--ease-out) backwards;
+  animation-delay: calc(var(--stagger-index, 0) * 45ms);
+}
+
+.searchFocus:focus-within {
+  border-color: #9ec7b8;
+  box-shadow: 0 0 0 3px rgba(47, 128, 105, 0.12);
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.spinOnRefresh {
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.spinOnRefresh.isSpinning svg {
+  animation: d2-spin 0.8s linear infinite;
+}
+
+.toastEnter {
+  animation: d2-fade-in-up var(--duration-normal) var(--ease-spring);
+}
+
+.cardHover {
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.cardHover:hover {
+  transform: translateY(-2px);
+  border-color: #c8d4cc;
+  box-shadow: 0 10px 24px rgba(29, 34, 32, 0.06);
+}
+
+.loadingPulse {
+  animation: d2-pulse-soft 1.15s ease-in-out infinite;
+}
+
+.contentSwap {
+  animation: d2-fade-in var(--duration-normal) var(--ease-out);
+}

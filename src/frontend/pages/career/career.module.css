@@ -22,7 +22,7 @@
 .career-crafting-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-elevated);
   box-shadow: var(--shadow);
 }
 
@@ -207,7 +207,7 @@
   height: 54px;
   border-radius: 7px;
   object-fit: cover;
-  background: #dce1dc;
+  background: var(--avatar-bg);
 }
 
 .career-character b,
@@ -310,7 +310,7 @@
   height: 58px;
   border-radius: 7px;
   object-fit: cover;
-  background: #dce1dc;
+  background: var(--avatar-bg);
 }
 
 .activity-detail-main {
@@ -357,9 +357,9 @@
   min-height: 20px;
   padding: 0 6px;
   border-radius: 6px;
-  border: 1px solid #ebcc96;
+  border: 1px solid var(--amber-border);
   background: var(--amber-2);
-  color: #7f5619;
+  color: var(--amber-text);
   font-style: normal;
   font-size: 11px;
   font-weight: 750;
@@ -378,7 +378,7 @@
   padding: 6px 8px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #fff;
+  background: var(--surface-elevated);
 }
 
 .career-variant-row span,

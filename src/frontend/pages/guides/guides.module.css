@@ -21,7 +21,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0 9px;
-  border: 1px solid #b7dccf;
+  border: 1px solid var(--green-border);
   border-radius: 8px;
   color: var(--green);
   background: var(--green-2);
@@ -70,7 +70,7 @@
 
 .category-tabs button.active {
   color: var(--green);
-  border-color: #b7dccf;
+  border-color: var(--green-border);
   background: var(--green-2);
 }
 
@@ -96,8 +96,8 @@
 
 .guide-card:hover,
 .guide-card.active {
-  border-color: #9fd0bf;
-  background: #fbfdfb;
+  border-color: var(--border-focus);
+  background: var(--green-2);
 }
 
 .guide-card img,

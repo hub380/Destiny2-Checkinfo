@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--topbar-bg);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(14px);
   position: sticky;
@@ -91,7 +91,7 @@
 
 .main-nav a.current {
   color: var(--green);
-  border-color: #b7dccf;
+  border-color: var(--green-border);
   background: var(--green-2);
 }
 
@@ -119,14 +119,14 @@
 .status-pill.ready {
   color: var(--green);
   background: var(--green-2);
-  border-color: #b7dccf;
+  border-color: var(--green-border);
 }
 
 .status-pill.demo,
 .status-pill.warn {
   color: var(--amber);
   background: var(--amber-2);
-  border-color: #ebcc96;
+  border-color: var(--amber-border);
 }
 
 .switch {
@@ -151,7 +151,7 @@
   width: 36px;
   height: 20px;
   border-radius: 999px;
-  background: #b7bfba;
+  background: var(--switch-off);
   position: relative;
   transition: background 140ms ease;
 }
@@ -162,7 +162,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--switch-knob);
   top: 2px;
   left: 2px;
   transition: transform 140ms ease;
@@ -216,8 +216,8 @@
 .github-link:hover,
 .career-search button:hover,
 .button.secondary:hover {
-  border-color: #aab6af;
-  background: #f6f8f5;
+  border-color: var(--border-muted);
+  background: var(--surface-hover);
 }
 
 .github-link {
@@ -300,8 +300,8 @@
 }
 
 .career-search:focus-within {
-  border-color: #9ec7b8;
-  box-shadow: 0 0 0 3px rgba(47, 128, 105, 0.12);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .career-search input {
@@ -317,10 +317,10 @@
 
 .career-search button {
   min-height: 36px;
-  border: 1px solid var(--text);
+  border: 1px solid var(--btn-primary-bg);
   border-radius: 8px;
-  background: var(--text);
-  color: #fff;
+  background: var(--btn-primary-bg);
+  color: var(--on-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -339,8 +339,8 @@
 }
 
 .career-search button:hover {
-  background: #303533;
-  border-color: #303533;
+  background: var(--btn-primary-hover);
+  border-color: var(--btn-primary-hover);
 }
 
 .career-search button:disabled {
@@ -349,16 +349,16 @@
 }
 
 .career-search button:disabled:hover {
-  background: var(--text);
-  border-color: var(--text);
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
 }
 
 .notice {
   margin-bottom: 12px;
   padding: 10px 12px;
-  border: 1px solid #ebcc96;
+  border: 1px solid var(--amber-border);
   border-radius: 8px;
-  color: #7f5619;
+  color: var(--amber-text);
   background: var(--amber-2);
   font-size: 13px;
   line-height: 1.5;
@@ -366,9 +366,9 @@
 }
 
 .notice.error {
-  border-color: #e2b5b5;
+  border-color: var(--red-border);
   color: var(--red);
-  background: #fff0f0;
+  background: var(--red-surface);
 }
 
 .hidden {
@@ -412,8 +412,8 @@
 
 .career-metric-card:hover {
   transform: translateY(-2px);
-  border-color: #c5d4cc;
-  box-shadow: 0 8px 20px rgba(29, 34, 32, 0.06);
+  border-color: var(--border-hover);
+  box-shadow: 0 8px 20px var(--shadow-soft);
 }
 
 .career-metric-card span,

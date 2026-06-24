@@ -29,7 +29,7 @@
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-elevated);
   box-shadow: var(--shadow);
 }
 
@@ -179,9 +179,9 @@
   margin: 0;
   padding: 8px;
   border-radius: 8px;
-  border: 1px solid #ebcc96;
+  border: 1px solid var(--amber-border);
   background: var(--amber-2);
-  color: #7f5619;
+  color: var(--amber-text);
 }
 
 .empty-state {

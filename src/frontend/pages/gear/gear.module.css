@@ -56,7 +56,7 @@
   border: 1px solid var(--text);
   border-radius: 8px;
   background: var(--text);
-  color: #fff;
+  color: var(--on-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -146,13 +146,13 @@
 
 .gear-card-button:hover {
   border-color: #aab6af;
-  background: #fff;
+  background: var(--surface-elevated);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(29, 34, 32, 0.06);
 }
 
 .weapon-group {
-  background: #fff;
+  background: var(--surface-elevated);
 }
 
 .gear-card-button {
@@ -167,7 +167,7 @@
   height: 58px;
   border-radius: 7px;
   border: 1px solid var(--line);
-  background: #dce1dc;
+  background: var(--avatar-bg);
   object-fit: cover;
 }
 
@@ -200,7 +200,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0 7px;
-  border: 1px solid #b7dccf;
+  border: 1px solid var(--green-border);
   border-radius: 7px;
   background: var(--green-2);
   color: var(--green);
@@ -230,8 +230,8 @@
   padding: 0 7px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #fff;
-  color: #3e4643;
+  background: var(--surface-elevated);
+  color: var(--text-chip);
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -248,7 +248,7 @@
 
 .gear-source-line {
   margin: 8px 0 0;
-  color: #446760;
+  color: var(--green);
   font-size: 12px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -260,7 +260,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  color: #8b9691;
+  color: var(--muted);
   font-size: 11px;
 }
 
@@ -272,7 +272,7 @@
 .gear-detail-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-elevated);
   padding: 12px;
   margin-bottom: 12px;
 }
@@ -363,7 +363,7 @@
   align-items: center;
   padding: 0 7px;
   border-radius: 7px;
-  border: 1px solid #b7dccf;
+  border: 1px solid var(--green-border);
   background: var(--green-2);
   color: var(--green);
   font-size: 12px;
@@ -396,7 +396,7 @@
 .source-hint {
   min-width: 0;
   padding: 9px;
-  border: 1px solid #b7dccf;
+  border: 1px solid var(--green-border);
   border-radius: 8px;
   background: var(--green-2);
 }
@@ -428,8 +428,8 @@
   gap: 5px;
   min-height: 28px;
   padding: 2px 8px 2px 3px;
-  border-color: #d7e2dd;
-  background: #fff;
+  border-color: var(--border-hover);
+  background: var(--surface-elevated);
 }
 
 .frame-inline img {
@@ -437,7 +437,7 @@
   height: 22px;
   border-radius: 5px;
   object-fit: cover;
-  background: #dce1dc;
+  background: var(--avatar-bg);
 }
 
 .frame-inline span {
@@ -501,7 +501,7 @@
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #fff;
+  background: var(--surface-elevated);
 }
 
 .perk-card.matched {
@@ -514,7 +514,7 @@
   height: 30px;
   border-radius: 6px;
   object-fit: cover;
-  background: #dce1dc;
+  background: var(--avatar-bg);
 }
 
 .perk-card b,
@@ -549,9 +549,9 @@
 .perk-enhanced-notes em {
   display: block;
   font-style: normal;
-  color: #72502d;
+  color: var(--amber-text);
   background: var(--amber-2);
-  border: 1px solid #ebcc96;
+  border: 1px solid var(--amber-border);
   border-radius: 5px;
   padding: 3px 5px;
   font-size: 11px;
@@ -574,7 +574,7 @@
   padding: 4px 8px 4px 5px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-elevated);
   max-width: 100%;
 }
 

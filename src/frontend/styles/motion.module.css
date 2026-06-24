@@ -31,8 +31,8 @@
 }
 
 .searchFocus:focus-within {
-  border-color: #9ec7b8;
-  box-shadow: 0 0 0 3px rgba(47, 128, 105, 0.12);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
   transition:
     border-color var(--duration-fast) ease,
     box-shadow var(--duration-fast) ease;
@@ -59,8 +59,8 @@
 
 .cardHover:hover {
   transform: translateY(-2px);
-  border-color: #c8d4cc;
-  box-shadow: 0 10px 24px rgba(29, 34, 32, 0.06);
+  border-color: var(--border-hover);
+  box-shadow: 0 10px 24px var(--shadow-soft);
 }
 
 .loadingPulse {

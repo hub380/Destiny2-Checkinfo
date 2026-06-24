@@ -3,16 +3,39 @@
   --bg: #f4f2ed;
   --surface: #ffffff;
   --surface-2: #f9faf7;
+  --surface-elevated: #ffffff;
+  --surface-hover: #f6f8f5;
   --text: #191d1c;
+  --text-body: #2f3533;
+  --text-chip: #3e4643;
   --muted: #66706d;
   --line: #d9ded7;
   --green: #2f8069;
   --accent: #2f8069;
   --green-2: #e3f1ec;
+  --green-border: #b7dccf;
+  --border-focus: #9ec7b8;
+  --border-hover: #c5d4cc;
+  --border-muted: #aab6af;
   --amber: #bd7f23;
   --amber-2: #fff1d8;
+  --amber-border: #ebcc96;
+  --amber-text: #7f5619;
   --red: #b84b4b;
+  --red-border: #e2b5b5;
+  --red-surface: #fff0f0;
+  --avatar-bg: #dce1dc;
+  --disabled-bg: #f0f2ef;
+  --disabled-text: #9aa39f;
+  --switch-off: #b7bfba;
+  --switch-knob: #ffffff;
+  --on-accent: #ffffff;
+  --btn-primary-bg: #191d1c;
+  --btn-primary-hover: #303533;
+  --topbar-bg: rgba(255, 255, 255, 0.86);
   --shadow: 0 18px 50px rgba(29, 34, 32, 0.08);
+  --shadow-soft: rgba(29, 34, 32, 0.07);
+  --focus-ring: rgba(47, 128, 105, 0.12);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
   --duration-fast: 140ms;
@@ -26,16 +49,46 @@
     --bg: #121614;
     --surface: #1a1f1c;
     --surface-2: #222824;
+    --surface-elevated: #2a3230;
+    --surface-hover: #323a38;
     --text: #e8ece9;
+    --text-body: #d4dce0;
+    --text-chip: #c8d0cd;
     --muted: #9aa5a0;
     --line: #2f3834;
     --green: #4cb896;
     --accent: #4cb896;
     --green-2: #1a2e27;
+    --green-border: #3d5c4f;
+    --border-focus: #4a7a68;
+    --border-hover: #3d4a45;
+    --border-muted: #4a5450;
     --amber: #d4a04a;
     --amber-2: #2e2418;
+    --amber-border: #6b5030;
+    --amber-text: #e8c88a;
     --red: #e07070;
+    --red-border: #6b4040;
+    --red-surface: #3a2525;
+    --avatar-bg: #3a4240;
+    --disabled-bg: #252b29;
+    --disabled-text: #7a8580;
+    --switch-off: #4a5450;
+    --switch-knob: #e8ece9;
+    --on-accent: #ffffff;
+    --btn-primary-bg: #3d9f7f;
+    --btn-primary-hover: #4cb896;
+    --topbar-bg: rgba(18, 22, 20, 0.92);
     --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    --shadow-soft: rgba(0, 0, 0, 0.28);
+    --focus-ring: rgba(76, 184, 150, 0.2);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(76, 184, 150, 0.08), transparent 40%),
+      radial-gradient(circle at 88% 100%, rgba(212, 160, 74, 0.06), transparent 36%),
+      var(--bg);
   }
 }
 

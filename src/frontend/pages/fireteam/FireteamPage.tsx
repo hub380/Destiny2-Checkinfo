@@ -8,6 +8,7 @@ import {
   MetricCard,
   MiniStat,
   Notice,
+  PageEmpty,
   PageLoading,
   StaggerList,
   createPageCn,
@@ -75,7 +76,7 @@ function FireteamResult({ lookup, loading }: { lookup: FireteamLookupDto; loadin
           <MetricCard label="检测成员" value={formatNumber(lookup.summary?.displayedMembers || members.length)} note={`Bungie 返回 ${formatNumber(lookup.summary?.detectedMembers || 0)} 名`} />
           <MetricCard label="资料读取" value={formatNumber(lookup.summary?.resolvedMembers || 0)} note={loading ? '加载中' : '公开资料'} />
           <MetricCard label="加入状态" value={lookup.joinability?.label || '未知'} note={joinabilityNote(lookup.joinability)} />
-          <MetricCard label="缓存路径" value={lookup.cache?.transitory || 'live'} note="当前队伍不长缓存" />
+          <MetricCard label="数据时效" value="实时" note="当前队伍不长期缓存" />
         </div>
       </section>
 
@@ -84,9 +85,9 @@ function FireteamResult({ lookup, loading }: { lookup: FireteamLookupDto; loadin
           <h2>队伍成员</h2>
           <span>{formatNumber(members.length)} 名</span>
         </div>
-        <StaggerList className={cn('member-grid')}>
+        <StaggerList className={cn('member-grid')} stagger={members.length <= 20}>
           {members.length ? members.map((member) => <MemberCard member={member} key={`${member.membershipType}-${member.membershipId}`} />) : (
-            <div className={cn('empty-card')}>没有检测到公开队伍成员。</div>
+            <PageEmpty>没有检测到公开队伍成员</PageEmpty>
           )}
         </StaggerList>      </section>
     </>

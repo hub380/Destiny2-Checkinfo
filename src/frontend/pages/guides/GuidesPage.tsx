@@ -1,10 +1,12 @@
-import React, { FormEvent } from 'react';
+import React, { FormEvent, useState } from 'react';
 import { useGuidesLibrary } from '@frontend/hooks';
 import {
   AppShell,
+  CopyIcon,
   FadeIn,
-  LoadingPulse,
   Notice,
+  PageEmpty,
+  PageLoading,
   SearchIcon,
   StaggerList,
   createPageCn,
@@ -30,23 +32,42 @@ export function GuidesPage() {
     error,
     categories,
     visibleItems,
-    openGuide
+    openGuide,
+    closeGuide
   } = useGuidesLibrary();
+  const [copyNotice, setCopyNotice] = useState('');
+
+  const detailOpen = Boolean(detail || detailLoading);
 
   function onSearch(event: FormEvent) {
     event.preventDefault();
   }
 
+  async function copyGuideLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = window.location.href;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+    }
+    setCopyNotice('链接已复制');
+    window.setTimeout(() => setCopyNotice(''), 1800);
+  }
+
   return (
     <AppShell title="Destiny 2 攻略/资讯" subtitle="Raid、地牢、地图与机制资料库" current="guides">
-      <FadeIn variant="page" className={cn('guides-layout')}>
+      <FadeIn variant="page" className={cn(`guides-layout ${detailOpen ? 'detail-open' : ''}`)}>
         <section className={cn('panel guides-list-panel panelEnter')}>
           <div className={cn('panel-header')}>
             <div>
               <h2>攻略库</h2>
               <p>{loading ? '加载中' : `${visibleItems.length} / ${index?.items?.length ?? 0} 篇`}</p>
             </div>
-            <span className={cn('cache-note')}>{index?.cache?.guides ? cacheLabel(index.cache.guides) : 'R2'}</span>
+            {index?.cache?.guides ? <span className={cn('cache-note')}>{cacheLabel(index.cache.guides)}</span> : null}
           </div>
 
           <form className={cn('guide-search')} onSubmit={onSearch}>
@@ -55,9 +76,26 @@ export function GuidesPage() {
           </form>
 
           <div className={cn('category-tabs')} role="tablist" aria-label="攻略分类">
-            <button className={cn(category === 'all' ? 'active' : '')} type="button" onClick={() => setCategory('all')}>全部</button>
+            <button
+              className={cn(category === 'all' ? 'active' : '')}
+              type="button"
+              role="tab"
+              aria-selected={category === 'all'}
+              id="guides-tab-all"
+              onClick={() => setCategory('all')}
+            >
+              全部
+            </button>
             {categories.map((item) => (
-              <button key={item.value} className={cn(category === item.value ? 'active' : '')} type="button" onClick={() => setCategory(item.value)}>
+              <button
+                key={item.value}
+                className={cn(category === item.value ? 'active' : '')}
+                type="button"
+                role="tab"
+                aria-selected={category === item.value}
+                id={`guides-tab-${item.value}`}
+                onClick={() => setCategory(item.value)}
+              >
                 {item.label}
               </button>
             ))}
@@ -65,39 +103,47 @@ export function GuidesPage() {
 
           <Notice message={notice} error={error} />
 
-          <StaggerList className={cn('guide-list')}>
-            {visibleItems.map((item) => (
-              <GuideCard
-                key={item.slug}
-                item={item}
-                active={detail?.slug === item.slug}
-                onOpen={() => void openGuide(item)}
-              />
-            ))}
-            {!loading && !visibleItems.length ? (
-              <div className={cn('empty-state')}>
-                <b>暂无攻略内容</b>
-                <span>R2 中没有攻略索引时会显示这里；上传内容后列表会自动出现。</span>
-              </div>
-            ) : null}
-          </StaggerList>
+          {loading ? (
+            <PageLoading className={cn('guide-list-loading')}>攻略索引加载中</PageLoading>
+          ) : (
+            <StaggerList className={cn('guide-list')} stagger={visibleItems.length <= 24}>
+              {visibleItems.map((item) => (
+                <GuideCard
+                  key={item.slug}
+                  item={item}
+                  active={detail?.slug === item.slug}
+                  onOpen={() => void openGuide(item)}
+                />
+              ))}
+              {!visibleItems.length ? (
+                <PageEmpty className={cn('guides-empty')}>
+                  <b>暂无攻略内容</b>
+                  <span>上传攻略后列表会自动出现。</span>
+                </PageEmpty>
+              ) : null}
+            </StaggerList>
+          )}
         </section>
 
-        <section className={cn('panel guide-detail-panel panelEnter')}>
+        <section className={cn('panel guide-detail-panel panelEnter')} role="tabpanel" aria-label="攻略详情">
+          {detailOpen ? (
+            <button className={cn('detail-back')} type="button" onClick={closeGuide}>
+              ← 返回列表
+            </button>
+          ) : null}
           {detailLoading ? (
-            <LoadingPulse className={cn('empty-state')}>
+            <PageLoading className={cn('empty-state')}>
               <b>正在加载攻略</b>
-              <span>从后端读取 R2 内容。</span>
-            </LoadingPulse>
+            </PageLoading>
           ) : detail ? (
             <FadeIn variant="detail" className={cn('contentSwap')}>
-              <GuideDetail detail={detail} />
+              <GuideDetail detail={detail} onCopyLink={() => void copyGuideLink()} copyNotice={copyNotice} />
             </FadeIn>
           ) : (
-            <div className={cn('empty-state detail-empty')}>
+            <PageEmpty className={cn('empty-state detail-empty')}>
               <b>选择一篇攻略</b>
               <span>这里会展示章节、机制步骤、图片和外部视频引用。</span>
-            </div>
+            </PageEmpty>
           )}
         </section>
       </FadeIn>
@@ -122,7 +168,15 @@ function GuideCard({ item, active, onOpen }: { item: GuideSummaryDto; active: bo
   );
 }
 
-function GuideDetail({ detail }: { detail: GuideDetailDto }) {
+function GuideDetail({
+  detail,
+  onCopyLink,
+  copyNotice
+}: {
+  detail: GuideDetailDto;
+  onCopyLink: () => void;
+  copyNotice: string;
+}) {
   const sections = Array.isArray(detail.sections) ? detail.sections : [];
   const videos = Array.isArray(detail.videos) ? detail.videos : [];
   return (
@@ -138,6 +192,13 @@ function GuideDetail({ detail }: { detail: GuideDetailDto }) {
             {detail.difficulty ? <span>{detail.difficulty}</span> : null}
             {detail.updatedAt ? <span>更新 {dateOnly(detail.updatedAt)}</span> : null}
             {detail.authors?.length ? <span>{detail.authors.join(' / ')}</span> : null}
+          </div>
+          <div className={cn('guide-actions')}>
+            <button className={cn('guide-copy-link')} type="button" onClick={onCopyLink}>
+              <CopyIcon />
+              复制链接
+            </button>
+            {copyNotice ? <span className={cn('guide-copy-notice')}>{copyNotice}</span> : null}
           </div>
           {detail.tags?.length ? (
             <div className={cn('tag-row')}>
@@ -156,10 +217,10 @@ function GuideDetail({ detail }: { detail: GuideDetailDto }) {
       <div className={cn('section-list')}>
         {sections.map((section, index) => <GuideSection key={section.id || index} section={section} index={index} />)}
         {!sections.length ? (
-          <div className={cn('empty-state')}>
+          <PageEmpty>
             <b>暂无章节</b>
-            <span>详情 JSON 中还没有 sections 数据。</span>
-          </div>
+            <span>这篇攻略还没有章节内容。</span>
+          </PageEmpty>
         ) : null}
       </div>
     </article>
@@ -239,9 +300,7 @@ function MediaBlock({ item }: { item: JsonRecord }) {
 
 function cacheLabel(value: unknown) {
   const text = String(value || '');
-  if (text === 'empty-r2') return 'R2 暂无内容';
-  if (text.includes('r2')) return 'R2 命中';
-  if (text.includes('memory')) return '内存缓存';
-  return text || '缓存';
+  if (text === 'empty-r2') return '暂无内容';
+  if (text.includes('hit') || text.includes('memory') || text.includes('r2')) return '已缓存';
+  return '在线';
 }
-

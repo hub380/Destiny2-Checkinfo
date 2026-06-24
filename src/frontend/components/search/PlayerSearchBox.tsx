@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import { useId } from 'react';
 import type { PlayerSearchItemDto } from '@frontend/lib/types';
 import { css, uiClasses } from '@frontend/lib/cn';
 import type { PlayerSearchState } from '@frontend/hooks';
@@ -32,7 +33,12 @@ export function PlayerSearchBox({
   wide = false,
   formClassName = 'career-search'
 }: PlayerSearchBoxProps) {
+  const listId = useId();
   const showResults = search.open && (search.loading || search.notice || search.suggestions.length > 0);
+  const activeId =
+    showResults && search.suggestions[search.activeIndex]
+      ? `${listId}-opt-${search.activeIndex}`
+      : undefined;
 
   async function handleSubmit(event: FormEvent) {
     const trimmed = query.trim();
@@ -56,6 +62,12 @@ export function PlayerSearchBox({
           autoComplete="off"
           spellCheck={false}
           placeholder={placeholder}
+          role="combobox"
+          aria-expanded={showResults ? true : false}
+          aria-controls={showResults ? listId : undefined}
+          aria-autocomplete="list"
+          aria-activedescendant={activeId}
+          aria-haspopup="listbox"
         />
         <button type="submit" disabled={submitting}>
           <SearchIcon />
@@ -63,7 +75,7 @@ export function PlayerSearchBox({
         </button>
       </form>
       {showResults ? (
-        <div className={cn('results')} role="listbox">
+        <div className={cn('results')} id={listId} role="listbox">
           {search.loading ? <div className={cn('state')}>搜索玩家中</div> : null}
           {!search.loading && search.notice ? <div className={cn('state')}>{search.notice}</div> : null}
           {!search.loading
@@ -72,6 +84,7 @@ export function PlayerSearchBox({
                   type="button"
                   className={cn(`item ${index === search.activeIndex ? 'itemSelected' : ''}`)}
                   key={`${player.bungieName}-${player.membershipId}`}
+                  id={`${listId}-opt-${index}`}
                   onMouseEnter={() => search.setActiveIndex(index)}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => void onSelectPlayer(player)}

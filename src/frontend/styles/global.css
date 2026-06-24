@@ -20,6 +20,25 @@
   --duration-slow: 420ms;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121614;
+    --surface: #1a1f1c;
+    --surface-2: #222824;
+    --text: #e8ece9;
+    --muted: #9aa5a0;
+    --line: #2f3834;
+    --green: #4cb896;
+    --accent: #4cb896;
+    --green-2: #1a2e27;
+    --amber: #d4a04a;
+    --amber-2: #2e2418;
+    --red: #e07070;
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  }
+}
+
 @keyframes d2-fade-in {
   from {
     opacity: 0;

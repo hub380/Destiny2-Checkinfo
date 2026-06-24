@@ -642,3 +642,70 @@
     grid-template-columns: minmax(78px, 1fr) 36px minmax(70px, 1fr);
   }
 }
+
+.gear-kind-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gear-kind-tabs button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gear-kind-tabs button.active {
+  border-color: var(--green);
+  background: var(--green-2);
+  color: var(--green);
+}
+
+.gear-card.active {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green);
+}
+
+.gear-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.gear-pagination button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-weight: 700;
+}
+
+.gear-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.perk-card-clickable {
+  cursor: pointer;
+}
+
+.perk-card-clickable:hover {
+  border-color: var(--green);
+}
+
+.perk-chip-clickable:not(:disabled) {
+  cursor: pointer;
+}
+
+.perk-chip-clickable:not(:disabled):hover {
+  border-color: var(--green);
+}

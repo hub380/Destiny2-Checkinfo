@@ -56,11 +56,19 @@ export function useHeyboxFeed(refreshSeconds = 30) {
 
   useEffect(() => {
     window.clearTimeout(refreshTimer.current);
-    if (!autoRefresh) return;
+    if (!autoRefresh || document.hidden) return;
     const delay = Math.max((nextRefreshAt.current ?? Date.now()) - Date.now(), 1000);
     refreshTimer.current = window.setTimeout(() => void refresh(), delay);
     return () => window.clearTimeout(refreshTimer.current);
   }, [autoRefresh, payload?.updatedAt, refresh]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (!document.hidden && autoRefresh) void refresh();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [autoRefresh, refresh]);
 
   const reportNotice = useCallback((message: string, error = false) => {
     setNotice(message);

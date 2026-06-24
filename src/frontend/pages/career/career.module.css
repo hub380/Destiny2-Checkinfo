@@ -121,6 +121,22 @@
   text-align: right;
 }
 
+.career-account-meta a {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.activity-guide-link {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .career-metric-grid,
 .career-mini-grid {
   display: grid;

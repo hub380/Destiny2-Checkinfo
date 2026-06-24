@@ -1,4 +1,4 @@
-import React, { FormEvent, useState } from 'react';
+import React, { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { PlayerSearchBox } from '@frontend/components/search';
 import {
   AppShell,
@@ -17,9 +17,10 @@ import {
   formatTime,
   privacyText,
   statDisplay,
+  formatBungieName,
   winRate
 } from '@frontend/ui';
-import { useCareerQuery, useMountUrlParam, usePlayerSearch } from '@frontend/hooks';
+import { useCareerQuery, useMountUrlParam, usePlayerSearch, useUrlPopstate } from '@frontend/hooks';
 import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
 import type { CareerSummaryDto, CharacterDto, PlayerSearchItemDto } from '@frontend/lib/types';
 import '@frontend/styles/global.css';
@@ -40,6 +41,12 @@ export function CareerPage() {
     setQuery(value);
     void runCareerQuery(value);
   });
+
+  useUrlPopstate(useCallback(() => {
+    const value = readUrlSearchParam('q') || '';
+    setQuery(value);
+    if (value) void runCareerQuery(value);
+  }, [runCareerQuery]));
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -122,6 +129,13 @@ function CareerDetail({ career }: { career: CareerSummaryDto }) {
   const raidTotal = raid.total || raid;
   const dungeonTotal = dungeon.total || dungeon;
 
+  const careerLinkQuery = formatBungieName(
+    career.account?.displayName as string,
+    career.account?.displayNameCode as number,
+    career.queriedName || (career.account?.bungieName as string)
+  );
+  const fireteamUrl = careerLinkQuery ? `/fireteam.html?q=${encodeURIComponent(careerLinkQuery)}` : undefined;
+
   return (
     <>
       <section className={cn('career-profile-panel')}>
@@ -133,6 +147,7 @@ function CareerDetail({ career }: { career: CareerSummaryDto }) {
           <div className={cn('career-account-meta')}>
             <span>{career.queriedName || ''}</span>
             <span>{profile.dateLastPlayed ? `最后在线 ${dateTime(profile.dateLastPlayed)}` : '公开资料'}</span>
+            {fireteamUrl ? <a href={fireteamUrl}>查棒鸡队伍</a> : null}
           </div>
         </div>
         <div className={cn('career-metric-grid')}>
@@ -285,6 +300,9 @@ function EndgameActivity({ activity }: { activity: any }) {
         <div>
           <b>{activity.name || '未知活动'}</b>
           <span>{activity.variantCount > 1 ? `${activity.variantCount} 个变体` : '单一变体'}</span>
+          {activity.name ? (
+            <a className={cn('activity-guide-link')} href={`/guides.html?q=${encodeURIComponent(activity.name)}`}>攻略</a>
+          ) : null}
         </div>
         <EndgameTags item={activity} />
       </div>
@@ -354,16 +372,51 @@ function CraftingPanel({ crafting, loading, error }: { crafting: any; loading?: 
 }
 
 function CraftingModal({ crafting, groups, onClose }: { crafting: any; groups: any[]; onClose: () => void }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key === 'Tab' && panelRef.current) {
+        const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previous?.focus();
+    };
+  }, [onClose]);
+
   return (
     <div className={cn('career-modal')}>
       <div className={cn('career-modal-backdrop')} onClick={onClose}></div>
-      <div className={cn('career-modal-panel')} role="dialog" aria-modal="true" aria-labelledby="craftingModalTitle">
+      <div className={cn('career-modal-panel')} ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="craftingModalTitle">
         <div className={cn('career-modal-head')}>
           <div>
             <h3 id="craftingModalTitle">锻造进度</h3>
             <span>{privacyText(crafting.privacy)}</span>
           </div>
-          <button className={cn('icon-button')} type="button" onClick={onClose} aria-label="关闭">×</button>
+          <button className={cn('icon-button')} ref={closeRef} type="button" onClick={onClose} aria-label="关闭">×</button>
         </div>
         <div className={cn('career-mini-grid crafting-summary')}>
           <MiniStat label="配方解锁" value={`${statDisplay(crafting.unlocked)} / ${statDisplay(crafting.total)}`} />

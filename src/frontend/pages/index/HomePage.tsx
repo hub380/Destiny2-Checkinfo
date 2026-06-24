@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useMemo, useState } from 'react';
+import React, { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { PlayerSearchBox } from '@frontend/components/search';
 import { getConfig } from '@frontend/lib/api';
 import {
@@ -21,8 +21,9 @@ import {
   staggerStyle,
   statDisplay
 } from '@frontend/ui';
-import { useHeyboxFeed, useCareerQuery, usePlayerSearch } from '@frontend/hooks';
+import { useHeyboxFeed, useCareerQuery, useMountUrlParam, usePlayerSearch, useUrlPopstate } from '@frontend/hooks';
 import type { CareerSummaryDto, FireteamDto, PlayerSearchItemDto } from '@frontend/lib/types';
+import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
 import '@frontend/styles/global.css';
 import styles from './home.module.css';
 const REFRESH_SECONDS = 30;
@@ -43,13 +44,24 @@ export function HomePage() {
   } = useHeyboxFeed(REFRESH_SECONDS);
   const [filter, setFilter] = useState('');
   const [toast, setToast] = useState('');
-  const [careerQuery, setCareerQuery] = useState('');
+  const [careerQuery, setCareerQuery] = useState(() => readUrlSearchParam('q') || '');
   const playerSearch = usePlayerSearch(careerQuery);
   const { career, loading: careerLoading, error: careerError, query: runCareerQuery } = useCareerQuery({
     modes: ['raid', 'dungeon'],
     includeDetails: false
   });
   const [careerNotice, setCareerNotice] = useState('');
+
+  useMountUrlParam('q', useCallback((value: string) => {
+    setCareerQuery(value);
+    void runCareerQuery(value);
+  }, [runCareerQuery]));
+
+  useUrlPopstate(useCallback(() => {
+    const value = readUrlSearchParam('q') || '';
+    setCareerQuery(value);
+    if (value) void runCareerQuery(value);
+  }, [runCareerQuery]));
 
   useEffect(() => {
     getConfig().catch((error) => {
@@ -98,6 +110,7 @@ export function HomePage() {
       return;
     }
     playerSearch.clearSuggestions();
+    writeUrlSearchParam('q', bungieName);
     setCareerNotice('Raid / 地牢完整历史加载中，基础资料已先展示。');
     const result = await runCareerQuery(bungieName);
     setCareerNotice(result.ok ? '' : result.error || '查询失败');
@@ -107,6 +120,7 @@ export function HomePage() {
     if (!player.bungieName) return;
     setCareerQuery(player.bungieName);
     playerSearch.clearSuggestions();
+    writeUrlSearchParam('q', player.bungieName);
     setCareerNotice('Raid / 地牢完整历史加载中，基础资料已先展示。');
     const result = await runCareerQuery(player.bungieName);
     setCareerNotice(result.ok ? '' : result.error || '查询失败');
@@ -120,6 +134,7 @@ export function HomePage() {
       return;
     }
     setCareerNotice('');
+    writeUrlSearchParam('q', username);
     void runCareerQuery(username);
   }
 
@@ -174,7 +189,7 @@ export function HomePage() {
             </div>
           </div>
           <Notice message={notice} error={noticeError} />
-          <StaggerList className={cn(`fireteam-list ${loading ? 'is-loading' : ''}`)}>
+          <StaggerList className={cn(`fireteam-list ${loading ? 'is-loading' : ''}`)} stagger={filteredItems.length <= 20}>
             {filteredItems.length ? (
               filteredItems.map((item, index) => (
                 <FireteamCard
@@ -191,7 +206,7 @@ export function HomePage() {
           </StaggerList>
         </PageSection>
 
-        <PageSection className={cn('panel career-panel')}>
+        <PageSection id="career" className={cn('panel career-panel')}>
           <div className={cn('panel-header stacked')}>
             <div>
               <h2>棒鸡玩家生涯</h2>
@@ -263,6 +278,9 @@ function FireteamCard({
           复制
         </button>
         {item.link ? <a className={cn('tag')} href={item.link} target="_blank" rel="noreferrer">来源</a> : null}
+        {username.includes('#') ? (
+          <a className={cn('tag')} href={`/fireteam.html?q=${encodeURIComponent(username)}`}>查棒鸡队伍</a>
+        ) : null}
       </div>
     </article>
   );

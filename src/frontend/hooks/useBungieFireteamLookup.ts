@@ -1,9 +1,10 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { getBungieFireteamLookup, getEndgame } from '@frontend/lib/api';
-import { writeUrlSearchParam, readUrlSearchParam } from '@frontend/lib/url';
+import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
 import type { FireteamLookupDto, FireteamMemberLookupDto, PlayerSearchItemDto } from '@frontend/lib/types';
 import { useMountUrlParam } from './useMountUrlParam';
 import { usePlayerSearch } from './usePlayerSearch';
+import { useUrlPopstate } from './useUrlPopstate';
 
 function memberKey(member: FireteamMemberLookupDto) {
   return `${member.account?.membershipType || member.membershipType || ''}:${member.account?.membershipId || member.membershipId || ''}`;
@@ -93,6 +94,17 @@ export function useBungieFireteamLookup() {
   useMountUrlParam('q', useCallback((value: string) => {
     setQuery(value);
     void runQuery({ bungieName: value });
+  }, [runQuery]));
+
+  useUrlPopstate(useCallback(() => {
+    const value = readUrlSearchParam('q') || '';
+    setQuery(value);
+    if (value) void runQuery({ bungieName: value });
+    else {
+      setLookup(null);
+      setNotice('输入玩家棒鸡 ID，查询该玩家当前公开队伍。');
+      setError(false);
+    }
   }, [runQuery]));
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGearSearch } from '@frontend/hooks';
 import {
   AppShell,
@@ -17,6 +17,7 @@ import '@frontend/styles/global.css';
 import styles from './gear.module.css';
 
 const cn = createPageCn(styles);
+const PAGE_SIZE = 24;
 
 export function GearPage() {
   const {
@@ -24,14 +25,35 @@ export function GearPage() {
     setQuery,
     payload,
     detail,
+    activeHash,
     subtitle,
     notice,
     error,
     openItem,
+    openPerk,
     onSubmit
   } = useGearSearch();
+  const [kindFilter, setKindFilter] = useState('all');
+  const [page, setPage] = useState(0);
+  const detailRef = useRef<HTMLDivElement>(null);
 
   const items = Array.isArray(payload?.items) ? payload.items : [];
+  const filteredItems = useMemo(() => {
+    if (kindFilter === 'all') return items;
+    return items.filter((item) => item.kind === kindFilter);
+  }, [items, kindFilter]);
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const visibleItems = filteredItems.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(0);
+  }, [payload?.query, kindFilter]);
+
+  useEffect(() => {
+    if (!detail || detail.loading || detail.error) return;
+    detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [detail, activeHash]);
 
   return (
     <AppShell title="Destiny 2 装备搜索" subtitle="统一搜索武器、护甲、Perk 与可出武器" current="gear">
@@ -53,6 +75,27 @@ export function GearPage() {
             </div>
           </form>
           <Notice message={notice} error={error} />
+          {payload ? (
+            <div className={cn('gear-kind-tabs')} role="tablist" aria-label="装备类型">
+              {[
+                { value: 'all', label: '全部' },
+                { value: 'weapon', label: '武器' },
+                { value: 'armor', label: '护甲' },
+                { value: 'perk', label: 'Perk' }
+              ].map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={kindFilter === tab.value}
+                  className={cn(kindFilter === tab.value ? 'active' : '')}
+                  onClick={() => setKindFilter(tab.value)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className={cn(`gear-result ${payload ? '' : 'empty'}`)}>
             {!payload ? (
               detail?.loading ? (
@@ -64,12 +107,28 @@ export function GearPage() {
               <>
                 <div className={cn('gear-summary')}>
                   <b>{payload.query}</b>
-                  <span>显示 {formatNumber(items.length)} / {formatNumber(payload.total || 0)}</span>
+                  <span>显示 {formatNumber(filteredItems.length)} / {formatNumber(payload.total || 0)}</span>
                 </div>
-                <GearDetailSlot detail={detail} />
-                <StaggerList className={cn('gear-grid')}>
-                  {items.length ? items.map((item) => <GearResultCard item={item} onOpen={() => openItem(item)} key={`${item.kind}-${item.hash}`} />) : <div className={cn('detail-loading')}>没有匹配的装备数据</div>}
+                <div className={cn('gear-detail-slot')} ref={detailRef}>
+                  <GearDetailSlot detail={detail} onPerkClick={(perk) => void openPerk(perk)} />
+                </div>
+                <StaggerList className={cn('gear-grid')} stagger={visibleItems.length <= 20}>
+                  {visibleItems.length ? visibleItems.map((item) => (
+                    <GearResultCard
+                      item={item}
+                      active={activeHash === String(item.hash)}
+                      onOpen={() => void openItem(item)}
+                      key={`${item.kind}-${item.hash}`}
+                    />
+                  )) : <PageEmpty>没有匹配的装备数据</PageEmpty>}
                 </StaggerList>
+                {pageCount > 1 ? (
+                  <div className={cn('gear-pagination')}>
+                    <button type="button" disabled={safePage <= 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>上一页</button>
+                    <span>{safePage + 1} / {pageCount}</span>
+                    <button type="button" disabled={safePage >= pageCount - 1} onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}>下一页</button>
+                  </div>
+                ) : null}
               </>
             )}
           </div>
@@ -79,11 +138,11 @@ export function GearPage() {
   );
 }
 
-function GearResultCard({ item, onOpen }: { item: JsonRecord; onOpen: () => void }) {
+function GearResultCard({ item, active, onOpen }: { item: JsonRecord; active?: boolean; onOpen: () => void }) {
   const meta = gearMeta(item);
   const action = item.kind === 'perk' ? '反查武器' : '查看详情';
   return (
-    <button className={cn('gear-card gear-card-button cardHover')} type="button" onClick={onOpen}>
+    <button className={cn(`gear-card gear-card-button cardHover ${active ? 'active' : ''}`)} type="button" onClick={onOpen}>
       <img className={cn('gear-icon')} src={item.icon || '/brand.svg'} alt="" />
       <div className={cn('gear-main')}>
         <div className={cn('gear-title')}>
@@ -101,22 +160,38 @@ function GearResultCard({ item, onOpen }: { item: JsonRecord; onOpen: () => void
   );
 }
 
-function GearDetailSlot({ detail }: { detail: JsonRecord | null }) {
-  if (!detail) return <div className={cn('gear-detail-slot')}></div>;
-  if (detail.loading) return <div className={cn('gear-detail-slot')}><div className={cn('detail-loading')}>{detail.message}</div></div>;
-  if (detail.error) return <div className={cn('gear-detail-slot')}><div className={cn('notice error')}>{detail.error}</div></div>;
-  if (detail.weapons || detail.perks) return <div className={cn('gear-detail-slot')}><PerkWeapons payload={detail} /></div>;
-  return <div className={cn('gear-detail-slot')}><GearDetail item={detail.item} detail={detail.detail} /></div>;
+function GearDetailSlot({ detail, onPerkClick }: { detail: JsonRecord | null; onPerkClick?: (perk: JsonRecord) => void }) {
+  if (!detail) return null;
+  if (detail.loading) return <div className={cn('detail-loading')}>{detail.message}</div>;
+  if (detail.error) return <div className={cn('notice error')}>{detail.error}</div>;
+  if (detail.weapons || detail.perks) return <PerkWeapons payload={detail} onPerkClick={onPerkClick} />;
+  return <GearDetail item={detail.item} detail={detail.detail} onPerkClick={onPerkClick} />;
 }
 
-function GearDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord }) {
+function GearDetail({
+  item,
+  detail,
+  onPerkClick
+}: {
+  item: JsonRecord;
+  detail: JsonRecord;
+  onPerkClick?: (perk: JsonRecord) => void;
+}) {
   if (!item || !detail) return <div className={cn('detail-loading')}>没有可展示的详情</div>;
-  if (item.kind === 'weapon') return <WeaponDetail item={item} detail={detail} />;
-  if (item.kind === 'armor') return <ArmorDetail item={item} detail={detail} />;
+  if (item.kind === 'weapon') return <WeaponDetail item={item} detail={detail} onPerkClick={onPerkClick} />;
+  if (item.kind === 'armor') return <ArmorDetail item={item} detail={detail} onPerkClick={onPerkClick} />;
   return <div className={cn('detail-loading')}>点击 Perk 可反查支持该 Perk 的武器</div>;
 }
 
-function WeaponDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord }) {
+function WeaponDetail({
+  item,
+  detail,
+  onPerkClick
+}: {
+  item: JsonRecord;
+  detail: JsonRecord;
+  onPerkClick?: (perk: JsonRecord) => void;
+}) {
   return (
     <section className={cn('gear-detail-panel')}>
       <div className={cn('gear-detail-head')}>
@@ -131,7 +206,7 @@ function WeaponDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord }
       </div>
       <SourceHints hints={detail.sourceHints || item.sourceHints || []} />
       <Stats stats={detail.stats || []} />
-      <PerkColumns sockets={detail.sockets || []} />
+      <PerkColumns sockets={detail.sockets || []} onPerkClick={onPerkClick} />
     </section>
   );
 }
@@ -155,7 +230,15 @@ function SourceHints({ hints }: { hints: JsonRecord[] }) {
   );
 }
 
-function ArmorDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord }) {
+function ArmorDetail({
+  item,
+  detail,
+  onPerkClick
+}: {
+  item: JsonRecord;
+  detail: JsonRecord;
+  onPerkClick?: (perk: JsonRecord) => void;
+}) {
   const setBonus = detail.setBonus;
   const intrinsicPerks = Array.isArray(detail.intrinsicPerks) ? detail.intrinsicPerks : [];
   return (
@@ -172,7 +255,7 @@ function ArmorDetail({ item, detail }: { item: JsonRecord; detail: JsonRecord })
       </div>
       <SourceHints hints={detail.sourceHints || item.sourceHints || []} />
       {setBonus ? <ArmorSetBonus setBonus={setBonus} /> : <div className={cn('detail-loading')}>这件护甲没有公开的两件 / 四件套效果</div>}
-      {intrinsicPerks.length ? <div className={cn('perk-columns armor-intrinsics')}><div className={cn('perk-column')}><h4>护甲特性</h4>{intrinsicPerks.map((perk: JsonRecord) => <PerkCard perk={perk} key={perk.hash || perk.name} />)}</div></div> : null}
+      {intrinsicPerks.length ? <div className={cn('perk-columns armor-intrinsics')}><div className={cn('perk-column')}><h4>护甲特性</h4>{intrinsicPerks.map((perk: JsonRecord) => <PerkCard perk={perk} onPerkClick={onPerkClick} key={perk.hash || perk.name} />)}</div></div> : null}
     </section>
   );
 }
@@ -195,7 +278,7 @@ function ArmorSetBonus({ setBonus }: { setBonus: JsonRecord }) {
   );
 }
 
-function PerkWeapons({ payload }: { payload: JsonRecord }) {
+function PerkWeapons({ payload, onPerkClick }: { payload: JsonRecord; onPerkClick?: (perk: JsonRecord) => void }) {
   const weapons = Array.isArray(payload.weapons) ? payload.weapons : [];
   const perks = Array.isArray(payload.perks) ? payload.perks : [];
   return (
@@ -205,13 +288,13 @@ function PerkWeapons({ payload }: { payload: JsonRecord }) {
         <span>命中 Perk {formatNumber(perks.length)} 个</span>
         <span>武器 {formatNumber(payload.total || 0)} 组</span>
       </div>
-      {perks.length ? <div className={cn('perk-strip')}>{perks.slice(0, 12).map((perk: JsonRecord) => <PerkChip perk={perk} key={perk.hash || perk.name} />)}</div> : null}
-      {weapons.length ? <div className={cn('weapon-group-list')}>{weapons.map((group: JsonRecord) => <WeaponGroup group={group} key={group.hash || group.name} />)}</div> : <div className={cn('detail-loading')}>没有找到可出该 Perk 的武器</div>}
+      {perks.length ? <div className={cn('perk-strip')}>{perks.slice(0, 12).map((perk: JsonRecord) => <PerkChip perk={perk} onPerkClick={onPerkClick} key={perk.hash || perk.name} />)}</div> : null}
+      {weapons.length ? <div className={cn('weapon-group-list')}>{weapons.map((group: JsonRecord) => <WeaponGroup group={group} onPerkClick={onPerkClick} key={group.hash || group.name} />)}</div> : <div className={cn('detail-loading')}>没有找到可出该 Perk 的武器</div>}
     </section>
   );
 }
 
-function WeaponGroup({ group }: { group: JsonRecord }) {
+function WeaponGroup({ group, onPerkClick }: { group: JsonRecord; onPerkClick?: (perk: JsonRecord) => void }) {
   const variants = Array.isArray(group.variants) ? group.variants : [];
   const primary = variants[0] || {};
   const sockets = Array.isArray(primary.sockets) ? primary.sockets : [];
@@ -235,7 +318,7 @@ function WeaponGroup({ group }: { group: JsonRecord }) {
           {variants.slice(0, 10).map((variant: JsonRecord) => <span key={variant.hash || variant.name}>{variant.name || '未知变体'}{variant.adept ? ' · 专家' : ''}</span>)}
           {variants.length > 10 ? <span>+{variants.length - 10}</span> : null}
         </div>
-        <PerkColumns sockets={perkSockets} />
+        <PerkColumns sockets={perkSockets} onPerkClick={onPerkClick} />
       </div>
     </article>
   );
@@ -260,23 +343,30 @@ function Stats({ stats }: { stats: JsonRecord[] }) {
   );
 }
 
-function PerkColumns({ sockets }: { sockets: JsonRecord[] }) {
+function PerkColumns({ sockets, onPerkClick }: { sockets: JsonRecord[]; onPerkClick?: (perk: JsonRecord) => void }) {
   if (!sockets.length) return <div className={cn('detail-loading')}>没有可展示的 Perk 池</div>;
   return (
     <div className={cn('perk-columns')}>
       {sockets.map((socket) => (
         <div className={cn('perk-column')} key={socket.socketIndex || socket.label}>
           <h4>{socket.label || `第 ${Number(socket.socketIndex || 0) + 1} 列`}</h4>
-          {(socket.perks || []).map((perk: JsonRecord) => <PerkCard perk={perk} key={perk.hash || perk.name} />)}
+          {(socket.perks || []).map((perk: JsonRecord) => <PerkCard perk={perk} onPerkClick={onPerkClick} key={perk.hash || perk.name} />)}
         </div>
       ))}
     </div>
   );
 }
 
-function PerkCard({ perk }: { perk: JsonRecord }) {
+function PerkCard({ perk, onPerkClick }: { perk: JsonRecord; onPerkClick?: (perk: JsonRecord) => void }) {
+  const clickable = Boolean(onPerkClick && perk.hash);
   return (
-    <div className={cn(`perk-card ${perk.matched ? 'matched' : ''}`)}>
+    <div
+      className={cn(`perk-card ${perk.matched ? 'matched' : ''} ${clickable ? 'perk-card-clickable' : ''}`)}
+      onClick={clickable ? () => onPerkClick?.(perk) : undefined}
+      onKeyDown={clickable ? (event) => event.key === 'Enter' && onPerkClick?.(perk) : undefined}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+    >
       <img src={perk.icon || '/brand.svg'} alt="" />
       <div>
         <b>{perk.name || '-'}</b>
@@ -308,13 +398,19 @@ function InlineFrameSocket({ socket }: { socket?: JsonRecord }) {
   );
 }
 
-function PerkChip({ perk }: { perk: JsonRecord }) {
+function PerkChip({ perk, onPerkClick }: { perk: JsonRecord; onPerkClick?: (perk: JsonRecord) => void }) {
+  const clickable = Boolean(onPerkClick && perk.hash);
   return (
-    <span className={cn('perk-chip')}>
+    <button
+      className={cn(`perk-chip ${clickable ? 'perk-chip-clickable' : ''}`)}
+      type="button"
+      disabled={!clickable}
+      onClick={clickable ? () => onPerkClick?.(perk) : undefined}
+    >
       <img src={perk.icon || '/brand.svg'} alt="" />
       <b>{perk.name || '未知 Perk'}</b>
       <em>{perk.enhanced ? '强化' : '普通'}</em>
-    </span>
+    </button>
   );
 }
 

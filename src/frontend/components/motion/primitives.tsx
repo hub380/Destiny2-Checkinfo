@@ -19,8 +19,17 @@ export function FadeIn({ children, className, variant = 'layout' }: FadeInProps)
   return <div className={css(motionClasses, `${motionClass} ${className || ''}`)}>{children}</div>;
 }
 
-export function StaggerList({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={css(motionClasses, `listEnter ${className || ''}`)}>{children}</div>;
+export function StaggerList({
+  children,
+  className,
+  stagger = true
+}: {
+  children: ReactNode;
+  className?: string;
+  stagger?: boolean;
+}) {
+  const motionClass = stagger ? 'listEnter' : '';
+  return <div className={css(motionClasses, `${motionClass} ${className || ''}`)}>{children}</div>;
 }
 
 export function LoadingPulse({

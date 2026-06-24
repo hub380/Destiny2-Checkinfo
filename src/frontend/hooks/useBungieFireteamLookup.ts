@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { getBungieFireteamLookup, getEndgame } from '@frontend/lib/api';
 import { readUrlSearchParam, writeUrlSearchParam } from '@frontend/lib/url';
 import type { FireteamLookupDto, FireteamMemberLookupDto, PlayerSearchItemDto } from '@frontend/lib/types';
@@ -59,20 +59,32 @@ export function useBungieFireteamLookup() {
   const [loading, setLoading] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerSearchItemDto | null>(null);
   const playerSearch = usePlayerSearch(query);
+  const queryRef = useRef(query);
+  const playerSearchRef = useRef(playerSearch);
+  const inflightKeyRef = useRef<string | null>(null);
+  queryRef.current = query;
+  playerSearchRef.current = playerSearch;
 
   const runQuery = useCallback(async (body: Record<string, unknown>) => {
-    const bungieName = String(body.bungieName || query || '').trim();
+    const bungieName = String(body.bungieName || queryRef.current || '').trim();
     if (!bungieName && !body.membershipId) {
       setNotice('请输入棒鸡名称，格式为 名称#数字代码。');
       setError(true);
       return;
     }
+
+    const requestKey = body.membershipId
+      ? `${body.membershipType || ''}:${body.membershipId}`
+      : bungieName;
+    if (inflightKeyRef.current === requestKey) return;
+
+    inflightKeyRef.current = requestKey;
     setLoading(true);
     setLookup(null);
     setNotice('正在查询当前队伍和成员生涯数据。');
     setError(false);
-    playerSearch.clearSuggestions();
-    writeUrlSearchParam('q', bungieName);
+    playerSearchRef.current.clearSuggestions();
+    if (readUrlSearchParam('q') !== bungieName) writeUrlSearchParam('q', bungieName);
     try {
       const payload = await getBungieFireteamLookup({
         ...body,
@@ -87,25 +99,31 @@ export function useBungieFireteamLookup() {
       setNotice(message);
       setError(true);
     } finally {
+      if (inflightKeyRef.current === requestKey) inflightKeyRef.current = null;
       setLoading(false);
     }
-  }, [query, playerSearch]);
+  }, []);
 
-  useMountUrlParam('q', useCallback((value: string) => {
-    setQuery(value);
-    void runQuery({ bungieName: value });
-  }, [runQuery]));
+  const applyUrlQuery = useCallback(
+    (value: string) => {
+      setQuery(value);
+      if (value) void runQuery({ bungieName: value });
+      else {
+        inflightKeyRef.current = null;
+        setLookup(null);
+        setNotice('输入玩家棒鸡 ID，查询该玩家当前公开队伍。');
+        setError(false);
+      }
+    },
+    [runQuery]
+  );
 
-  useUrlPopstate(useCallback(() => {
+  useMountUrlParam('q', applyUrlQuery);
+
+  useUrlPopstate(() => {
     const value = readUrlSearchParam('q') || '';
-    setQuery(value);
-    if (value) void runQuery({ bungieName: value });
-    else {
-      setLookup(null);
-      setNotice('输入玩家棒鸡 ID，查询该玩家当前公开队伍。');
-      setError(false);
-    }
-  }, [runQuery]));
+    applyUrlQuery(value);
+  });
 
   useEffect(() => {
     if (!lookup?.updatedAt) return;

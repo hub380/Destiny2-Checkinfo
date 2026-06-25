@@ -22,16 +22,7 @@
             "kalli",
             "第一关"
           ],
-          "drops": [
-            {
-              "name": "唠叨龙骨",
-              "en": "Chattering Bone"
-            },
-            {
-              "name": "旧日羁绊",
-              "en": "Age-Old Bond"
-            }
-          ]
+          "drops": []
         },
         {
           "key": "shuro-chi",
@@ -44,16 +35,7 @@
             "shuro chi",
             "第二关"
           ],
-          "drops": [
-            {
-              "name": "变形术",
-              "en": "Transfiguration"
-            },
-            {
-              "name": "霸权",
-              "en": "Tyranny of Heaven"
-            }
-          ]
+          "drops": []
         },
         {
           "key": "morgeth",
@@ -64,12 +46,7 @@
             "morgeth",
             "第三关"
           ],
-          "drops": [
-            {
-              "name": "野兽国度",
-              "en": "Nation of Beasts"
-            }
-          ]
+          "drops": []
         },
         {
           "key": "vault",
@@ -80,12 +57,7 @@
             "vault",
             "第四关"
           ],
-          "drops": [
-            {
-              "name": "灵巫力量",
-              "en": "Techeun Force"
-            }
-          ]
+          "drops": []
         },
         {
           "key": "riven",
@@ -96,12 +68,7 @@
             "riven",
             "第五关"
           ],
-          "drops": [
-            {
-              "name": "巅峰捕食者",
-              "en": "Apex Predator"
-            }
-          ]
+          "drops": []
         },
         {
           "key": "queenswalk",
@@ -114,12 +81,7 @@
             "heart",
             "尾王"
           ],
-          "drops": [
-            {
-              "name": "千语",
-              "en": "One Thousand Voices"
-            }
-          ]
+          "drops": []
         }
       ]
     },
@@ -149,8 +111,8 @@
               "en": "Accrued Redemption"
             },
             {
-              "name": "神圣起源",
-              "en": "Sacred Provenance"
+              "name": "狂徒的奖励",
+              "en": "Zealot's Reward"
             }
           ]
         },
@@ -164,6 +126,10 @@
             "第二关"
           ],
           "drops": [
+            {
+              "name": "末日先知",
+              "en": "Prophet of Doom"
+            },
             {
               "name": "鲁莽神谕",
               "en": "Reckless Oracle"
@@ -181,8 +147,12 @@
           ],
           "drops": [
             {
-              "name": "全知之眼",
-              "en": "Omniscient Eye"
+              "name": "上古福音",
+              "en": "Ancient Gospel"
+            },
+            {
+              "name": "神圣起源",
+              "en": "Sacred Provenance"
             }
           ]
         },
@@ -197,12 +167,12 @@
           ],
           "drops": [
             {
-              "name": "狂徒的奖励",
-              "en": "Zealot's Reward"
+              "name": "全知之眼",
+              "en": "Omniscient Eye"
             },
             {
-              "name": "天堂暴政",
-              "en": "Tyranny"
+              "name": "神圣裁决",
+              "en": "Divinity"
             }
           ]
         }
@@ -232,10 +202,6 @@
             {
               "name": "受托",
               "en": "Trustee"
-            },
-            {
-              "name": "继承",
-              "en": "Succession"
             }
           ]
         },
@@ -249,12 +215,12 @@
           ],
           "drops": [
             {
-              "name": "遗产",
-              "en": "Heritage"
+              "name": "继承",
+              "en": "Succession"
             },
             {
-              "name": "后代",
-              "en": "Posterity"
+              "name": "遗产",
+              "en": "Heritage"
             }
           ]
         },
@@ -268,8 +234,8 @@
           ],
           "drops": [
             {
-              "name": "纪念",
-              "en": "Commemoration"
+              "name": "后代",
+              "en": "Posterity"
             }
           ]
         },
@@ -283,6 +249,14 @@
             "尾王"
           ],
           "drops": [
+            {
+              "name": "纪念",
+              "en": "Commemoration"
+            },
+            {
+              "name": "遗赠",
+              "en": "Bequest"
+            },
             {
               "name": "明日之眼",
               "en": "Eyes of Tomorrow"
@@ -315,6 +289,14 @@
             {
               "name": "汇流愿景",
               "en": "Vision of Confluence"
+            },
+            {
+              "name": "裁决定论",
+              "en": "Found Verdict"
+            },
+            {
+              "name": "惩戒措施",
+              "en": "Corrective Measure"
             }
           ]
         },
@@ -335,6 +317,10 @@
             {
               "name": "汇流愿景",
               "en": "Vision of Confluence"
+            },
+            {
+              "name": "裁决定论",
+              "en": "Found Verdict"
             }
           ]
         },
@@ -351,6 +337,14 @@
             {
               "name": "命运终结者",
               "en": "Fatebringer"
+            },
+            {
+              "name": "汇流愿景",
+              "en": "Vision of Confluence"
+            },
+            {
+              "name": "惩戒措施",
+              "en": "Corrective Measure"
             }
           ]
         },
@@ -365,12 +359,16 @@
           ],
           "drops": [
             {
-              "name": "裁决定论",
-              "en": "Found Verdict"
+              "name": "命运终结者",
+              "en": "Fatebringer"
             },
             {
-              "name": "惩戒措施",
-              "en": "Corrective Measure"
+              "name": "光芒复仇",
+              "en": "Hezen Vengeance"
+            },
+            {
+              "name": "裁决定论",
+              "en": "Found Verdict"
             }
           ]
         },
@@ -388,6 +386,14 @@
             {
               "name": "Vex揭秘者",
               "en": "Vex Mythoclast"
+            },
+            {
+              "name": "普莱蒂斯的复仇",
+              "en": "Praedyth's Revenge"
+            },
+            {
+              "name": "惩戒措施",
+              "en": "Corrective Measure"
             },
             {
               "name": "光芒复仇",
@@ -422,6 +428,14 @@
             {
               "name": "驯顺",
               "en": "Submission"
+            },
+            {
+              "name": "解脱",
+              "en": "Deliverance"
+            },
+            {
+              "name": "灾变",
+              "en": "Cataclysmic"
             }
           ]
         },
@@ -435,12 +449,20 @@
           ],
           "drops": [
             {
-              "name": "自制",
-              "en": "Forbearance"
-            },
-            {
               "name": "驯顺",
               "en": "Submission"
+            },
+            {
+              "name": "阴险",
+              "en": "Insidious"
+            },
+            {
+              "name": "灾变",
+              "en": "Cataclysmic"
+            },
+            {
+              "name": "自制",
+              "en": "Forbearance"
             }
           ]
         },
@@ -454,8 +476,8 @@
           ],
           "drops": [
             {
-              "name": "解脱",
-              "en": "Deliverance"
+              "name": "驯顺",
+              "en": "Submission"
             },
             {
               "name": "阴险",
@@ -474,16 +496,20 @@
           ],
           "drops": [
             {
-              "name": "灾变",
-              "en": "Cataclysmic"
+              "name": "集体义务",
+              "en": "Collective Obligation"
+            },
+            {
+              "name": "解脱",
+              "en": "Deliverance"
+            },
+            {
+              "name": "自制",
+              "en": "Forbearance"
             },
             {
               "name": "鲁布瑞之厄",
               "en": "Lubrae's Ruin"
-            },
-            {
-              "name": "集体义务",
-              "en": "Collective Obligation"
             }
           ]
         }
@@ -537,8 +563,8 @@
               "en": "Smite of Merain"
             },
             {
-              "name": "库里姆的终界",
-              "en": "Qullim's Terminus"
+              "name": "亚斯明的抗争",
+              "en": "Defiance of Yasmin"
             }
           ]
         },
@@ -560,6 +586,10 @@
             {
               "name": "弥达的清算",
               "en": "Midha's Reckoning"
+            },
+            {
+              "name": "库里姆的终界",
+              "en": "Qullim's Terminus"
             }
           ]
         },
@@ -574,8 +604,16 @@
           ],
           "drops": [
             {
+              "name": "梅拉恩的惩戒",
+              "en": "Smite of Merain"
+            },
+            {
               "name": "扎乌利的克星",
               "en": "Zaouli's Bane"
+            },
+            {
+              "name": "亚斯明的抗争",
+              "en": "Defiance of Yasmin"
             }
           ]
         },
@@ -591,12 +629,8 @@
           ],
           "drops": [
             {
-              "name": "亚斯明的抗争",
-              "en": "Siege Drum"
-            },
-            {
               "name": "恶意触碰",
-              "en": "Necrochasm"
+              "en": "Touch of Malice"
             }
           ]
         }
@@ -625,8 +659,16 @@
           ],
           "drops": [
             {
-              "name": "鲁弗斯的狂怒",
-              "en": "Rufus's Fury"
+              "name": "蔷薇的蔑视",
+              "en": "Briar's Contempt"
+            },
+            {
+              "name": "科拉西斯的苦恼",
+              "en": "Koraxis's Distress"
+            },
+            {
+              "name": "内萨的奉献",
+              "en": "Nessa's Oblation"
             }
           ]
         },
@@ -639,6 +681,18 @@
             "第二关"
           ],
           "drops": [
+            {
+              "name": "麦克尔的崇敬",
+              "en": "Mykel's Reverence"
+            },
+            {
+              "name": "科拉西斯的苦恼",
+              "en": "Koraxis's Distress"
+            },
+            {
+              "name": "阿卡西娅的沮丧",
+              "en": "Acasia's Dejection"
+            },
             {
               "name": "内萨的奉献",
               "en": "Nessa's Oblation"
@@ -656,8 +710,20 @@
           ],
           "drops": [
             {
-              "name": "蔷薇的蔑视",
-              "en": "Briar's Contempt"
+              "name": "麦克尔的崇敬",
+              "en": "Mykel's Reverence"
+            },
+            {
+              "name": "鲁弗斯的狂怒",
+              "en": "Rufus's Fury"
+            },
+            {
+              "name": "阿卡西娅的沮丧",
+              "en": "Acasia's Dejection"
+            },
+            {
+              "name": "科拉西斯的苦恼",
+              "en": "Koraxis's Distress"
             }
           ]
         },
@@ -672,10 +738,6 @@
             "尾王"
           ],
           "drops": [
-            {
-              "name": "科拉西斯的苦恼",
-              "en": "Koraxis's Distress"
-            },
             {
               "name": "条件终局",
               "en": "Conditional Finality"
@@ -707,6 +769,14 @@
           ],
           "drops": [
             {
+              "name": "伊尔·约特之歌",
+              "en": "Song of Ir Yût"
+            },
+            {
+              "name": "伊尔·约特的尖牙",
+              "en": "Fang of Ir Yût"
+            },
+            {
               "name": "深渊叛逆",
               "en": "Abyss Defiant"
             }
@@ -725,6 +795,14 @@
             {
               "name": "断剑者",
               "en": "Swordbreaker"
+            },
+            {
+              "name": "伊尔·约特的尖牙",
+              "en": "Fang of Ir Yût"
+            },
+            {
+              "name": "超灵之诏",
+              "en": "Oversoul Edict"
             }
           ]
         },
@@ -739,8 +817,12 @@
           ],
           "drops": [
             {
-              "name": "伊尔·约特的尖牙",
-              "en": "Fang of Ir Yût"
+              "name": "克洛塔之语",
+              "en": "Word of Crota"
+            },
+            {
+              "name": "伊尔·约特之歌",
+              "en": "Song of Ir Yût"
             },
             {
               "name": "超灵之诏",
@@ -761,6 +843,18 @@
             {
               "name": "克洛塔之语",
               "en": "Word of Crota"
+            },
+            {
+              "name": "深渊叛逆",
+              "en": "Abyss Defiant"
+            },
+            {
+              "name": "断剑者",
+              "en": "Swordbreaker"
+            },
+            {
+              "name": "坏疽",
+              "en": "Necrochasm"
             }
           ]
         }
@@ -803,7 +897,7 @@
           "drops": [
             {
               "name": "终焉未至",
-              "en": "Circular Logic"
+              "en": "Sometime Soon"
             }
           ]
         },
@@ -818,7 +912,7 @@
           "drops": [
             {
               "name": "至善",
-              "en": "Nullify"
+              "en": "Greatest Good"
             }
           ]
         },
@@ -907,12 +1001,7 @@
             "boss",
             "尾王"
           ],
-          "drops": [
-            {
-              "name": "征兆",
-              "en": "Apostate"
-            }
-          ]
+          "drops": []
         }
       ]
     },
@@ -937,7 +1026,16 @@
             "hell",
             "第一关"
           ],
-          "drops": []
+          "drops": [
+            {
+              "name": "无情",
+              "en": "Relentless"
+            },
+            {
+              "name": "检察官",
+              "en": "Prosecutor"
+            }
+          ]
         },
         {
           "key": "hexahedron",
@@ -949,7 +1047,16 @@
             "hexahedron",
             "第二关"
           ],
-          "drops": []
+          "drops": [
+            {
+              "name": "猝死",
+              "en": "A Sudden Death"
+            },
+            {
+              "name": "判决",
+              "en": "Adjudicator"
+            }
+          ]
         },
         {
           "key": "kell-echo",
@@ -962,7 +1069,16 @@
             "boss",
             "尾王"
           ],
-          "drops": []
+          "drops": [
+            {
+              "name": "黑暗极致",
+              "en": "Darkest Before"
+            },
+            {
+              "name": "审判",
+              "en": "Judgment"
+            }
+          ]
         }
       ]
     },
@@ -1029,48 +1145,67 @@
       ],
       "encounters": [
         {
-          "key": "vault",
-          "zh": "忧愁承者",
-          "en": "The Vault",
+          "key": "gahlran",
+          "zh": "加尔兰",
+          "en": "Nightmare of Gahlran, Sorrow Bearer",
           "abbr": [
-            "忧愁承者",
-            "vault",
+            "加尔兰",
+            "gahlran",
             "第一关"
           ],
           "drops": [
             {
-              "name": "宿命",
-              "en": "Doom"
+              "name": "不散恐惧",
+              "en": "Lingering Dread"
             },
             {
-              "name": "风暴猎人",
-              "en": "Storm Chaser"
+              "name": "享乐主义",
+              "en": "The Epicurean"
             }
           ]
         },
         {
-          "key": "gahlran",
-          "zh": "卡鲁斯最大的羞耻",
-          "en": "Gahlran, the Pleasure-Seeker",
+          "key": "vault",
+          "zh": "开启金库",
+          "en": "Unlocking the Vault",
           "abbr": [
-            "加尔兰",
-            "卡鲁斯",
-            "gahlran",
+            "金库",
+            "vault",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "风暴猎人",
+              "en": "Stormchaser"
+            },
+            {
+              "name": "不可饶恕",
+              "en": "Unforgiven"
+            }
+          ]
+        },
+        {
+          "key": "caiatl",
+          "zh": "卡伊塔尔的噩梦",
+          "en": "Nightmare of Caiatl, Princess-Imperial",
+          "abbr": [
+            "卡伊塔尔",
+            "caiatl",
             "boss",
             "尾王"
           ],
           "drops": [
             {
+              "name": "新目标",
+              "en": "New Purpose"
+            },
+            {
+              "name": "宿命",
+              "en": "Fixed Odds"
+            },
+            {
               "name": "心影",
               "en": "Heartshadow"
-            },
-            {
-              "name": "享乐主义",
-              "en": "Epicurean"
-            },
-            {
-              "name": "不可饶恕",
-              "en": "Unforgiven"
             }
           ]
         }
@@ -1097,7 +1232,20 @@
             "ascent",
             "第一关"
           ],
-          "drops": []
+          "drops": [
+            {
+              "name": "长臂",
+              "en": "Long Arm"
+            },
+            {
+              "name": "第七炽天使卡宾枪",
+              "en": "Seventh Seraph Carbine"
+            },
+            {
+              "name": "终点视界",
+              "en": "Terminus Horizon"
+            }
+          ]
         },
         {
           "key": "akelous",
@@ -1110,12 +1258,12 @@
           ],
           "drops": [
             {
-              "name": "第七炽天使卡宾枪",
-              "en": "Seventh Seraph Carbine"
+              "name": "第七炽天使军官左轮",
+              "en": "Seventh Seraph Officer Revolver"
             },
             {
-              "name": "长臂",
-              "en": "Long Arm"
+              "name": "终点视界",
+              "en": "Terminus Horizon"
             }
           ]
         },
@@ -1131,8 +1279,12 @@
           ],
           "drops": [
             {
-              "name": "第七炽天使军官左轮",
-              "en": "Seventh Seraph Officer Revolver"
+              "name": "阈限守夜",
+              "en": "Liminal Vigil"
+            },
+            {
+              "name": "狂野飞禽",
+              "en": "Wilderflight"
             },
             {
               "name": "需求层级",
@@ -1163,7 +1315,16 @@
             "ritual",
             "第一关"
           ],
-          "drops": []
+          "drops": [
+            {
+              "name": "无人幸存",
+              "en": "No Survivors"
+            },
+            {
+              "name": "新太平洋碑文",
+              "en": "New Pacific Epitaph"
+            }
+          ]
         },
         {
           "key": "ecthar",
@@ -1181,7 +1342,7 @@
             },
             {
               "name": "无效安慰",
-              "en": "Defiant Whisper"
+              "en": "Cold Comfort"
             }
           ]
         },
@@ -1198,11 +1359,11 @@
           "drops": [
             {
               "name": "领航员",
-              "en": "Navigator"
+              "en": "The Navigator"
             },
             {
-              "name": "贪婪胃口",
-              "en": "Nox Perennial V"
+              "name": "无效安慰",
+              "en": "Cold Comfort"
             }
           ]
         }
@@ -1231,24 +1392,9 @@
           ],
           "drops": [
             {
-              "name": "纳伊姆的长矛",
-              "en": "Naeem's Lance"
-            },
-            {
               "name": "复仇低语",
-              "en": "Whisper of Rending"
-            }
-          ]
-        },
-        {
-          "key": "hefnd",
-          "zh": "赫芬德的复仇",
-          "en": "Hefnd's Vengeance",
-          "abbr": [
-            "hefnd",
-            "第二关"
-          ],
-          "drops": [
+              "en": "Vengeful Whisper"
+            },
             {
               "name": "拜龙教镰刀",
               "en": "Dragoncult Sickle"
@@ -1256,12 +1402,32 @@
           ]
         },
         {
-          "key": "ahamkara",
-          "zh": "阿汉卡拉",
-          "en": "Bone Collector / Ahamkara",
+          "key": "locus",
+          "zh": "悲嚎化身",
+          "en": "Locus of Wailing Grief",
           "abbr": [
-            "ahamkara",
-            "bone collector",
+            "悲嚎化身",
+            "locus",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "纳伊姆的长矛",
+              "en": "Naeem's Lance"
+            },
+            {
+              "name": "蒙恩",
+              "en": "Indebted Kindness"
+            }
+          ]
+        },
+        {
+          "key": "hefnd",
+          "zh": "赫芬德的复仇",
+          "en": "Hefnd's Vengeance, Blighted Chimaera",
+          "abbr": [
+            "赫芬德",
+            "hefnd",
             "boss",
             "尾王"
           ],
@@ -1271,8 +1437,12 @@
               "en": "Buried Bloodline"
             },
             {
+              "name": "纳伊姆的长矛",
+              "en": "Naeem's Lance"
+            },
+            {
               "name": "蒙恩",
-              "en": "Scatter Signal"
+              "en": "Indebted Kindness"
             }
           ]
         }
@@ -1301,8 +1471,12 @@
           ],
           "drops": [
             {
-              "name": "无声",
-              "en": "Indebted Kindness"
+              "name": "无爱",
+              "en": "Loveless"
+            },
+            {
+              "name": "无誓",
+              "en": "Oathless"
             }
           ]
         },
@@ -1319,7 +1493,15 @@
           "drops": [
             {
               "name": "无爱",
-              "en": "Aberrant Action"
+              "en": "Loveless"
+            },
+            {
+              "name": "无誓",
+              "en": "Oathless"
+            },
+            {
+              "name": "无声",
+              "en": "Hushed"
             }
           ]
         },
@@ -1335,8 +1517,20 @@
           ],
           "drops": [
             {
+              "name": "无爱",
+              "en": "Loveless"
+            },
+            {
+              "name": "无誓",
+              "en": "Oathless"
+            },
+            {
               "name": "无视",
-              "en": "Critical Anomaly"
+              "en": "Disregard"
+            },
+            {
+              "name": "无声",
+              "en": "Hushed"
             },
             {
               "name": "终局螺旋钻",
@@ -1407,36 +1601,41 @@
     "\"永恒沙漠\"突袭": {
       "type": "raid",
       "zh": "永恒沙漠",
-      "en": "The Edge of Fate",
+      "en": "The Desert Perpetual",
       "abbr": [
         "eof",
         "EoF",
         "edge of fate",
         "永恒沙漠",
-        "沙漠"
+        "沙漠",
+        "tdp",
+        "TDP",
+        "desert perpetual"
       ],
       "encounters": [
         {
-          "key": "aglais",
+          "key": "agraios",
           "zh": "阿格莱奥斯",
-          "en": "Aglais",
+          "en": "Agraios Inherent",
           "abbr": [
             "阿格莱奥斯",
-            "aglais",
+            "agraios",
             "第一关"
           ],
-          "drops": []
-        },
-        {
-          "key": "epoptes",
-          "zh": "埃波普特斯",
-          "en": "Epoptes",
-          "abbr": [
-            "埃波普特斯",
-            "epoptes",
-            "第二关"
-          ],
-          "drops": []
+          "drops": [
+            {
+              "name": "超前",
+              "en": "Antedate"
+            },
+            {
+              "name": "转瞬长矛",
+              "en": "Lance Ephemeral"
+            },
+            {
+              "name": "闰蚀",
+              "en": "Intercalary"
+            }
+          ]
         },
         {
           "key": "iatros",
@@ -1445,9 +1644,34 @@
           "abbr": [
             "伊亚特罗斯",
             "iatros",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "有限未知",
+              "en": "Finite Maybe"
+            },
+            {
+              "name": "何时何地",
+              "en": "The When and Where"
+            }
+          ]
+        },
+        {
+          "key": "epoptes",
+          "zh": "埃波普特斯",
+          "en": "Epoptes",
+          "abbr": [
+            "埃波普特斯",
+            "epoptes",
             "第三关"
           ],
-          "drops": []
+          "drops": [
+            {
+              "name": "隐晦沙漏",
+              "en": "Opaque Hourglass"
+            }
+          ]
         },
         {
           "key": "koregos",
@@ -1462,9 +1686,227 @@
           "drops": [
             {
               "name": "回旋喝彩",
-              "en": "Quickfang"
+              "en": "Whirling Ovation"
             }
           ]
+        }
+      ]
+    },
+    "\"永恒沙漠\"史诗突袭": {
+      "type": "raid",
+      "zh": "永恒沙漠（史诗）",
+      "en": "Edge of Fate (Epic)",
+      "abbr": [
+        "永恒沙漠史诗",
+        "eofd-epic",
+        "edge-epic",
+        "史诗沙漠"
+      ],
+      "encounters": [
+        {
+          "key": "agraios",
+          "zh": "阿格莱奥斯",
+          "en": "Agraios Inherent",
+          "abbr": [
+            "阿格莱奥斯",
+            "agraios",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "永恒之尖",
+              "en": "Cusp Sempiternal"
+            }
+          ]
+        },
+        {
+          "key": "iatros",
+          "zh": "伊亚特罗斯",
+          "en": "Iatros",
+          "abbr": [
+            "伊亚特罗斯",
+            "iatros",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "永存者",
+              "en": "The Ever-Present"
+            }
+          ]
+        },
+        {
+          "key": "epoptes",
+          "zh": "埃波普特斯",
+          "en": "Epoptes",
+          "abbr": [
+            "埃波普特斯",
+            "epoptes",
+            "第三关"
+          ],
+          "drops": [
+            {
+              "name": "星界虚无",
+              "en": "Starscape Null"
+            }
+          ]
+        },
+        {
+          "key": "koregos",
+          "zh": "科雷戈斯",
+          "en": "Koregos",
+          "abbr": [
+            "科雷戈斯",
+            "koregos",
+            "boss",
+            "尾王"
+          ],
+          "drops": []
+        }
+      ]
+    },
+    "晚星之主": {
+      "type": "dungeon",
+      "zh": "晚星之主",
+      "en": "Vesper's Host",
+      "abbr": [
+        "晚星之主",
+        "vespers-host",
+        "vh",
+        "晚星"
+      ],
+      "encounters": [
+        {
+          "key": "station",
+          "zh": "晚星空间站",
+          "en": "Vesper Station",
+          "abbr": [
+            "晚星空间站",
+            "station",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "VS速度指挥",
+              "en": "VS Throttle"
+            },
+            {
+              "name": "VS重力滞止",
+              "en": "VS Graviton"
+            },
+            {
+              "name": "VS寒冷抑制",
+              "en": "VS Chill"
+            }
+          ]
+        },
+        {
+          "key": "nexus",
+          "zh": "雷尼克斯联合",
+          "en": "Nexus Alliance",
+          "abbr": [
+            "雷尼克斯",
+            "nexus",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "VS热电推进",
+              "en": "VS Thermoelectric"
+            },
+            {
+              "name": "VS速度指挥",
+              "en": "VS Throttle"
+            },
+            {
+              "name": "VS重力滞止",
+              "en": "VS Graviton"
+            },
+            {
+              "name": "VS寒冷抑制",
+              "en": "VS Chill"
+            }
+          ]
+        },
+        {
+          "key": "atraks-2",
+          "zh": "腐化傀儡师·阿特拉克斯-2",
+          "en": "Corrupted Puppetmaster, Atraks-2",
+          "abbr": [
+            "阿特拉克斯",
+            "atraks-2",
+            "boss",
+            "尾王"
+          ],
+          "drops": [
+            {
+              "name": "VS热电推进",
+              "en": "VS Thermoelectric"
+            },
+            {
+              "name": "VS速度指挥",
+              "en": "VS Throttle"
+            },
+            {
+              "name": "VS重力滞止",
+              "en": "VS Graviton"
+            },
+            {
+              "name": "VS寒冷抑制",
+              "en": "VS Chill"
+            },
+            {
+              "name": "破冰者",
+              "en": "Icebreaker"
+            }
+          ]
+        }
+      ]
+    },
+    "\"破碎王座\"地牢": {
+      "type": "dungeon",
+      "zh": "破碎王座",
+      "en": "Shattered Throne",
+      "abbr": [
+        "破碎王座",
+        "shattered-throne",
+        "st",
+        "王座"
+      ],
+      "encounters": [
+        {
+          "key": "erebos",
+          "zh": "侦察行动",
+          "en": "Erebos Patrol",
+          "abbr": [
+            "侦察",
+            "erebos",
+            "第一关"
+          ],
+          "drops": []
+        },
+        {
+          "key": "vorgeth",
+          "zh": "伏喉斯",
+          "en": "Vorgeth, the Boundless Hunger",
+          "abbr": [
+            "伏喉斯",
+            "vorgeth",
+            "第二关"
+          ],
+          "drops": []
+        },
+        {
+          "key": "dul-incaru",
+          "zh": "杜尔·因卡鲁",
+          "en": "Dul Incaru, the Eternal Return",
+          "abbr": [
+            "杜尔",
+            "dul-incaru",
+            "boss",
+            "尾王"
+          ],
+          "drops": []
         }
       ]
     }

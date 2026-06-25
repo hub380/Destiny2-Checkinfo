@@ -14,4 +14,4 @@ export const ITEM_TYPE_WEAPON = 3;
 export const TRAIT_CATEGORY = 3708671066;
 export const EMPTY_TRAIT_SOCKET = '空特征插槽';
 export const ADEPT_SUFFIX = '（专家）';
-export const GEAR_INDEX_VERSION = 'gear-index-v5-source-hints';
+export const GEAR_INDEX_VERSION = 'gear-index-v6-split-r2';

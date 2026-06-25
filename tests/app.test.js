@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { handleAppRequest } from '../src/app/index.js';
+import {
+  gearItemPath,
+  perkWeaponsPath,
+  searchShardPath,
+  sourceAliasesPath,
+  sourceIndexPath,
+  sourceKeyFor
+} from '../src/lib/gear/split-paths.js';
 
 const BASE_URL = 'https://destiny2-checkinfo.test';
 
@@ -14,85 +22,173 @@ async function responseJson(response) {
 function gearFixture() {
   const armorWithSetBonus = {
     hash: 3001,
-    name: '国王的陨落 头盔',
+    name: 'Kings Fall Helm',
     kind: 'armor',
-    type: '头盔',
+    type: 'Helmet',
     icon: '/armor-set.png',
-    tier: '传说',
-    className: '泰坦',
-    searchText: '国王的陨落 头盔 raid',
-    sourceHints: [{ text: '国王的陨落', label: 'Raid' }],
+    tier: 'Legendary',
+    className: 'Titan',
+    searchText: "kings fall helm raid",
+    sourceHints: [{ text: "King's Fall", label: '收藏品来源' }],
     hasSetBonus: true,
-    setBonusName: '战争祭司遗产'
+    setBonusName: 'Warpriest Legacy'
   };
   const armorWithoutSetBonus = {
     hash: 3002,
-    name: '国王的陨落 旧头盔',
+    name: 'Kings Fall Old Helm',
     kind: 'armor',
-    type: '头盔',
+    type: 'Helmet',
     icon: '/armor-old.png',
-    tier: '传说',
-    className: '泰坦',
-    searchText: '国王的陨落 旧头盔 raid',
-    sourceHints: [{ text: '国王的陨落', label: 'Raid' }]
+    tier: 'Legendary',
+    className: 'Titan',
+    searchText: "kings fall old helm raid",
+    sourceHints: [{ text: "King's Fall", label: '收藏品来源' }]
   };
   const weapon = {
     hash: 1001,
-    name: '恶意触碰',
-    baseName: '恶意触碰',
+    name: 'Calamity',
+    baseName: 'Calamity',
     kind: 'weapon',
-    type: '武器',
-    weaponType: '斥候步枪',
-    ammo: '动能槽',
-    element: '动能',
+    type: 'Linear Fusion Rifle',
+    weaponType: 'Linear Fusion Rifle',
+    ammo: 'Heavy',
+    element: 'Solar',
     icon: '/weapon.png',
-    searchText: '恶意触碰 国王的陨落 raid',
-    sourceHints: [{ text: '国王的陨落', label: 'Raid' }]
+    searchText: "calamity kings fall raid bait and switch",
+    sourceHints: [{ text: "King's Fall", label: '收藏品来源' }]
   };
   const perk = {
     hash: 2001,
-    name: '诱导推销',
+    name: 'Bait and Switch',
     kind: 'perk',
-    type: '特性',
+    type: 'Trait',
     icon: '/perk.png',
-    description: '造成伤害后提升表现。',
-    searchText: '诱导推销'
+    enhanced: false,
+    description: 'Damage bonus.',
+    category: 'trait',
+    stats: [],
+    searchText: 'bait and switch'
   };
   return {
     manifestVersion: 'test-manifest',
+    locale: 'test',
     items: [armorWithoutSetBonus, weapon, armorWithSetBonus, perk],
     weapons: [
       {
         ...weapon,
-        sockets: [{ socketIndex: 3, label: '第 4 列', perks: [2001] }]
+        stats: [{ hash: 10, name: 'Impact', value: 92 }],
+        sockets: [{ socketIndex: 3, label: 'Trait', perks: [perk] }]
       }
     ],
     armors: [
       {
         ...armorWithSetBonus,
         setBonus: {
-          name: '战争祭司遗产',
-          perks: [{ hash: 9001, name: '两件套', description: '2 件套效果' }]
+          name: 'Warpriest Legacy',
+          perks: [{ hash: 9001, name: 'Two piece', description: '2 piece bonus' }]
         }
       },
       armorWithoutSetBonus
-    ]
+    ],
+    weaponPlugs: [perk]
   };
 }
 
 function envWithStaticGearIndex() {
+  const fixture = gearFixture();
+  const root = fixture.manifestVersion;
+  const sourceText = "King's Fall";
+  const sourceKey = sourceKeyFor(sourceText);
+  const files = new Map([
+    ['latest.json', { schemaVersion: 2, locale: 'test', manifestVersion: root, root }],
+    [
+      `${root}/${searchShardPath('armor')}`,
+      { schemaVersion: 2, kind: 'armor', locale: 'test', manifestVersion: root, items: fixture.items.filter((item) => item.kind === 'armor') }
+    ],
+    [
+      `${root}/${searchShardPath('weapon')}`,
+      { schemaVersion: 2, kind: 'weapon', locale: 'test', manifestVersion: root, items: fixture.items.filter((item) => item.kind === 'weapon') }
+    ],
+    [
+      `${root}/${searchShardPath('perk')}`,
+      { schemaVersion: 2, kind: 'perk', locale: 'test', manifestVersion: root, items: fixture.items.filter((item) => item.kind === 'perk') }
+    ],
+    [
+      `${root}/${gearItemPath(1001)}`,
+      { schemaVersion: 2, locale: 'test', manifestVersion: root, kind: 'weapon', hash: 1001, item: fixture.items.find((item) => item.hash === 1001), itemRecord: fixture.weapons[0] }
+    ],
+    [
+      `${root}/${perkWeaponsPath(2001)}`,
+      {
+        schemaVersion: 2,
+        locale: 'test',
+        manifestVersion: root,
+        perkHash: 2001,
+        weapons: [
+          {
+            name: 'Calamity',
+            weaponType: 'Linear Fusion Rifle',
+            ammo: 'Heavy',
+            element: 'Solar',
+            variants: [
+              {
+                hash: 1001,
+                name: 'Calamity',
+                adept: false,
+                icon: '/weapon.png',
+                stats: [{ hash: 10, name: 'Impact', value: 92 }]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    [
+      `${root}/${sourceAliasesPath()}`,
+      {
+        schemaVersion: 1,
+        aliases: {
+          [sourceText]: {
+            type: 'raid',
+            zh: sourceText,
+            en: sourceText,
+            abbr: ['kf'],
+            encounters: [
+              {
+                key: 'warpriest',
+                zh: 'Warpriest',
+                en: 'Warpriest',
+                abbr: ['warpriest'],
+                drops: [{ name: 'Calamity' }]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    [
+      `${root}/${sourceIndexPath(sourceKey)}`,
+      {
+        schemaVersion: 2,
+        locale: 'test',
+        manifestVersion: root,
+        sourceKey,
+        sourceText,
+        items: fixture.items.filter((item) => item.kind !== 'perk'),
+        encounters: []
+      }
+    ]
+  ]);
   return {
     BUNGIE_API_KEY: 'test-key',
     BUNGIE_LOCALE: 'test',
     GEAR_INDEX_CACHE_TTL_SECONDS: '60',
-    ASSETS: {
-      fetch: async (assetRequest) => {
-        const url = new URL(assetRequest.url);
-        if (url.pathname === '/data/gear-index-test.json') {
-          return Response.json(gearFixture());
-        }
-        return new Response('not found', { status: 404 });
-      }
+    GEAR_DEPS: {
+      apiKey: 'test-key',
+      locale: 'test',
+      cacheTtlSeconds: 60,
+      getLatestGearPointer: async () => files.get('latest.json'),
+      readGearJson: async (path) => files.get(path) || null
     }
   };
 }
@@ -152,17 +248,116 @@ describe('handleAppRequest API integration', () => {
       request('/api/gear/search', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ query: '国王的陨落', kind: 'armor' })
+        body: JSON.stringify({ query: "King's Fall", kind: 'armor' })
       }),
       envWithStaticGearIndex()
     );
     const payload = await responseJson(response);
 
     expect(response.status).toBe(200);
-    expect(payload.cache.gearIndex).toMatch(/miss|hit/);
+    expect(payload.cache.gearIndex).toBe('source-alias');
     expect(payload.items.map((item) => item.hash)).toEqual([3001, 3002]);
     expect(payload.items[0].hasSetBonus).toBe(true);
-    expect(payload.items[0].setBonusName).toBe('战争祭司遗产');
+    expect(payload.items[0].setBonusName).toBe('Warpriest Legacy');
+  });
+
+  it('searches gear by source aliases through source indexes', async () => {
+    const response = await handleAppRequest(
+      request('/api/gear/search', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: 'kf', kind: 'weapon' })
+      }),
+      envWithStaticGearIndex()
+    );
+    const payload = await responseJson(response);
+
+    expect(response.status).toBe(200);
+    expect(payload.cache.gearIndex).toBe('source-alias');
+    expect(payload.total).toBe(1);
+    expect(payload.items.map((item) => item.hash)).toEqual([1001]);
+  });
+
+  it('uses alias encounter drops when source indexes have no encounter metadata', async () => {
+    const response = await handleAppRequest(
+      request('/api/gear/search', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: 'kf warpriest', kind: 'weapon' })
+      }),
+      envWithStaticGearIndex()
+    );
+    const payload = await responseJson(response);
+
+    expect(response.status).toBe(200);
+    expect(payload.cache.gearIndex).toBe('encounter-source');
+    expect(payload.encounter.encounterKey).toBe('warpriest');
+    expect(payload.items.map((item) => item.hash)).toEqual([1001]);
+  });
+
+  it('loads gear item details from a single v2 item file', async () => {
+    const response = await handleAppRequest(
+      request('/api/gear/item', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ hash: '1001' })
+      }),
+      envWithStaticGearIndex()
+    );
+    const payload = await responseJson(response);
+
+    expect(response.status).toBe(200);
+    expect(payload.item.hash).toBe(1001);
+    expect(payload.item.sourceHints[0]).toMatchObject({
+      label: 'Raid 来源',
+      text: "King's Fall",
+      sourceAlias: {
+        type: 'raid',
+        zh: "King's Fall"
+      },
+      encounters: [
+        {
+          key: 'warpriest',
+          label: 'Warpriest',
+          zh: 'Warpriest',
+          en: 'Warpriest'
+        }
+      ]
+    });
+    expect(payload.detail.sourceHints[0].label).toBe('Raid 来源');
+    expect(payload.detail.sourceHints[0].encounters[0].key).toBe('warpriest');
+    expect(payload.detail.sockets[0].perks[0].name).toBe('Bait and Switch');
+  });
+
+  it('loads perk reverse search from v2 perk weapon files', async () => {
+    const response = await handleAppRequest(
+      request('/api/gear/perk-weapons', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: 'Bait and Switch' })
+      }),
+      envWithStaticGearIndex()
+    );
+    const payload = await responseJson(response);
+
+    expect(response.status).toBe(200);
+    expect(payload.weapons[0].variants[0].stats).toEqual([{ hash: 10, name: 'Impact', value: 92 }]);
+    expect(payload.weapons[0].variants[0].sockets[0].perks[0].matched).toBe(true);
+  });
+
+  it('returns a clear 503 when the v2 gear index is missing', async () => {
+    const response = await handleAppRequest(
+      request('/api/gear/search', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: 'Calamity' })
+      }),
+      { BUNGIE_API_KEY: 'test-key', GEAR_DEPS: { apiKey: 'test-key', getLatestGearPointer: async () => null, readGearJson: async () => null } }
+    );
+    const payload = await responseJson(response);
+
+    expect(response.status).toBe(503);
+    expect(payload.error.code).toBe('GEAR_INDEX_NOT_FOUND');
   });
 
   it('keeps guide list available when R2 content is empty', async () => {

@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildGearIndex } from '../src/lib/gear/index.js';
+import { buildGearIndex } from '../../src/lib/gear/index.js';
+import { writeSplitGearIndex } from '../../src/lib/gear/split-writer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..', '..');
@@ -10,6 +11,8 @@ loadEnvFile(path.join(rootDir, '.env'));
 const locale = process.env.BUNGIE_LOCALE || 'zh-chs';
 const outputDir = path.join(rootDir, 'public', 'data');
 const outputFile = path.join(outputDir, `gear-index-${locale}.json`);
+const splitOutputDir = path.join(outputDir, 'gear');
+const sourceAliasesFile = path.join(rootDir, 'content', 'gear', 'source-aliases.json');
 const maxBytes = Math.max(
   positiveNumber(process.env.GEAR_MANIFEST_MAX_BYTES, 0),
   positiveNumber(process.env.GEAR_INDEX_BUILD_MAX_BYTES, 500_000_000)
@@ -29,11 +32,20 @@ const index = await buildGearIndex({
   maxBytes
 });
 
-const serialized = JSON.stringify(index);
-writeFileSync(outputFile, serialized);
-const bytes = Buffer.byteLength(serialized);
+if (process.env.GEAR_WRITE_LEGACY_INDEX === '1') {
+  const serialized = JSON.stringify(index);
+  writeFileSync(outputFile, serialized);
+  console.log(`Wrote legacy ${path.relative(rootDir, outputFile)} (${formatBytes(Buffer.byteLength(serialized))})`);
+}
+
+const { latestPointer } = await writeSplitGearIndex(index, {
+  outputDir: splitOutputDir,
+  sourceAliasesFile,
+  locale
+});
+
 const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
-console.log(`Wrote ${path.relative(rootDir, outputFile)} (${formatBytes(bytes)}) in ${seconds}s`);
+console.log(`Wrote ${path.relative(rootDir, splitOutputDir)} (${formatBytes(latestPointer.byteSize)}) in ${seconds}s`);
 console.log(`Items: ${index.items.length}, weapons: ${index.weapons.length}, manifest: ${index.manifestVersion || '-'}`);
 
 function loadEnvFile(filePath) {

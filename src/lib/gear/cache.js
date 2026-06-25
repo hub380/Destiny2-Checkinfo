@@ -1,6 +1,6 @@
 const BUNGIE_BASE_URL = 'https://www.bungie.net';
 const DEFAULT_LOCALE = 'zh-chs';
-const DEFAULT_GEAR_PREFIX = 'gear-cache';
+const DEFAULT_GEAR_PREFIX = 'gear-cache/v2';
 const DEFAULT_BUCKET = 'destiny2-checkinfo-data';
 
 export async function loadR2GearIndex(env = {}) {
@@ -69,10 +69,16 @@ export async function runGearCacheCheck(env = {}, ctx = {}, meta = {}) {
   return status;
 }
 
-async function readLatestGearPointer(env) {
+export async function readLatestGearPointer(env) {
   const locale = gearLocale(env);
   const kvPointer = await readKvJson(latestKvKey(locale), env);
-  if (isUsablePointer(kvPointer)) {
+  const legacyKvPointer = isUsablePointer(kvPointer)
+    ? {
+        ...kvPointer,
+        source: 'kv'
+      }
+    : null;
+  if (isUsableV2Pointer(kvPointer)) {
     return {
       ...kvPointer,
       source: 'kv'
@@ -87,7 +93,7 @@ async function readLatestGearPointer(env) {
     };
   }
 
-  return null;
+  return legacyKvPointer;
 }
 
 async function readGearStatus(env) {
@@ -185,7 +191,11 @@ async function readR2Json(key, env) {
 }
 
 function isUsablePointer(pointer) {
-  return Boolean(pointer && typeof pointer === 'object' && pointer.r2Key && pointer.manifestVersion);
+  return Boolean(pointer && typeof pointer === 'object' && pointer.manifestVersion && (pointer.r2Key || pointer.root));
+}
+
+function isUsableV2Pointer(pointer) {
+  return Boolean(pointer && typeof pointer === 'object' && pointer.manifestVersion && pointer.root);
 }
 
 function isUsableGearIndex(index) {

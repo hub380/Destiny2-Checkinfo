@@ -5,6 +5,8 @@ dist/
 .codegraph/
 .cursor/rules/codegraph.mdc
 work/
+public/data/gear/
+public/data/gear-index-*.json
 .env
 .env.local
 .env.production

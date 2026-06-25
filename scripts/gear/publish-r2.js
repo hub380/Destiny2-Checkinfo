@@ -1,64 +1,72 @@
-import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { manifestRoot, trimSlashes } from '../../src/lib/gear/split-paths.js';
 
 const bucket = process.env.R2_BUCKET || 'destiny2-checkinfo-data';
-const prefix = trimSlashes(process.env.R2_GEAR_PREFIX || 'gear-cache');
+const prefix = trimSlashes(process.env.R2_GEAR_PREFIX || 'gear-cache/v2');
 const locale = String(process.env.BUNGIE_LOCALE || 'zh-chs').toLowerCase();
 const rootDir = resolve('.');
-const indexPath = resolve(rootDir, process.env.GEAR_INDEX_FILE || `public/data/gear-index-${locale}.json`);
-const outDir = resolve(rootDir, 'work/gear-cache-upload');
+const gearDir = resolve(rootDir, process.env.GEAR_SPLIT_DIR || 'public/data/gear');
+const sourceAliasesFile = resolve(rootDir, process.env.GEAR_SOURCE_ALIASES_FILE || 'content/gear/source-aliases.json');
+const workDir = resolve(rootDir, 'work/gear-cache-upload');
+const dryRunSamples = [];
+let dryRunCount = 0;
 
 try {
-  const index = JSON.parse(readFileSync(indexPath, 'utf8'));
-  validateIndex(index);
+  const localPointer = JSON.parse(readFileSync(resolve(gearDir, 'latest.json'), 'utf8'));
+  validatePointer(localPointer);
 
-  const manifestVersion = String(index.manifestVersion || 'unknown');
-  const versionSegment = safeSegment(manifestVersion);
-  const byteSize = statSync(indexPath).size;
-  const r2Key = `${prefix}/${locale}/${versionSegment}/gear-index.json`;
   const pointer = {
-    schemaVersion: 1,
-    locale,
-    manifestVersion,
-    indexVersion: index.indexVersion || '',
-    builtAt: index.builtAt || null,
+    ...localPointer,
     publishedAt: new Date().toISOString(),
-    byteSize,
-    r2Key,
-    counts: {
-      items: index.items.length,
-      weapons: index.weapons.length,
-      armors: Array.isArray(index.armors) ? index.armors.length : 0,
-      perks: index.items.filter((item) => item.kind === 'perk').length,
-      craftables: Array.isArray(index.craftables) ? index.craftables.length : 0
-    }
+    root: manifestRoot(prefix, locale, localPointer.manifestVersion)
   };
 
-  rmSync(outDir, { recursive: true, force: true });
-  mkdirSync(outDir, { recursive: true });
-
-  const latestPath = resolve(outDir, 'latest.json');
+  rmSync(workDir, { recursive: true, force: true });
+  mkdirSync(workDir, { recursive: true });
+  const latestPath = resolve(workDir, 'latest.json');
   writeFileSync(latestPath, JSON.stringify(pointer, null, 2), 'utf8');
 
-  uploadFile(indexPath, r2Key, 'application/json');
-  uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json');
+  const files = listFiles(gearDir).filter((filePath) => !filePath.endsWith(`${separator()}latest.json`));
+  for (const filePath of files) {
+    const relativePath = toPosix(relative(gearDir, filePath));
+    uploadFile(filePath, `${prefix}/${locale}/${relativePath}`, 'application/json; charset=utf-8');
+  }
+  const aliasesUploaded = uploadSourceAliases(localPointer.root);
+  uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json; charset=utf-8');
   publishKvPointer(pointer);
 
-  console.log(`Published gear cache ${manifestVersion} to R2 bucket ${bucket}.`);
-  console.log(`Items: ${pointer.counts.items}, weapons: ${pointer.counts.weapons}, perks: ${pointer.counts.perks}, size: ${formatBytes(byteSize)}`);
+  const byteSize = files.reduce((sum, filePath) => sum + statSync(filePath).size, 0) + statSync(latestPath).size;
+  const action = process.env.GEAR_CACHE_DRY_RUN === '1' ? 'Prepared' : 'Published';
+  console.log(`${action} gear cache ${pointer.manifestVersion} to R2 bucket ${bucket}.`);
+  console.log(`Files: ${files.length + 1 + Number(aliasesUploaded)}, items: ${pointer.counts?.items || 0}, size: ${formatBytes(byteSize)}`);
+  if (dryRunCount) {
+    console.log(`Dry run commands: ${dryRunCount}`);
+    for (const sample of dryRunSamples) console.log(`Dry run sample: npx ${sample}`);
+  }
 } catch (error) {
   console.error(error.message || error);
   process.exitCode = 1;
 }
 
-function validateIndex(index) {
-  if (!index || !Array.isArray(index.items) || !Array.isArray(index.weapons)) {
-    throw new Error(`Invalid gear index: ${indexPath}`);
+function validatePointer(pointer) {
+  if (!pointer || Number(pointer.schemaVersion) !== 2 || !pointer.manifestVersion || !pointer.root) {
+    throw new Error(`Invalid v2 gear pointer: ${resolve(gearDir, 'latest.json')}`);
   }
-  if (!index.manifestVersion) {
-    throw new Error('Invalid gear index: missing manifestVersion');
+}
+
+function listFiles(directory) {
+  const output = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const filePath = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      output.push(...listFiles(filePath));
+    } else if (entry.isFile()) {
+      output.push(filePath);
+    }
   }
+  return output;
 }
 
 function uploadFile(filePath, key, contentType) {
@@ -78,6 +86,13 @@ function uploadFile(filePath, key, contentType) {
   runNpx(args, `wrangler r2 object put failed for ${target}`);
 }
 
+function uploadSourceAliases(root) {
+  if (!existsSync(sourceAliasesFile)) return false;
+  JSON.parse(readFileSync(sourceAliasesFile, 'utf8'));
+  uploadFile(sourceAliasesFile, `${prefix}/${locale}/${root}/source-aliases.json`, 'application/json; charset=utf-8');
+  return true;
+}
+
 function publishKvPointer(pointer) {
   if (process.env.GEAR_CACHE_WRITE_KV !== '1') return;
   const key = `gear-cache:latest:${locale}`;
@@ -92,7 +107,8 @@ function publishKvPointer(pointer) {
 
 function runNpx(args, errorMessage) {
   if (process.env.GEAR_CACHE_DRY_RUN === '1') {
-    console.log(`Dry run: npx ${args.join(' ')}`);
+    dryRunCount += 1;
+    if (dryRunSamples.length < 5) dryRunSamples.push(args.join(' '));
     return;
   }
   const result = spawnSync('npx', args, {
@@ -103,15 +119,12 @@ function runNpx(args, errorMessage) {
   if (result.status !== 0) throw new Error(errorMessage);
 }
 
-function safeSegment(value) {
-  return String(value || 'unknown')
-    .replace(/[^a-zA-Z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 120) || 'unknown';
+function toPosix(value) {
+  return value.replace(/\\/g, '/');
 }
 
-function trimSlashes(value) {
-  return String(value || '').replace(/^\/+|\/+$/g, '');
+function separator() {
+  return process.platform === 'win32' ? '\\' : '/';
 }
 
 function formatBytes(bytes) {

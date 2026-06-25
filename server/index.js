@@ -5,6 +5,7 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { handleAppRequest } from '../src/app/index.js';
+import { serverGearDeps } from '../src/lib/gear/server-deps.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, '..');
@@ -83,6 +84,10 @@ function waitUntilContext() {
 function nodeEnv() {
   return {
     ...process.env,
+    GEAR_DEPS: serverGearDeps(process.env, {
+      dataDir: path.join(rootDir, 'public', 'data', 'gear'),
+      sourceAliasesFile: path.join(rootDir, 'content', 'gear', 'source-aliases.json')
+    }),
     ASSETS: {
       fetch: fetchLocalAsset
     }

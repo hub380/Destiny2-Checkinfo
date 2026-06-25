@@ -14,7 +14,7 @@
     "build": "tsc --noEmit && vite build",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:unit": "vitest run tests/frontend.test.js tests/lib.test.js tests/url.test.js",
+    "test:unit": "vitest run tests/frontend.test.js tests/lib.test.js tests/url.test.js tests/gear-split.test.js tests/gear-cache.test.js",
     "test:sit": "vitest run tests/app.test.js",
     "test:watch": "vitest",
     "gear:index": "node scripts/data/build-gear-index.js",
@@ -23,7 +23,6 @@
     "guides:validate": "node scripts/guides/validate.js",
     "guides:upload": "node scripts/guides/upload.js",
     "codegen:destiny": "node scripts/codegen/split-destiny.mjs",
-    "codegen:gear": "node scripts/codegen/split-gear.mjs",
     "worker:dev": "wrangler dev",
     "worker:deploy": "wrangler deploy"
   },

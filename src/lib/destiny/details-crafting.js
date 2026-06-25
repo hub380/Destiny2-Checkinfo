@@ -5,6 +5,8 @@ import {
   getWorkerCachedJson,
   activityDefinitionConcurrency
 } from '../cache/index.js';
+import { readLatestGearPointer } from '../gear/cache.js';
+import { joinGearPath, searchShardPath } from '../gear/split-paths.js';
 import { CACHE_VERSION } from '../shared/index.js';
 import { itemDefinitionCache } from './state.js';
 import { hasFailures } from './privacy.js';
@@ -156,13 +158,15 @@ export async function getInventoryItemDefinitions(hashes, env, ctx) {
 }
 
 export async function loadStaticGearItems(env, ctx) {
-  if (!env.ASSETS?.fetch) return [];
   const locale = env.BUNGIE_LOCALE || 'zh-chs';
   const cacheKey = ['static-gear-items', CACHE_VERSION, locale].join(':');
   const cached = await getWorkerCachedJson(
     cacheKey,
     positiveNumber(env.GEAR_INDEX_CACHE_TTL_SECONDS, 604800),
     async () => {
+      const r2Items = await loadR2GearItems(env);
+      if (r2Items.length) return r2Items;
+      if (!env.ASSETS?.fetch) return [];
       const response = await env.ASSETS.fetch(new Request(`https://assets.local/data/gear-index-${locale}.json`));
       if (!response.ok) return [];
       const index = await response.json();
@@ -176,6 +180,20 @@ export async function loadStaticGearItems(env, ctx) {
     { memoryOnly: true }
   );
   return cached.value || [];
+}
+
+async function loadR2GearItems(env) {
+  if (!env.CAREER_R2?.get) return [];
+  try {
+    const pointer = await readLatestGearPointer(env);
+    if (!pointer?.root) return [];
+    const object = await env.CAREER_R2.get(joinGearPath(pointer.root, searchShardPath('weapon')));
+    if (!object) return [];
+    const shard = await object.json();
+    return Array.isArray(shard.items) ? shard.items.filter((item) => item.kind === 'weapon') : [];
+  } catch {
+    return [];
+  }
 }
 
 export function inventoryItemIcon(definition) {

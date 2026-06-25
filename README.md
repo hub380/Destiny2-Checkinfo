@@ -197,12 +197,11 @@ npm run test:watch  # 监听
 | `npm run test` / `test:watch` | Vitest |
 | `npm run lint` | ESLint |
 | `npm run activity:index` | 构建活动静态索引 → `public/data/` |
-| `npm run gear:index` | 构建装备索引 → `public/data/gear-index-*.json` |
+| `npm run gear:index` | 构建装备 v2 索引 → `public/data/gear/` |
 | `npm run gear:publish-r2` | 将装备索引发布到 R2 |
 | `npm run guides:validate` | 校验 `content/guides/` 下 JSON 与媒体引用 |
 | `npm run guides:upload` | 校验后通过 `wrangler r2 object put` 上传到 bucket |
 | `npm run codegen:destiny` | 从单体快照重新切片 destiny 模块（可选） |
-| `npm run codegen:gear` | 从单体快照重新切片 gear 模块（可选） |
 | `npm run worker:dev` | Wrangler 本地 Worker（需先 `npm run build`） |
 | `npm run worker:deploy` | 部署 Worker + `dist` 静态资源 |
 
@@ -310,7 +309,7 @@ scripts/
   data/                activity、gear 静态索引构建
   guides/              validate.js、upload.js、content.js
   gear/                publish-r2.js
-  codegen/             split-destiny.mjs、split-gear.mjs
+  codegen/             split-destiny.mjs
 src/                   Worker、前端、共享 lib
 content/guides/        攻略 JSON 与媒体源
 public/                静态资源与 data/*.json

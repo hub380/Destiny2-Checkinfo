@@ -72,13 +72,31 @@ function SourceHints({ hints }: { hints: JsonRecord[] }) {
     <div className={cn('source-hints')}>
       <div className={cn('section-title')}>来源提示 · 非精确掉落表</div>
       <div className={cn('source-hint-grid')}>
-        {items.map((hint, index) => (
-          <div className={cn('source-hint')} key={`${hint.kind || 'source'}-${hint.hash || index}-${hint.text}`}>
-            <span>{hint.label || sourceKindLabel(hint.kind)}</span>
-            <b>{hint.text}</b>
-            {hint.description ? <p>{hint.description}</p> : null}
-          </div>
-        ))}
+        {items.map((hint, index) => {
+          const encounters = Array.isArray(hint.encounters)
+            ? hint.encounters
+              .filter((encounter) => encounter?.label || encounter?.zh || encounter?.en || encounter?.key)
+              .slice(0, 8)
+            : [];
+          return (
+            <div className={cn('source-hint')} key={`${hint.kind || 'source'}-${hint.hash || index}-${hint.text}`}>
+              <span>{hint.label || sourceKindLabel(hint.kind)}</span>
+              <b>{hint.text}</b>
+              {hint.description ? <p>{hint.description}</p> : null}
+              {encounters.length ? (
+                <div className={cn('source-encounters')}>
+                  <span>掉落关卡</span>
+                  <div>
+                    {encounters.map((encounter, encounterIndex) => {
+                      const label = encounter.label || encounter.zh || encounter.en || encounter.key;
+                      return <em key={`${encounter.key || label}-${encounterIndex}`}>{label}</em>;
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

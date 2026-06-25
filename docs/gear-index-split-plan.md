@@ -622,7 +622,7 @@ GEAR_INDEX_FILE 环境变量改为 GEAR_V2_DIR，指向 public/data/gear/ 目录
     CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     BUNGIE_LOCALE: zh-chs
     R2_BUCKET: destiny2-checkinfo-data
-    R2_GEAR_PREFIX: gear-cache
+    R2_GEAR_PREFIX: gear-cache/v2
     GEAR_V2_DIR: public/data/gear
 ```
 

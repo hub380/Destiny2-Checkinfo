@@ -137,9 +137,9 @@ npx wrangler secret put BUNGIE_API_KEY
 
 ## 当前分支与架构
 
-当前开发分支：[refactor/architecture-root-layout](https://github.com/hub380/Destiny2-Checkinfo/tree/refactor/architecture-root-layout)
+当前开发分支：[codex/merge-architecture-tests](https://github.com/hub380/Destiny2-Checkinfo/tree/codex/merge-architecture-tests)
 
-与 `main` 对比：[compare/main...refactor/architecture-root-layout](https://github.com/hub380/Destiny2-Checkinfo/compare/main...refactor/architecture-root-layout)
+与 `main` 对比：[compare/main...codex/merge-architecture-tests](https://github.com/hub380/Destiny2-Checkinfo/compare/main...codex/merge-architecture-tests)
 
 ### 前端
 
@@ -152,7 +152,7 @@ npx wrangler secret put BUNGIE_API_KEY
 | 玩家搜索 | `resolveBungieNameSubmit` — 无 `#` 时先前缀搜索再提交 |
 | 首页拆分 | `FireteamFeedSection`、`CompactCareerPanel`、`HomeCareerSection` |
 | Career 页 | `CareerInfoPanels`、`CareerEndgamePanels`、`CareerCraftingPanels` 等子组件 |
-| Gear 页 | `GearDetailViews`、`gear-labels` |
+| Gear 页 | `GearDetailViews`、`gear-labels`；来源提示可展示 `source-aliases` 中的具体掉落关卡 |
 | 终局加载 | `endgame-tasks.ts` — 生涯多 mode 并行、fireteam 成员顺序拉取 |
 | 长列表 | `useWindowedSlice` — 首页组队 / 攻略默认 48 条 +「显示更多」 |
 | 主题 | `useTheme` + Header `ThemeToggle`：跟随系统 / 浅色 / 深色（`localStorage: d2-theme`） |
@@ -164,9 +164,9 @@ npx wrangler secret put BUNGIE_API_KEY
 |------|------|
 | destiny | `summary-stats` / `summary-search`；`endgame-history` / `endgame-format` |
 | details | `details-records.js`（成就统计）、`details-crafting.js`（锻造与定义拉取） |
-| gear | `factories-items.js`（列表项）、`factories-records.js`（详情记录与 socket） |
+| gear | v2 分片索引；`handlers.js` 聚合搜索 / 来源 / 详情 / perk 反查；`factories-*` 生成列表项与详情记录 |
 | 集成 | `integrations/heybox-feed.js` — 小黑盒解析 |
-| 缓存 | KV / R2 / Worker 内存多层；大型快照走 R2 |
+| 缓存 | KV / R2 / Worker 内存多层；大型快照和装备 v2 索引走 R2 |
 
 ### 测试（Vitest）
 
@@ -180,8 +180,10 @@ npm run test:watch  # 监听
 | `tests/frontend.test.js` | 玩家提交、endgame 格式化、生涯合并、锻造分组、format 工具 |
 | `tests/lib.test.js` | 文本工具、heybox 解析、bungie/env 工具、统计格式化 |
 | `tests/url.test.js` | `readUrlSearchParam`、`readUrlParams`、`syncUrlParams` |
+| `tests/app.test.js` | API 集成、装备 v2 搜索 / 来源 / 详情 / perk 反查 |
+| `tests/gear-*.test.js` | 装备索引拆分、缓存指针、本地 server deps |
 
-当前约 **26** 项用例。PR 前建议：`npm run test`、`npm run build`、`npm run lint`。
+当前约 **46** 项用例。PR 前建议：`npm run test`、`npm run build`、`npm run lint`。
 
 ---
 
@@ -198,12 +200,12 @@ npm run test:watch  # 监听
 | `npm run lint` | ESLint |
 | `npm run activity:index` | 构建活动静态索引 → `public/data/` |
 | `npm run gear:index` | 构建装备 v2 索引 → `public/data/gear/` |
-| `npm run gear:publish-r2` | 将装备索引发布到 R2 |
+| `npm run gear:publish-r2` | 将装备 v2 分片索引通过 Wrangler R2 bulk put 发布到 R2 |
 | `npm run guides:validate` | 校验 `content/guides/` 下 JSON 与媒体引用 |
 | `npm run guides:upload` | 校验后通过 `wrangler r2 object put` 上传到 bucket |
 | `npm run codegen:destiny` | 从单体快照重新切片 destiny 模块（可选） |
 | `npm run worker:dev` | Wrangler 本地 Worker（需先 `npm run build`） |
-| `npm run worker:deploy` | 部署 Worker + `dist` 静态资源 |
+| `npm run worker:deploy` | build 后移除 `dist/data/gear`，再部署 Worker + `dist` 静态资源 |
 
 ---
 

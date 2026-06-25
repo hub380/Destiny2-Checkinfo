@@ -4,9 +4,11 @@ import { existsSync } from 'node:fs';
 import { normalizeText } from './utils.js';
 import {
   GEAR_SPLIT_SCHEMA_VERSION,
+  dungeonAliasesPath,
   gearItemPath,
   joinGearPath,
   perkWeaponsPath,
+  raidAliasesPath,
   safeSegment,
   searchShardPath,
   sourceAliasesPath,
@@ -20,7 +22,7 @@ export async function writeSplitGearIndex(gearIndex, options = {}) {
   const locale = String(gearIndex.locale || options.locale || 'zh-chs').toLowerCase();
   const root = safeSegment(gearIndex.manifestVersion);
   const rootDir = join(outputDir, root);
-  const aliases = await readSourceAliases(options.sourceAliasesFile);
+  const aliases = await readSourceAliases(options.sourceAliasesFile, options.raidAliasesFile, options.dungeonAliasesFile);
 
   await rm(outputDir, { recursive: true, force: true });
   await mkdir(rootDir, { recursive: true });
@@ -50,7 +52,10 @@ export async function writeSplitGearIndex(gearIndex, options = {}) {
     await writeJson(files, outputDir, join(root, sourceIndexPath(sourceIndex.sourceKey)), sourceIndex);
   }
 
-  await writeJson(files, outputDir, join(root, sourceAliasesPath()), normalizeSourceAliases(aliases));
+  const normalizedAliases = normalizeSourceAliases(aliases);
+  await writeJson(files, outputDir, join(root, sourceAliasesPath()), normalizedAliases);
+  await writeJson(files, outputDir, join(root, raidAliasesPath()), filterSourceAliasesByType(normalizedAliases, 'raid'));
+  await writeJson(files, outputDir, join(root, dungeonAliasesPath()), filterSourceAliasesByType(normalizedAliases, 'dungeon'));
 
   const byteSize = await totalByteSize(files);
   const latestPointer = {
@@ -272,10 +277,15 @@ function normalizePerkItem(item) {
   };
 }
 
-async function readSourceAliases(filePath) {
-  if (!filePath || !existsSync(filePath)) return {};
-  const raw = await readFile(filePath, 'utf8');
-  return JSON.parse(raw);
+async function readSourceAliases(...filePaths) {
+  const merged = { schemaVersion: 1, aliases: {} };
+  for (const filePath of filePaths.filter(Boolean)) {
+    if (!filePath || !existsSync(filePath)) continue;
+    const raw = JSON.parse(await readFile(filePath, 'utf8'));
+    if (raw?.schemaVersion) merged.schemaVersion = raw.schemaVersion;
+    Object.assign(merged.aliases, raw?.aliases || {});
+  }
+  return merged;
 }
 
 function normalizeSourceAliases(value) {
@@ -285,6 +295,16 @@ function normalizeSourceAliases(value) {
   return {
     schemaVersion: Number(value.schemaVersion || 1),
     aliases: value.aliases && typeof value.aliases === 'object' ? value.aliases : {}
+  };
+}
+
+function filterSourceAliasesByType(value, type) {
+  const normalized = normalizeSourceAliases(value);
+  return {
+    ...normalized,
+    aliases: Object.fromEntries(
+      Object.entries(normalized.aliases).filter(([, alias]) => alias?.type === type)
+    )
   };
 }
 

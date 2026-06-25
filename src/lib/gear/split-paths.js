@@ -43,6 +43,14 @@ export function sourceAliasesPath() {
   return 'source-aliases.json';
 }
 
+export function raidAliasesPath() {
+  return 'source-aliases-raids.json';
+}
+
+export function dungeonAliasesPath() {
+  return 'source-aliases-dungeons.json';
+}
+
 export function joinGearPath(...parts) {
   return parts
     .filter((part) => part !== undefined && part !== null && String(part).trim() !== '')

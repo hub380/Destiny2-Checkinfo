@@ -1,9 +1,16 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { writeSplitGearIndex, mergePerks } from '../src/lib/gear/split-writer.js';
-import { gearItemPath, joinGearPath, perkWeaponsPath } from '../src/lib/gear/split-paths.js';
+import {
+  dungeonAliasesPath,
+  gearItemPath,
+  joinGearPath,
+  perkWeaponsPath,
+  raidAliasesPath,
+  sourceAliasesPath
+} from '../src/lib/gear/split-paths.js';
 
 describe('gear split writer', () => {
   it('preserves nested paths when joining gear cache keys', () => {
@@ -42,6 +49,37 @@ describe('gear split writer', () => {
       expect(variant.sockets).toBeUndefined();
     } finally {
       await rm(outputDir, { recursive: true, force: true });
+    }
+  });
+
+  it('merges source alias maintenance files and writes compatibility outputs', async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), 'gear-split-'));
+    const aliasesDir = await mkdtemp(join(tmpdir(), 'gear-aliases-'));
+    try {
+      const sourceAliasesFile = join(aliasesDir, 'source-aliases.json');
+      const raidAliasesFile = join(aliasesDir, 'source-aliases-raids.json');
+      const dungeonAliasesFile = join(aliasesDir, 'source-aliases-dungeons.json');
+      await writeFile(sourceAliasesFile, JSON.stringify({ schemaVersion: 1, aliases: { Crucible: { type: 'pvp', zh: '熔炉竞技场' } } }));
+      await writeFile(raidAliasesFile, JSON.stringify({ schemaVersion: 1, aliases: { "King's Fall": { type: 'raid', zh: '国王的陨落' } } }));
+      await writeFile(dungeonAliasesFile, JSON.stringify({ schemaVersion: 1, aliases: { Prophecy: { type: 'dungeon', zh: '预言' } } }));
+
+      await writeSplitGearIndex(gearFixture(), {
+        outputDir,
+        sourceAliasesFile,
+        raidAliasesFile,
+        dungeonAliasesFile
+      });
+
+      const full = JSON.parse(await readFile(join(outputDir, 'test-manifest', sourceAliasesPath()), 'utf8'));
+      const raids = JSON.parse(await readFile(join(outputDir, 'test-manifest', raidAliasesPath()), 'utf8'));
+      const dungeons = JSON.parse(await readFile(join(outputDir, 'test-manifest', dungeonAliasesPath()), 'utf8'));
+
+      expect(Object.keys(full.aliases).sort()).toEqual(['Crucible', "King's Fall", 'Prophecy']);
+      expect(Object.keys(raids.aliases)).toEqual(["King's Fall"]);
+      expect(Object.keys(dungeons.aliases)).toEqual(['Prophecy']);
+    } finally {
+      await rm(outputDir, { recursive: true, force: true });
+      await rm(aliasesDir, { recursive: true, force: true });
     }
   });
 });

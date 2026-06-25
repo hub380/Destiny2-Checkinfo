@@ -1,0 +1,732 @@
+{
+  "schemaVersion": 1,
+  "aliases": {
+    "“异端深渊”地牢": {
+      "type": "dungeon",
+      "zh": "异端深渊",
+      "en": "Pit of Heresy",
+      "abbr": [
+        "poh",
+        "PoH",
+        "POH",
+        "pit of heresy",
+        "pit"
+      ],
+      "encounters": [
+        {
+          "key": "necropolis",
+          "zh": "地下墓穴",
+          "en": "Necropolis",
+          "abbr": [
+            "墓穴",
+            "necropolis",
+            "第一关"
+          ],
+          "drops": []
+        },
+        {
+          "key": "tunnels",
+          "zh": "绝望隧道",
+          "en": "Tunnels of Despair",
+          "abbr": [
+            "隧道",
+            "tunnels",
+            "第二关"
+          ],
+          "drops": []
+        },
+        {
+          "key": "zulmak",
+          "zh": "祖玛克",
+          "en": "Zulmak, Instrument of Torment",
+          "abbr": [
+            "zulmak",
+            "boss",
+            "尾王"
+          ],
+          "drops": []
+        }
+      ]
+    },
+    "“预言”地牢": {
+      "type": "dungeon",
+      "zh": "预言",
+      "en": "Prophecy",
+      "abbr": [
+        "prophecy",
+        "proph"
+      ],
+      "encounters": [
+        {
+          "key": "heaven-hell",
+          "zh": "天堂/地狱",
+          "en": "Heaven or Hell",
+          "abbr": [
+            "天堂",
+            "地狱",
+            "天堂地狱",
+            "heaven",
+            "hell",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "无情",
+              "en": "Relentless"
+            },
+            {
+              "name": "检察官",
+              "en": "Prosecutor"
+            }
+          ]
+        },
+        {
+          "key": "hexahedron",
+          "zh": "六面体",
+          "en": "Hexahedron",
+          "abbr": [
+            "六面体",
+            "六面",
+            "hexahedron",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "猝死",
+              "en": "A Sudden Death"
+            },
+            {
+              "name": "判决",
+              "en": "Adjudicator"
+            }
+          ]
+        },
+        {
+          "key": "kell-echo",
+          "zh": "奇点",
+          "en": "Singularity",
+          "abbr": [
+            "奇点",
+            "singularity",
+            "kell",
+            "boss",
+            "尾王"
+          ],
+          "drops": [
+            {
+              "name": "黑暗极致",
+              "en": "Darkest Before"
+            },
+            {
+              "name": "审判",
+              "en": "Judgment"
+            }
+          ]
+        }
+      ]
+    },
+    "“贪婪之握”地牢": {
+      "type": "dungeon",
+      "zh": "贪婪之握",
+      "en": "Grasp of Avarice",
+      "abbr": [
+        "goa",
+        "GoA",
+        "GOA",
+        "grasp of avarice",
+        "grasp"
+      ],
+      "encounters": [
+        {
+          "key": "shield",
+          "zh": "护盾间隙",
+          "en": "Shield Puzzle / Sparrow",
+          "abbr": [
+            "赛车",
+            "shield",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "千码凝视",
+              "en": "1000-Yard Stare"
+            },
+            {
+              "name": "斗牛士64",
+              "en": "Matador 64"
+            }
+          ]
+        },
+        {
+          "key": "avarokk",
+          "zh": "阿瓦罗克",
+          "en": "Avarokk, the Covetous",
+          "abbr": [
+            "avarokk",
+            "boss",
+            "尾王"
+          ],
+          "drops": [
+            {
+              "name": "永世英雄",
+              "en": "Hero of Ages"
+            },
+            {
+              "name": "鹰月",
+              "en": "Eyasluna"
+            }
+          ]
+        }
+      ]
+    },
+    "地牢“二象性”": {
+      "type": "dungeon",
+      "zh": "二象性",
+      "en": "Duality",
+      "abbr": [
+        "duality"
+      ],
+      "encounters": [
+        {
+          "key": "gahlran",
+          "zh": "加尔兰",
+          "en": "Nightmare of Gahlran, Sorrow Bearer",
+          "abbr": [
+            "加尔兰",
+            "gahlran",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "不散恐惧",
+              "en": "Lingering Dread"
+            },
+            {
+              "name": "享乐主义",
+              "en": "The Epicurean"
+            }
+          ]
+        },
+        {
+          "key": "vault",
+          "zh": "开启金库",
+          "en": "Unlocking the Vault",
+          "abbr": [
+            "金库",
+            "vault",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "风暴猎人",
+              "en": "Stormchaser"
+            },
+            {
+              "name": "不可饶恕",
+              "en": "Unforgiven"
+            }
+          ]
+        },
+        {
+          "key": "caiatl",
+          "zh": "卡伊塔尔的噩梦",
+          "en": "Nightmare of Caiatl, Princess-Imperial",
+          "abbr": [
+            "卡伊塔尔",
+            "caiatl",
+            "boss",
+            "尾王"
+          ],
+          "drops": [
+            {
+              "name": "新目标",
+              "en": "New Purpose"
+            },
+            {
+              "name": "宿命",
+              "en": "Fixed Odds"
+            },
+            {
+              "name": "心影",
+              "en": "Heartshadow"
+            }
+          ]
+        }
+      ]
+    },
+    "“守望者尖塔”地牢": {
+      "type": "dungeon",
+      "zh": "守望者尖塔",
+      "en": "Spire of the Watcher",
+      "abbr": [
+        "sotw",
+        "SotW",
+        "SOTW",
+        "spire of the watcher",
+        "spire"
+      ],
+      "encounters": [
+        {
+          "key": "ascent",
+          "zh": "尖塔攀升",
+          "en": "Ascent",
+          "abbr": [
+            "尖塔攀升",
+            "ascent",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "长臂",
+              "en": "Long Arm"
+            },
+            {
+              "name": "第七炽天使卡宾枪",
+              "en": "Seventh Seraph Carbine"
+            },
+            {
+              "name": "终点视界",
+              "en": "Terminus Horizon"
+            }
+          ]
+        },
+        {
+          "key": "akelous",
+          "zh": "阿克勒斯",
+          "en": "Akelous, the Siren's Current",
+          "abbr": [
+            "阿克勒斯",
+            "akelous",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "第七炽天使军官左轮",
+              "en": "Seventh Seraph Officer Revolver"
+            },
+            {
+              "name": "终点视界",
+              "en": "Terminus Horizon"
+            }
+          ]
+        },
+        {
+          "key": "persys",
+          "zh": "珀塞斯",
+          "en": "Persys, Primordial Ruin",
+          "abbr": [
+            "珀塞斯",
+            "persys",
+            "boss",
+            "尾王"
+          ],
+          "drops": [
+            {
+              "name": "阈限守夜",
+              "en": "Liminal Vigil"
+            },
+            {
+              "name": "狂野飞禽",
+              "en": "Wilderflight"
+            },
+            {
+              "name": "需求层级",
+              "en": "Hierarchy of Needs"
+            }
+          ]
+        }
+      ]
+    },
+    "“深渊机灵”地牢": {
+      "type": "dungeon",
+      "zh": "深渊机灵",
+      "en": "Ghosts of the Deep",
+      "abbr": [
+        "gotd",
+        "GotD",
+        "GOTD",
+        "ghosts of the deep",
+        "ghosts"
+      ],
+      "encounters": [
+        {
+          "key": "ritual",
+          "zh": "邪魔族仪式",
+          "en": "Ritual",
+          "abbr": [
+            "邪魔族仪式",
+            "ritual",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "无人幸存",
+              "en": "No Survivors"
+            },
+            {
+              "name": "新太平洋碑文",
+              "en": "New Pacific Epitaph"
+            }
+          ]
+        },
+        {
+          "key": "ecthar",
+          "zh": "艾克塔",
+          "en": "Ecthar, Sword of Oryx",
+          "abbr": [
+            "艾克塔",
+            "ecthar",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "滑溜运气",
+              "en": "Greasy Luck"
+            },
+            {
+              "name": "无效安慰",
+              "en": "Cold Comfort"
+            }
+          ]
+        },
+        {
+          "key": "simmumah",
+          "zh": "厄诺克鲁",
+          "en": "Simmumah ur-Nokru, Lucent Necromancer",
+          "abbr": [
+            "厄诺克鲁",
+            "simmumah",
+            "boss",
+            "尾王"
+          ],
+          "drops": [
+            {
+              "name": "领航员",
+              "en": "The Navigator"
+            },
+            {
+              "name": "无效安慰",
+              "en": "Cold Comfort"
+            }
+          ]
+        }
+      ]
+    },
+    "“战争领主的废墟”地牢": {
+      "type": "dungeon",
+      "zh": "战争领主的废墟",
+      "en": "Warlord's Ruin",
+      "abbr": [
+        "wr",
+        "WR",
+        "warlord's ruin",
+        "warlords ruin",
+        "warlords"
+      ],
+      "encounters": [
+        {
+          "key": "rathil",
+          "zh": "拉席尔",
+          "en": "Rathil, First Broken Knight of Fikrul",
+          "abbr": [
+            "拉席尔",
+            "rathil",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "复仇低语",
+              "en": "Vengeful Whisper"
+            },
+            {
+              "name": "拜龙教镰刀",
+              "en": "Dragoncult Sickle"
+            }
+          ]
+        },
+        {
+          "key": "locus",
+          "zh": "悲嚎化身",
+          "en": "Locus of Wailing Grief",
+          "abbr": [
+            "悲嚎化身",
+            "locus",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "纳伊姆的长矛",
+              "en": "Naeem's Lance"
+            },
+            {
+              "name": "蒙恩",
+              "en": "Indebted Kindness"
+            }
+          ]
+        },
+        {
+          "key": "hefnd",
+          "zh": "赫芬德的复仇",
+          "en": "Hefnd's Vengeance, Blighted Chimaera",
+          "abbr": [
+            "赫芬德",
+            "hefnd",
+            "boss",
+            "尾王"
+          ],
+          "drops": [
+            {
+              "name": "深埋血脉",
+              "en": "Buried Bloodline"
+            },
+            {
+              "name": "纳伊姆的长矛",
+              "en": "Naeem's Lance"
+            },
+            {
+              "name": "蒙恩",
+              "en": "Indebted Kindness"
+            }
+          ]
+        }
+      ]
+    },
+    "分离教义": {
+      "type": "dungeon",
+      "zh": "分离教义",
+      "en": "Vesper's Host",
+      "abbr": [
+        "vh",
+        "VH",
+        "vesper's host",
+        "vespers host",
+        "vesper"
+      ],
+      "encounters": [
+        {
+          "key": "extraction",
+          "zh": "谜题",
+          "en": "Extraction",
+          "abbr": [
+            "谜题",
+            "puzzle",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "无爱",
+              "en": "Loveless"
+            },
+            {
+              "name": "无誓",
+              "en": "Oathless"
+            }
+          ]
+        },
+        {
+          "key": "operator",
+          "zh": "生命锁具",
+          "en": "Corrupted Puppeteer",
+          "abbr": [
+            "生命锁具",
+            "生命",
+            "operator",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "无爱",
+              "en": "Loveless"
+            },
+            {
+              "name": "无誓",
+              "en": "Oathless"
+            },
+            {
+              "name": "无声",
+              "en": "Hushed"
+            }
+          ]
+        },
+        {
+          "key": "omen",
+          "zh": "克瑞夫",
+          "en": "Omen, the Purifier",
+          "abbr": [
+            "克瑞夫",
+            "omen",
+            "boss",
+            "尾王"
+          ],
+          "drops": [
+            {
+              "name": "无爱",
+              "en": "Loveless"
+            },
+            {
+              "name": "无誓",
+              "en": "Oathless"
+            },
+            {
+              "name": "无视",
+              "en": "Disregard"
+            },
+            {
+              "name": "无声",
+              "en": "Hushed"
+            },
+            {
+              "name": "终局螺旋钻",
+              "en": "Conductor of Souls"
+            }
+          ]
+        }
+      ]
+    },
+    "晚星之主": {
+      "type": "dungeon",
+      "zh": "晚星之主",
+      "en": "Vesper's Host",
+      "abbr": [
+        "晚星之主",
+        "vespers-host",
+        "vh",
+        "晚星"
+      ],
+      "encounters": [
+        {
+          "key": "station",
+          "zh": "晚星空间站",
+          "en": "Vesper Station",
+          "abbr": [
+            "晚星空间站",
+            "station",
+            "第一关"
+          ],
+          "drops": [
+            {
+              "name": "VS速度指挥",
+              "en": "VS Throttle"
+            },
+            {
+              "name": "VS重力滞止",
+              "en": "VS Graviton"
+            },
+            {
+              "name": "VS寒冷抑制",
+              "en": "VS Chill"
+            }
+          ]
+        },
+        {
+          "key": "nexus",
+          "zh": "雷尼克斯联合",
+          "en": "Nexus Alliance",
+          "abbr": [
+            "雷尼克斯",
+            "nexus",
+            "第二关"
+          ],
+          "drops": [
+            {
+              "name": "VS热电推进",
+              "en": "VS Thermoelectric"
+            },
+            {
+              "name": "VS速度指挥",
+              "en": "VS Throttle"
+            },
+            {
+              "name": "VS重力滞止",
+              "en": "VS Graviton"
+            },
+            {
+              "name": "VS寒冷抑制",
+              "en": "VS Chill"
+            }
+          ]
+        },
+        {
+          "key": "atraks-2",
+          "zh": "腐化傀儡师·阿特拉克斯-2",
+          "en": "Corrupted Puppetmaster, Atraks-2",
+          "abbr": [
+            "阿特拉克斯",
+            "atraks-2",
+            "boss",
+            "尾王"
+          ],
+          "drops": [
+            {
+              "name": "VS热电推进",
+              "en": "VS Thermoelectric"
+            },
+            {
+              "name": "VS速度指挥",
+              "en": "VS Throttle"
+            },
+            {
+              "name": "VS重力滞止",
+              "en": "VS Graviton"
+            },
+            {
+              "name": "VS寒冷抑制",
+              "en": "VS Chill"
+            },
+            {
+              "name": "破冰者",
+              "en": "Icebreaker"
+            }
+          ]
+        }
+      ]
+    },
+    "\"破碎王座\"地牢": {
+      "type": "dungeon",
+      "zh": "破碎王座",
+      "en": "Shattered Throne",
+      "abbr": [
+        "破碎王座",
+        "shattered-throne",
+        "st",
+        "王座"
+      ],
+      "encounters": [
+        {
+          "key": "erebos",
+          "zh": "侦察行动",
+          "en": "Erebos Patrol",
+          "abbr": [
+            "侦察",
+            "erebos",
+            "第一关"
+          ],
+          "drops": []
+        },
+        {
+          "key": "vorgeth",
+          "zh": "伏喉斯",
+          "en": "Vorgeth, the Boundless Hunger",
+          "abbr": [
+            "伏喉斯",
+            "vorgeth",
+            "第二关"
+          ],
+          "drops": []
+        },
+        {
+          "key": "dul-incaru",
+          "zh": "杜尔·因卡鲁",
+          "en": "Dul Incaru, the Eternal Return",
+          "abbr": [
+            "杜尔",
+            "dul-incaru",
+            "boss",
+            "尾王"
+          ],
+          "drops": []
+        }
+      ]
+    }
+  }
+}

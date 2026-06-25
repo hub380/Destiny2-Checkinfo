@@ -13,6 +13,8 @@ const outputDir = path.join(rootDir, 'public', 'data');
 const outputFile = path.join(outputDir, `gear-index-${locale}.json`);
 const splitOutputDir = path.join(outputDir, 'gear');
 const sourceAliasesFile = path.join(rootDir, 'content', 'gear', 'source-aliases.json');
+const raidAliasesFile = path.join(rootDir, 'content', 'gear', 'source-aliases-raids.json');
+const dungeonAliasesFile = path.join(rootDir, 'content', 'gear', 'source-aliases-dungeons.json');
 const maxBytes = Math.max(
   positiveNumber(process.env.GEAR_MANIFEST_MAX_BYTES, 0),
   positiveNumber(process.env.GEAR_INDEX_BUILD_MAX_BYTES, 500_000_000)
@@ -41,6 +43,8 @@ if (process.env.GEAR_WRITE_LEGACY_INDEX === '1') {
 const { latestPointer } = await writeSplitGearIndex(index, {
   outputDir: splitOutputDir,
   sourceAliasesFile,
+  raidAliasesFile,
+  dungeonAliasesFile,
   locale
 });
 

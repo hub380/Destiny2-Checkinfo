@@ -211,12 +211,28 @@ export interface FireteamLookupDto extends JsonRecord {
   cache?: JsonRecord;
 }
 
+export interface GearSearchEncounterContext {
+  sourceText: string;
+  encounterZh: string;
+  encounterKey: string;
+}
+
+export interface GearSearchSourceContext {
+  sourceText: string;
+  sourceZh: string;
+  sourceType: string;
+}
+
 export interface GearSearchDto extends JsonRecord {
   query?: string;
   total?: number;
   manifestVersion?: string;
   items?: JsonRecord[];
   cache?: JsonRecord;
+  /** Populated when the query matched a specific encounter (e.g. "国王的陨落 战争祭司"). */
+  encounter?: GearSearchEncounterContext;
+  /** Populated when the query matched an activity alias (e.g. "国王的陨落"). */
+  source?: GearSearchSourceContext;
 }
 
 export interface GuideSummaryDto extends JsonRecord {

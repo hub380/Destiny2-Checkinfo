@@ -58,3 +58,38 @@ export function signedNumber(value: unknown) {
   const number = Number(value || 0);
   return number > 0 ? `+${number}` : String(number);
 }
+
+const SOURCE_TYPE_MAP: Record<string, string> = {
+  raid: '突袭',
+  dungeon: '地牢',
+  pvp: 'PvP',
+  vendor: '商人',
+  seasonal: '赛季',
+  exotic: '异域'
+};
+
+/** Returns a localised activity-type label, e.g. "突袭" for raid. Empty string when unknown. */
+export function sourceTypeTag(item: JsonRecord): string {
+  const hints = Array.isArray(item.sourceHints) ? item.sourceHints : [];
+  const first = hints.find((h: JsonRecord) => h?.sourceAlias?.type);
+  const type = String(first?.sourceAlias?.type || '');
+  return SOURCE_TYPE_MAP[type] || '';
+}
+
+/** Returns the activity's Chinese display name from sourceAlias, falling back to raw hint text. */
+export function sourceAliasZh(item: JsonRecord): string {
+  const hints = Array.isArray(item.sourceHints) ? item.sourceHints : [];
+  const first = hints.find((h: JsonRecord) => h?.sourceAlias?.zh || h?.text);
+  return String(first?.sourceAlias?.zh || first?.text || item.source || '');
+}
+
+/** Returns the encounter labels (up to 4) that this item drops from. */
+export function encounterLabels(item: JsonRecord): string[] {
+  const hints = Array.isArray(item.sourceHints) ? item.sourceHints : [];
+  const first = hints.find((h: JsonRecord) => Array.isArray(h?.encounters) && h.encounters.length > 0);
+  if (!first) return [];
+  return (first.encounters as JsonRecord[])
+    .map((e: JsonRecord) => String(e?.label || e?.zh || e?.en || e?.key || ''))
+    .filter(Boolean)
+    .slice(0, 4);
+}

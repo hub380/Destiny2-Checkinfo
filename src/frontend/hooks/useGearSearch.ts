@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FormEvent, useCallback, useRef, useState } from 'react';
 import { getGearItem, getPerkWeapons, searchGear } from '@frontend/lib/api';
 import type { GearSearchDto, JsonRecord } from '@frontend/lib/types';
 import {
@@ -29,10 +29,6 @@ export function useGearSearch() {
   const [error, setError] = useState(false);
   const payloadRef = useRef(payload);
 
-  useEffect(() => {
-    payloadRef.current = payload;
-  }, [payload]);
-
   const setQuery = useCallback((value: string) => {
     setQueryState(value);
   }, []);
@@ -46,6 +42,7 @@ export function useGearSearch() {
     }
     setNotice('');
     setError(false);
+    payloadRef.current = null;
     setPayload(null);
     setDetail(null);
     setActiveHash('');
@@ -54,6 +51,7 @@ export function useGearSearch() {
     if (!options?.skipUrlWrite) syncUrlParams({ q: value, hash: null });
     try {
       const data = await searchGear(value);
+      payloadRef.current = data;
       setPayload(data);
       setDetail(null);
       setSubtitle(`统一搜索 · ${formatNumber(data.total || 0)} 条`);
@@ -130,6 +128,7 @@ export function useGearSearch() {
         if (urlHash) await openItemByHash(urlHash);
         else setDetail(null);
       } else {
+        payloadRef.current = null;
         setPayload(null);
         setDetail(null);
         setSubtitle(COPY_GEAR_IDLE_SUBTITLE);

@@ -15,11 +15,11 @@ import {
   COPY_GEAR_EMPTY,
   COPY_GEAR_PLACEHOLDER
 } from '@frontend/lib/copy';
-import type { JsonRecord } from '@frontend/lib/types';
+import type { GearSearchDto, JsonRecord } from '@frontend/lib/types';
 import '@frontend/styles/global.css';
 import { GearDetailSlot } from './GearDetailViews';
 import { cn } from './gear-cn';
-import { gearKindLabel, gearMeta, primarySourceLabel } from './gear-labels';
+import { encounterLabels, gearKindLabel, gearMeta, sourceAliasZh, sourceTypeTag } from './gear-labels';
 
 const PAGE_SIZE = 24;
 
@@ -41,7 +41,7 @@ export function GearPage() {
   const [page, setPage] = useState(0);
   const detailRef = useRef<HTMLDivElement>(null);
 
-  const items = Array.isArray(payload?.items) ? payload.items : [];
+  const items = useMemo(() => Array.isArray(payload?.items) ? payload.items : [], [payload]);
   const filteredItems = useMemo(() => {
     if (kindFilter === 'all') return items;
     return items.filter((item) => item.kind === kindFilter);
@@ -117,6 +117,7 @@ export function GearPage() {
                   <b>{payload.query}</b>
                   <span>显示 {formatNumber(filteredItems.length)} / {formatNumber(payload.total || 0)}</span>
                 </div>
+                <SearchContextBanner payload={payload} />
                 <div className={cn('gear-detail-slot')} ref={detailRef}>
                   <GearDetailSlot detail={detail} onPerkClick={(perk) => void openPerk(perk)} />
                 </div>
@@ -146,6 +147,71 @@ export function GearPage() {
   );
 }
 
+// ── source type CSS key map ────────────────────────────────────────────────────
+
+const SOURCE_TYPE_CSS: Record<string, string> = {
+  '突袭': 'raid', '地牢': 'dungeon', 'PvP': 'pvp',
+  '商人': 'vendor', '赛季': 'seasonal', '异域': 'exotic'
+};
+
+// ── GearSourceLine ─────────────────────────────────────────────────────────────
+
+function GearSourceLine({ item }: { item: JsonRecord }) {
+  const tag = sourceTypeTag(item);
+  const source = sourceAliasZh(item);
+  const encounters = encounterLabels(item);
+  if (!source && !tag) return null;
+  return (
+    <div className={cn('gear-source-line')}>
+      {tag ? (
+        <span className={cn(`gear-source-tag gear-source-tag-${SOURCE_TYPE_CSS[tag] || 'other'}`)}>
+          {tag}
+        </span>
+      ) : null}
+      {source ? <span className={cn('gear-source-name')}>{source}</span> : null}
+      {encounters.length ? (
+        <span className={cn('gear-encounter-labels')}>
+          {encounters.map((label) => <em key={label}>{label}</em>)}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+// ── SearchContextBanner ────────────────────────────────────────────────────────
+
+const SOURCE_TYPE_LABEL: Record<string, string> = {
+  raid: '突袭', dungeon: '地牢', pvp: 'PvP',
+  vendor: '商人', seasonal: '赛季', exotic: '异域'
+};
+
+function SearchContextBanner({ payload }: { payload: GearSearchDto | null }) {
+  if (!payload) return null;
+  if (payload.encounter) {
+    return (
+      <div className={cn('search-context-banner')}>
+        <span className={cn('gear-source-tag gear-source-tag-raid')}>关卡搜索</span>
+        <b>{payload.encounter.encounterZh || payload.encounter.encounterKey}</b>
+        <span className={cn('context-source')}>来自 {payload.encounter.sourceText}</span>
+      </div>
+    );
+  }
+  if (payload.source) {
+    const typeLabel = SOURCE_TYPE_LABEL[payload.source.sourceType] || '来源';
+    return (
+      <div className={cn('search-context-banner')}>
+        <span className={cn(`gear-source-tag gear-source-tag-${payload.source.sourceType || 'other'}`)}>
+          {typeLabel}
+        </span>
+        <b>{payload.source.sourceZh || payload.source.sourceText}</b>
+      </div>
+    );
+  }
+  return null;
+}
+
+// ── GearResultCard ─────────────────────────────────────────────────────────────
+
 function GearResultCard({ item, active, onOpen }: { item: JsonRecord; active?: boolean; onOpen: () => void }) {
   const meta = gearMeta(item);
   const action = item.kind === 'perk' ? '反查武器' : '查看详情';
@@ -159,11 +225,11 @@ function GearResultCard({ item, active, onOpen }: { item: JsonRecord; active?: b
         </div>
         {meta.length ? <div className={cn('gear-tags')}>{meta.map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}</div> : null}
         {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
-        {primarySourceLabel(item) ? <p className={cn('gear-source-line')}>来源：{primarySourceLabel(item)}</p> : null}
+        <GearSourceLine item={item} />
         <div className={cn('gear-card-foot')}>
           <b>{action}</b>
         </div>
       </div>
-    </button>
-  );
+  </button>
+)
 }

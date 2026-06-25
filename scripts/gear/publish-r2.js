@@ -31,10 +31,10 @@ try {
   const files = listFiles(gearDir).filter((filePath) => !filePath.endsWith(`${separator()}latest.json`));
   for (const filePath of files) {
     const relativePath = toPosix(relative(gearDir, filePath));
-    uploadFile(filePath, `${prefix}/${locale}/${relativePath}`, 'application/json; charset=utf-8');
+    uploadFile(filePath, `${prefix}/${locale}/${relativePath}`, 'application/json');
   }
   const aliasesUploaded = uploadSourceAliases(localPointer.root);
-  uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json; charset=utf-8');
+  uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json');
   publishKvPointer(pointer);
 
   const byteSize = files.reduce((sum, filePath) => sum + statSync(filePath).size, 0) + statSync(latestPath).size;
@@ -89,7 +89,7 @@ function uploadFile(filePath, key, contentType) {
 function uploadSourceAliases(root) {
   if (!existsSync(sourceAliasesFile)) return false;
   JSON.parse(readFileSync(sourceAliasesFile, 'utf8'));
-  uploadFile(sourceAliasesFile, `${prefix}/${locale}/${root}/source-aliases.json`, 'application/json; charset=utf-8');
+  uploadFile(sourceAliasesFile, `${prefix}/${locale}/${root}/source-aliases.json`, 'application/json');
   return true;
 }
 
@@ -111,13 +111,23 @@ function runNpx(args, errorMessage) {
     if (dryRunSamples.length < 5) dryRunSamples.push(args.join(' '));
     return;
   }
-  const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const result = spawnSync(command, args, {
-    stdio: 'inherit',
-    shell: false
-  });
+  const result = process.platform === 'win32'
+    ? spawnSync('cmd.exe', ['/d', '/s', '/c', ['npx', ...args].map(quoteCmdArg).join(' ')], {
+        stdio: 'inherit',
+        shell: false
+      })
+    : spawnSync('npx', args, {
+        stdio: 'inherit',
+        shell: false
+      });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(errorMessage);
+}
+
+function quoteCmdArg(value) {
+  const text = String(value);
+  if (!/[\s&()^|<>"]/.test(text)) return text;
+  return `"${text.replace(/"/g, '\\"')}"`;
 }
 
 function toPosix(value) {

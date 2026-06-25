@@ -28,19 +28,26 @@ try {
   const latestPath = resolve(workDir, 'latest.json');
   writeFileSync(latestPath, JSON.stringify(pointer, null, 2), 'utf8');
 
-  const files = listFiles(gearDir).filter((filePath) => !filePath.endsWith(`${separator()}latest.json`));
+  const files = listFiles(gearDir).filter((filePath) => filePath !== resolve(gearDir, 'latest.json'));
+  const bulkEntries = [];
   for (const filePath of files) {
     const relativePath = toPosix(relative(gearDir, filePath));
-    uploadFile(filePath, `${prefix}/${locale}/${relativePath}`, 'application/json');
+    bulkEntries.push({
+      key: `${prefix}/${locale}/${relativePath}`,
+      file: filePath
+    });
   }
-  const aliasesUploaded = uploadSourceAliases(localPointer.root);
+  const aliasesUploaded = appendSourceAliases(bulkEntries, localPointer.root);
+  const bulkManifestPath = resolve(workDir, 'bulk-manifest.json');
+  writeFileSync(bulkManifestPath, JSON.stringify(bulkEntries, null, 2), 'utf8');
+  if (bulkEntries.length) bulkUpload(bulkManifestPath);
   uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json');
   publishKvPointer(pointer);
 
-  const byteSize = files.reduce((sum, filePath) => sum + statSync(filePath).size, 0) + statSync(latestPath).size;
+  const byteSize = bulkEntries.reduce((sum, entry) => sum + statSync(entry.file).size, 0) + statSync(latestPath).size;
   const action = process.env.GEAR_CACHE_DRY_RUN === '1' ? 'Prepared' : 'Published';
   console.log(`${action} gear cache ${pointer.manifestVersion} to R2 bucket ${bucket}.`);
-  console.log(`Files: ${files.length + 1 + Number(aliasesUploaded)}, items: ${pointer.counts?.items || 0}, size: ${formatBytes(byteSize)}`);
+  console.log(`Files: ${bulkEntries.length + 1}, items: ${pointer.counts?.items || 0}, size: ${formatBytes(byteSize)}, aliases: ${aliasesUploaded ? 'yes' : 'no'}`);
   if (dryRunCount) {
     console.log(`Dry run commands: ${dryRunCount}`);
     for (const sample of dryRunSamples) console.log(`Dry run sample: npx ${sample}`);
@@ -86,10 +93,32 @@ function uploadFile(filePath, key, contentType) {
   runNpx(args, `wrangler r2 object put failed for ${target}`);
 }
 
-function uploadSourceAliases(root) {
+function bulkUpload(filename) {
+  const args = [
+    'wrangler',
+    'r2',
+    'bulk',
+    'put',
+    bucket,
+    process.env.R2_UPLOAD_LOCAL === '1' ? '--local' : '--remote',
+    '--filename',
+    filename,
+    '--content-type',
+    'application/json',
+    '--concurrency',
+    String(positiveNumber(process.env.R2_UPLOAD_CONCURRENCY, 20)),
+    '--force'
+  ];
+  runNpx(args, `wrangler r2 bulk put failed for ${bucket}`);
+}
+
+function appendSourceAliases(entries, root) {
   if (!existsSync(sourceAliasesFile)) return false;
   JSON.parse(readFileSync(sourceAliasesFile, 'utf8'));
-  uploadFile(sourceAliasesFile, `${prefix}/${locale}/${root}/source-aliases.json`, 'application/json');
+  entries.push({
+    key: `${prefix}/${locale}/${root}/source-aliases.json`,
+    file: sourceAliasesFile
+  });
   return true;
 }
 
@@ -134,12 +163,13 @@ function toPosix(value) {
   return value.replace(/\\/g, '/');
 }
 
-function separator() {
-  return process.platform === 'win32' ? '\\' : '/';
-}
-
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : fallback;
 }

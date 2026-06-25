@@ -8,6 +8,10 @@ import {
   sourceKindLabel
 } from './gear-labels';
 
+function gearTagKey(value: unknown, index: number) {
+  return `${index}-${String(value)}`;
+}
+
 export function GearDetailSlot({
   detail,
   onPerkClick
@@ -53,7 +57,7 @@ function WeaponDetail({
         <div>
           <h3>{item.name || detail.name || '未知武器'}</h3>
           <div className={cn('gear-tags')}>
-            {[detail.weaponType, detail.ammo, detail.element, detail.adept ? '专家' : ''].filter(Boolean).map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}
+            {[detail.weaponType, detail.ammo, detail.element, detail.adept ? '专家' : ''].filter(Boolean).map((value, index) => <span className={cn('gear-tag')} key={gearTagKey(value, index)}>{value}</span>)}
           </div>
           {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
         </div>
@@ -120,7 +124,7 @@ function ArmorDetail({
         <div>
           <h3>{item.name || detail.name || '未知护甲'}</h3>
           <div className={cn('gear-tags')}>
-            {[detail.slot, detail.className, detail.tier, detail.type].filter(Boolean).map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}
+            {[detail.slot, detail.className, detail.tier, detail.type].filter(Boolean).map((value, index) => <span className={cn('gear-tag')} key={gearTagKey(value, index)}>{value}</span>)}
           </div>
           {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
         </div>
@@ -183,7 +187,7 @@ function WeaponGroup({ group, onPerkClick }: { group: JsonRecord; onPerkClick?: 
           <span>{canRoll.join(' / ') || '可出'}</span>
         </div>
         <div className={cn('gear-tags')}>
-          {meta.map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}
+          {meta.map((value, index) => <span className={cn('gear-tag')} key={gearTagKey(value, index)}>{value}</span>)}
           <InlineFrameSocket socket={frameSocket} />
         </div>
         <div className={cn('variant-pills')}>

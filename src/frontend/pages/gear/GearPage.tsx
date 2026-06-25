@@ -287,7 +287,11 @@ function GearResultCard({ item, active, onOpen }: { item: JsonRecord; active?: b
           <h3>{item.name || '未知装备'}</h3>
           <span>{gearKindLabel(item.kind)}</span>
         </div>
-        {meta.length ? <div className={cn('gear-tags')}>{meta.map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}</div> : null}
+        {meta.length ? (
+          <div className={cn('gear-tags')}>
+            {meta.map((value, index) => <span className={cn('gear-tag')} key={`${index}-${String(value)}`}>{value}</span>)}
+          </div>
+        ) : null}
         {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
         <GearSourceLine item={item} />
         <div className={cn('gear-card-foot')}>

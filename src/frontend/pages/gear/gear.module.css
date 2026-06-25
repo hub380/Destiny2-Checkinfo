@@ -671,8 +671,24 @@
   font-style: normal;
 }
 
+.gear-grid-virtual-outer {
+  overflow-y: auto;
+  max-height: calc(100vh - 260px);
+  min-height: 300px;
+  position: relative;
+  scrollbar-gutter: stable;
+}
+
+.gear-grid-virtual-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
 @media (max-width: 980px) {
   .gear-grid,
+  .gear-grid-virtual-row,
   .weapon-group-list,
   .weapon-stat-list,
   .set-bonus-grid {

@@ -24,7 +24,7 @@
     "guides:upload": "node scripts/guides/upload.js",
     "codegen:destiny": "node scripts/codegen/split-destiny.mjs",
     "worker:dev": "wrangler dev",
-  "worker:deploy": "npm run build && node scripts/data/prune-dist-gear.js && wrangler deploy"
+    "worker:deploy": "npm run build && node scripts/data/prune-dist-gear.js && wrangler deploy"
   },
   "engines": {
     "node": ">=18"
@@ -46,6 +46,7 @@
     "wrangler": "^4.104.0"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.14.3",
     "@vitejs/plugin-react": "^6.0.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

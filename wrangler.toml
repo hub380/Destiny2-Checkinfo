@@ -33,7 +33,7 @@ GEAR_CACHE_STATUS_TTL_SECONDS = "604800"
 GEAR_CACHE_CHECK_TIMEOUT_MS = "10000"
 R2_SNAPSHOT_PREFIX = "career-snapshots"
 R2_GUIDE_PREFIX = "guides"
-R2_GEAR_PREFIX = "gear-cache"
+R2_GEAR_PREFIX = "gear-cache/v2"
 GUIDE_INDEX_CACHE_TTL_SECONDS = "300"
 
 # Optional cache bindings. KV is recommended for player JSON cache.

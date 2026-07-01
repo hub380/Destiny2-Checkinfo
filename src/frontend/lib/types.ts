@@ -211,6 +211,24 @@ export interface FireteamLookupDto extends JsonRecord {
   cache?: JsonRecord;
 }
 
+export interface GearCatalystStatBonus {
+  name: string;
+  value: number;
+}
+
+export interface GearCatalystPerk {
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export interface GearCatalyst {
+  perk: GearCatalystPerk;
+  statBonuses: GearCatalystStatBonus[];
+  killsRequired: number;
+  progressDescription: string;
+}
+
 export interface GearSearchEncounterContext {
   sourceText: string;
   encounterZh: string;

@@ -39,7 +39,8 @@ export function publicWeaponRecord(record, index, matchedHashes = new Set()) {
     stats: record.stats || [],
     screenshot: record.screenshot || '',
     sourceHints: Array.isArray(record.sourceHints) ? record.sourceHints : [],
-    sockets: publicWeaponSockets(record, perkMap(index), matchedHashes)
+    sockets: publicWeaponSockets(record, perkMap(index), matchedHashes),
+    catalyst: record.catalyst || null
   };
 }
 

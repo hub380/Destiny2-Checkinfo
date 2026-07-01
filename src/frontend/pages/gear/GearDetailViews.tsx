@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatNumber } from '@frontend/ui';
-import type { JsonRecord } from '@frontend/lib/types';
+import type { GearCatalyst, JsonRecord } from '@frontend/lib/types';
 import { cn } from './gear-cn';
 import {
   enhancedLines,
@@ -65,6 +65,7 @@ function WeaponDetail({
       <SourceHints hints={detail.sourceHints || item.sourceHints || []} />
       <Stats stats={detail.stats || []} />
       <PerkColumns sockets={detail.sockets || []} onPerkClick={onPerkClick} />
+      {detail.catalyst ? <CatalystSection catalyst={detail.catalyst as GearCatalyst} /> : null}
     </section>
   );
 }
@@ -287,6 +288,45 @@ function PerkChip({ perk, onPerkClick }: { perk: JsonRecord; onPerkClick?: (perk
       <b>{perk.name || '未知 Perk'}</b>
       <em>{perk.enhanced ? '强化' : '普通'}</em>
     </button>
+  );
+}
+
+function CatalystSection({ catalyst }: { catalyst: GearCatalyst }) {
+  const statBonuses = Array.isArray(catalyst.statBonuses) ? catalyst.statBonuses : [];
+  const hasProgressTarget = catalyst.killsRequired > 0 || Boolean(catalyst.progressDescription);
+  return (
+    <div className={cn('catalyst-box')}>
+      <div className={cn('section-title')}>催化剂</div>
+      <div className={cn('catalyst-perk-card')}>
+        <img src={catalyst.perk.icon || '/brand.svg'} alt="" />
+        <div>
+          <b>{catalyst.perk.name}</b>
+          <span>催化效果</span>
+          {catalyst.perk.description ? <p>{catalyst.perk.description}</p> : null}
+        </div>
+      </div>
+      {statBonuses.length ? (
+        <div className={cn('catalyst-stat-bonuses')}>
+          {statBonuses.map((stat, index) => (
+            <span key={`${stat.name}-${index}`} className={cn('catalyst-stat-chip')}>
+              {stat.name}&ensp;{stat.value > 0 ? `+${stat.value}` : stat.value}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {hasProgressTarget ? (
+        <div className={cn('catalyst-progress')}>
+          <span className={cn('catalyst-progress-label')}>
+            催化进度目标
+          </span>
+          {catalyst.killsRequired > 0 ? (
+            <p className={cn('catalyst-progress-hint')}>
+              需击杀 <b>{catalyst.killsRequired}</b> 个目标
+            </p>
+          ) : <p className={cn('catalyst-progress-hint')}>{catalyst.progressDescription}</p>}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

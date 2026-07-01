@@ -94,7 +94,7 @@ export async function buildGearIndex(deps) {
     throw httpError(502, 'MANIFEST_PATH_MISSING', 'Bungie Manifest 缺少装备定义表');
   }
 
-  const [items, plugSets, damageTypes, statDefs, itemSets, sandboxPerks, collectibles, recordDefs, rewardSources, vendors] = await Promise.all([
+  const [items, plugSets, damageTypes, statDefs, itemSets, sandboxPerks, collectibles, recordDefs, rewardSources, vendors, objectiveDefs] = await Promise.all([
     bungieFetchJson(paths.DestinyInventoryItemDefinition, deps),
     bungieFetchJson(paths.DestinyPlugSetDefinition, deps),
     paths.DestinyDamageTypeDefinition ? bungieFetchJson(paths.DestinyDamageTypeDefinition, deps) : Promise.resolve({}),
@@ -104,7 +104,8 @@ export async function buildGearIndex(deps) {
     paths.DestinyCollectibleDefinition ? bungieFetchJson(paths.DestinyCollectibleDefinition, deps) : Promise.resolve({}),
     paths.DestinyRecordDefinition ? bungieFetchJson(paths.DestinyRecordDefinition, deps) : Promise.resolve({}),
     paths.DestinyRewardSourceDefinition ? bungieFetchJson(paths.DestinyRewardSourceDefinition, deps) : Promise.resolve({}),
-    paths.DestinyVendorDefinition ? bungieFetchJson(paths.DestinyVendorDefinition, deps) : Promise.resolve({})
+    paths.DestinyVendorDefinition ? bungieFetchJson(paths.DestinyVendorDefinition, deps) : Promise.resolve({}),
+    paths.DestinyObjectiveDefinition ? bungieFetchJson(paths.DestinyObjectiveDefinition, deps) : Promise.resolve({})
   ]);
 
   const records = [];
@@ -121,7 +122,7 @@ export async function buildGearIndex(deps) {
     if (isWeapon(definition)) {
       const item = makeWeaponItem(definition, damageTypes, craftingInfoByHash, collectibles, rewardSources, vendors);
       records.push(item);
-      weapons.push(makeWeaponRecord(definition, item, items, plugSets, statDefs, weaponPlugs, craftingInfoByHash));
+      weapons.push(makeWeaponRecord(definition, item, items, plugSets, statDefs, weaponPlugs, craftingInfoByHash, sandboxPerks, objectiveDefs));
       continue;
     }
 

@@ -31,6 +31,7 @@ describe('gear split writer', () => {
 
       expect(itemFile.itemRecord.sockets[0].perks[0].name).toBe('Bait and Switch');
       expect(itemFile.itemRecord.sockets[0].perks[1].name).toBe('Plug Override');
+      expect(itemFile.itemRecord.catalyst?.perk.name).toBe('Catalyst Spark');
       expect(itemFile.itemRecord.perkColumns).toBeUndefined();
     } finally {
       await rm(outputDir, { recursive: true, force: true });
@@ -139,7 +140,13 @@ function gearFixture() {
         baseName: 'Calamity',
         stats: [{ hash: 10, name: 'Impact', value: 92 }],
         screenshot: '/screenshot.jpg',
-        sockets: [{ socketIndex: 3, label: 'Trait', perks: [2001, 4001] }]
+        sockets: [{ socketIndex: 3, label: 'Trait', perks: [2001, 4001] }],
+        catalyst: {
+          perk: { name: 'Catalyst Spark', description: 'Effect.', icon: '/catalyst.png' },
+          statBonuses: [{ name: 'Stability', value: 20 }],
+          killsRequired: 500,
+          progressDescription: 'Defeat targets.'
+        }
       }
     ],
     armors: [],

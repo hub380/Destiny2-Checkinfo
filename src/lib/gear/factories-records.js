@@ -9,7 +9,7 @@ import {
   baseWeaponName
 } from './labels.js';
 
-export function makeWeaponRecord(definition, item, items, plugSets, statDefs, weaponPlugs, craftingInfoByHash = new Map()) {
+export function makeWeaponRecord(definition, item, items, plugSets, statDefs, weaponPlugs, craftingInfoByHash = new Map(), sandboxPerks = {}, objectiveDefs = {}) {
   const sockets = [];
   const entries = definition.sockets?.socketEntries || [];
   const craftingInfo = craftingInfoByHash.get(Number(definition.hash));
@@ -46,8 +46,78 @@ export function makeWeaponRecord(definition, item, items, plugSets, statDefs, we
     screenshot: imageUrl(definition.screenshot),
     sockets,
     sourceHints: item.sourceHints || [],
-    crafting: craftingInfo || null
+    crafting: craftingInfo || null,
+    catalyst: makeCatalystRecord(definition, items, plugSets, sandboxPerks, statDefs, objectiveDefs)
   };
+}
+
+export function makeCatalystRecord(definition, items, plugSets, sandboxPerks, statDefs, objectiveDefs) {
+  if (definition.inventory?.tierType !== 6) return null;
+  const candidates = [];
+  for (const entry of definition.sockets?.socketEntries || []) {
+    for (const hash of plugHashesForSocket(entry, plugSets)) {
+      const plug = items[String(hash)];
+      if (!isCatalystPlug(plug)) continue;
+      const perkEntry = (plug.perks || []).find((perk) => perk.perkHash);
+      const perkDef = perkEntry ? sandboxPerks[String(perkEntry.perkHash)] : null;
+      const perkName = displayName(perkDef || plug);
+      const perkDescription = cleanText(displayDescription(perkDef || plug));
+      if (!perkName && !perkDescription) continue;
+
+      const statBonuses = (plug.investmentStats || [])
+        .filter((stat) => Number(stat.value || 0) !== 0)
+        .map((stat) => {
+          const statDef = statDefs[String(stat.statTypeHash)];
+          const name = statDef ? displayName(statDef) : '';
+          return name ? { name, value: Number(stat.value || 0) } : null;
+        })
+        .filter(Boolean);
+      const objHash = plug.objectives?.objectiveHashes?.[0];
+      const objDef = objHash ? objectiveDefs[String(objHash)] : null;
+      const killsRequired = Number(objDef?.completionValue || 0);
+
+      candidates.push({
+        perk: {
+          name: perkName,
+          description: perkDescription,
+          icon: iconUrl(perkDef || plug)
+        },
+        statBonuses,
+        killsRequired,
+        progressDescription: cleanText(objDef?.progressDescription || ''),
+        score: catalystCandidateScore(plug, perkDef, statBonuses, killsRequired)
+      });
+    }
+  }
+  const [best] = candidates.sort((a, b) => b.score - a.score);
+  if (!best) return null;
+  const { score: _score, ...record } = best;
+  return record;
+}
+
+function isCatalystPlug(plug) {
+  if (!plug || plug.redacted) return false;
+  const name = displayName(plug);
+  const description = cleanText(displayDescription(plug));
+  const category = String(plug.plug?.plugCategoryIdentifier || '').toLowerCase();
+  const text = `${name} ${description} ${category}`.toLowerCase();
+  if (!category.includes('masterwork') && !category.includes('catalyst') && !text.includes('催化')) return false;
+  if (/tracker|kill_counter/.test(category)) return false;
+  if (name.includes('击杀记录器') || name.includes('空催化插槽')) return false;
+  if (description.includes('可以将异域催化插入此插槽')) return false;
+  return true;
+}
+
+function catalystCandidateScore(plug, perkDef, statBonuses, killsRequired) {
+  const name = displayName(plug);
+  const category = String(plug.plug?.plugCategoryIdentifier || '').toLowerCase();
+  return [
+    perkDef ? 100 : 0,
+    killsRequired > 1 ? 50 : 0,
+    statBonuses.length ? 25 : 0,
+    name.includes('催化') ? 10 : 0,
+    category.includes('catalyst') ? 5 : 0
+  ].reduce((sum, value) => sum + value, 0);
 }
 
 export function makeArmorRecord(definition, item, items, itemSetByItemHash, statDefs) {

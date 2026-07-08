@@ -1,4 +1,5 @@
 import { readLatestGearPointer } from './cache.js';
+import { GEAR_SPLIT_PREFIX } from './split-paths.js';
 import { positiveNumber } from '../http/index.js';
 import { getWorkerCachedJson } from '../cache/index.js';
 
@@ -8,6 +9,7 @@ export function workerGearDeps(env, ctx) {
   return {
     apiKey: env.BUNGIE_API_KEY,
     locale,
+    gearPrefix: env.R2_GEAR_PREFIX || GEAR_SPLIT_PREFIX,
     timeoutMs: positiveNumber(env.GEAR_MANIFEST_TIMEOUT_MS, positiveNumber(env.REQUEST_TIMEOUT_MS, 30000)),
     maxBytes: positiveNumber(env.GEAR_MANIFEST_MAX_BYTES, 80_000_000),
     cacheTtlSeconds: positiveNumber(env.GEAR_INDEX_CACHE_TTL_SECONDS, 604800),

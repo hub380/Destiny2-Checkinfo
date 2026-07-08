@@ -1,6 +1,14 @@
 import { GEAR_INDEX_VERSION } from './constants.js';
 import { httpError } from './utils.js';
-import { gearItemPath, joinGearPath, perkWeaponsPath, searchShardPath, sourceAliasesPath, sourceIndexPath } from './split-paths.js';
+import {
+  GEAR_SPLIT_PREFIX,
+  gearItemPath,
+  joinGearPath,
+  perkWeaponsPath,
+  searchShardPath,
+  sourceAliasesPath,
+  sourceIndexPath
+} from './split-paths.js';
 
 const GEAR_INDEX_NOT_FOUND_MESSAGE = 'Gear index not found. Run npm run gear:index locally, or publish v2 gear data to R2 before deploying.';
 
@@ -72,13 +80,13 @@ export async function getSourceIndex(deps, sourceKey) {
 
 export async function readOptionalGearJson(deps, relativePath) {
   const latestPointer = await getLatestPointer(deps);
-  const path = joinGearPath(latestPointer.root, relativePath);
+  const path = joinGearPath(gearRootPath(latestPointer, deps), relativePath);
   return cachedGearJson(deps, path, async () => deps.readGearJson(path));
 }
 
 async function readRequiredGearJson(deps, relativePath) {
   const latestPointer = await getLatestPointer(deps);
-  const path = joinGearPath(latestPointer.root, relativePath);
+  const path = joinGearPath(gearRootPath(latestPointer, deps), relativePath);
   const cached = await cachedGearJson(deps, path, async () => deps.readGearJson(path));
   if (!cached.value) {
     throw httpError(503, 'GEAR_INDEX_NOT_FOUND', GEAR_INDEX_NOT_FOUND_MESSAGE);
@@ -145,4 +153,10 @@ function cacheMeta(cached) {
 
 function firstValue(items, key) {
   return items.find((item) => item?.[key])?.[key] || null;
+}
+
+function gearRootPath(latestPointer, deps) {
+  const root = String(latestPointer?.root || '');
+  if (!root || root.includes('/') || !deps.gearPrefix) return root;
+  return joinGearPath(deps.gearPrefix || GEAR_SPLIT_PREFIX, deps.locale || 'zh-chs', root);
 }

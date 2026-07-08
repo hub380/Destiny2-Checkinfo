@@ -15,6 +15,7 @@ import {
   sourceIndexPath,
   sourceKeyFor
 } from './split-paths.js';
+import { mapWithConcurrency } from '../utils/concurrency.js';
 
 export async function writeSplitGearIndex(gearIndex, options = {}) {
   validateGearIndex(gearIndex);
@@ -40,17 +41,25 @@ export async function writeSplitGearIndex(gearIndex, options = {}) {
     items: context.perks
   });
 
-  for (const item of gearIndex.items || []) {
-    await writeJson(files, outputDir, join(root, gearItemPath(item.hash)), itemRecordFile(item, context));
-  }
+  await mapWithConcurrency(
+    gearIndex.items || [],
+    64,
+    (item) => writeJson(files, outputDir, join(root, gearItemPath(item.hash)), itemRecordFile(item, context))
+  );
 
-  for (const perkWeaponsIndex of buildPerkWeaponsIndexes(gearIndex)) {
-    await writeJson(files, outputDir, join(root, perkWeaponsPath(perkWeaponsIndex.perkHash)), perkWeaponsIndex);
-  }
+  const perkWeaponsIndexes = buildPerkWeaponsIndexes(gearIndex);
+  await mapWithConcurrency(
+    perkWeaponsIndexes,
+    64,
+    (perkWeaponsIndex) => writeJson(files, outputDir, join(root, perkWeaponsPath(perkWeaponsIndex.perkHash)), perkWeaponsIndex)
+  );
 
-  for (const sourceIndex of buildSourceIndexes(gearIndex, aliases)) {
-    await writeJson(files, outputDir, join(root, sourceIndexPath(sourceIndex.sourceKey)), sourceIndex);
-  }
+  const sourceIndexes = buildSourceIndexes(gearIndex, aliases);
+  await mapWithConcurrency(
+    sourceIndexes,
+    64,
+    (sourceIndex) => writeJson(files, outputDir, join(root, sourceIndexPath(sourceIndex.sourceKey)), sourceIndex)
+  );
 
   const normalizedAliases = normalizeSourceAliases(aliases);
   await writeJson(files, outputDir, join(root, sourceAliasesPath()), normalizedAliases);

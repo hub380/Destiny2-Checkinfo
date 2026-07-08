@@ -13,6 +13,7 @@ import { getWorkerCachedJson, summaryCacheTtlSeconds } from '../cache/index.js';
 import { CACHE_VERSION } from '../shared/index.js';
 import { findModeBucket, pickEndgameStats, pickStats } from './summary-stats.js';
 import { searchBungiePlayersByPrefix } from './summary-search.js';
+import { getPlayerNameFromD1, putPlayerNameToD1 } from './d1-player-cache.js';
 
 export async function getPublicCareerSummaryByMembership(membership, env, ctx) {
   const membershipId = cleanText(membership?.membershipId);
@@ -237,12 +238,25 @@ export async function getDestinySummary(body, env, ctx) {
     parsedName.displayNameCode
   ].join(':');
   const cached = await getWorkerCachedJson(cacheKey, summaryCacheTtlSeconds(env), async () => {
-    let memberships = await safeMembershipSearch(() => searchMembershipsByBungieName(parsedName, membershipType, env));
+    // D1 玩家名缓存：先查 D1，命中则跳过 SearchDestinyPlayerByBungieName
+    const bungieName = `${parsedName.displayName}#${String(parsedName.displayNameCode).padStart(4, '0')}`;
+    const d1Hit = await getPlayerNameFromD1(bungieName, env);
+    let memberships = d1Hit?.memberships?.length ? d1Hit.memberships : [];
+
+    if (!memberships.length) {
+      memberships = await safeMembershipSearch(() => searchMembershipsByBungieName(parsedName, membershipType, env));
+    }
     if (!memberships.length) {
       memberships = await searchFallbackMembershipsByName(parsedName, membershipType, env);
     }
     if (!memberships.length) {
       throw httpError(404, 'PLAYER_NOT_FOUND', '没有找到这个棒鸡玩家');
+    }
+
+    // 写入 D1（首次 / D1 过期后），后台执行不阻塞响应
+    if (!d1Hit) {
+      const primary = selectMembership(memberships);
+      putPlayerNameToD1(bungieName, primary, memberships, env, ctx);
     }
 
     try {

@@ -119,6 +119,42 @@ describe('destiny summary membership resolution', () => {
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(legacyPath), expect.any(Object));
   });
 
+  it('uses the D1 player-name cache before BungieName search', async () => {
+    const fetchMock = vi.fn(async (url) => {
+      const text = String(url);
+      if (text.includes('/SearchDestinyPlayerByBungieName/') || text.includes('/SearchDestinyPlayer/')) {
+        throw new Error(`Unexpected player search: ${text}`);
+      }
+      if (text.includes('/Destiny2/3/Profile/4611686018523329088/')) return profileResponse(steamMembership);
+      if (text.includes('/Destiny2/3/Account/4611686018523329088/')) return statsResponse();
+      throw new Error(`Unexpected request: ${text}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const env = {
+      ...testEnv('d1-hit'),
+      PLAYER_NAMES_DB: {
+        prepare: () => ({
+          bind: () => ({
+            first: async () => ({
+              membership_type: '3',
+              membership_id: steamMembership.membershipId,
+              memberships_json: JSON.stringify([steamMembership])
+            })
+          })
+        })
+      }
+    };
+
+    const summary = await getDestinySummary({ bungieName: '洛梓qwq。#8923' }, env);
+
+    expect(summary.account.membershipId).toBe(steamMembership.membershipId);
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/SearchDestinyPlayerByBungieName/'),
+      expect.any(Object)
+    );
+  });
+
   it('returns a summary when account stats cannot be read', async () => {
     const fetchMock = vi.fn(async (url) => {
       const text = String(url);

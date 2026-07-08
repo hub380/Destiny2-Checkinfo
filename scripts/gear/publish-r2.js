@@ -28,26 +28,40 @@ try {
   const latestPath = resolve(workDir, 'latest.json');
   writeFileSync(latestPath, JSON.stringify(pointer, null, 2), 'utf8');
 
-  const files = listFiles(gearDir).filter((filePath) => filePath !== resolve(gearDir, 'latest.json'));
-  const bulkEntries = [];
-  for (const filePath of files) {
-    const relativePath = toPosix(relative(gearDir, filePath));
-    bulkEntries.push({
-      key: `${prefix}/${locale}/${relativePath}`,
-      file: filePath
-    });
-  }
-  const aliasesUploaded = appendSourceAliases(bulkEntries, localPointer.root);
-  const bulkManifestPath = resolve(workDir, 'bulk-manifest.json');
-  writeFileSync(bulkManifestPath, JSON.stringify(bulkEntries, null, 2), 'utf8');
-  if (bulkEntries.length) bulkUpload(bulkManifestPath);
-  uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json');
-  publishKvPointer(pointer);
+  // 检查 R2 上已有的 manifest version，相同则跳过 bulk 上传
+  const forceUpload = process.env.GEAR_CACHE_FORCE === '1';
+  const r2Current = forceUpload ? null : fetchR2LatestPointer(bucket, prefix, locale);
+  const manifestUnchanged = !forceUpload && r2Current?.manifestVersion === localPointer.manifestVersion;
 
-  const byteSize = bulkEntries.reduce((sum, entry) => sum + statSync(entry.file).size, 0) + statSync(latestPath).size;
-  const action = process.env.GEAR_CACHE_DRY_RUN === '1' ? 'Prepared' : 'Published';
-  console.log(`${action} gear cache ${pointer.manifestVersion} to R2 bucket ${bucket}.`);
-  console.log(`Files: ${bulkEntries.length + 1}, items: ${pointer.counts?.items || 0}, size: ${formatBytes(byteSize)}, aliases: ${aliasesUploaded ? 'yes' : 'no'}`);
+  if (manifestUnchanged) {
+    console.log(`R2 已有 manifest ${localPointer.manifestVersion}，跳过 bulk 上传（${localPointer.counts?.files || '?'} 个文件已存在）。`);
+    uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json');
+    publishKvPointer(pointer);
+    const action = process.env.GEAR_CACHE_DRY_RUN === '1' ? 'Prepared' : 'Published';
+    console.log(`${action} latest.json for manifest ${pointer.manifestVersion} (no bulk upload needed).`);
+  } else {
+    const files = listFiles(gearDir).filter((filePath) => filePath !== resolve(gearDir, 'latest.json'));
+    const bulkEntries = [];
+    for (const filePath of files) {
+      const relativePath = toPosix(relative(gearDir, filePath));
+      bulkEntries.push({
+        key: `${prefix}/${locale}/${relativePath}`,
+        file: filePath
+      });
+    }
+    const aliasesUploaded = appendSourceAliases(bulkEntries, localPointer.root);
+    const bulkManifestPath = resolve(workDir, 'bulk-manifest.json');
+    writeFileSync(bulkManifestPath, JSON.stringify(bulkEntries, null, 2), 'utf8');
+    if (bulkEntries.length) bulkUpload(bulkManifestPath);
+    uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json');
+    publishKvPointer(pointer);
+
+    const byteSize = bulkEntries.reduce((sum, entry) => sum + statSync(entry.file).size, 0) + statSync(latestPath).size;
+    const action = process.env.GEAR_CACHE_DRY_RUN === '1' ? 'Prepared' : 'Published';
+    console.log(`${action} gear cache ${pointer.manifestVersion} to R2 bucket ${bucket}.`);
+    console.log(`Files: ${bulkEntries.length + 1}, items: ${pointer.counts?.items || 0}, size: ${formatBytes(byteSize)}, aliases: ${aliasesUploaded ? 'yes' : 'no'}`);
+  }
+
   if (dryRunCount) {
     console.log(`Dry run commands: ${dryRunCount}`);
     for (const sample of dryRunSamples) console.log(`Dry run sample: npx ${sample}`);
@@ -55,6 +69,27 @@ try {
 } catch (error) {
   console.error(error.message || error);
   process.exitCode = 1;
+}
+
+// 从 R2 拉取当前 latest.json，返回 pointer 对象或 null（首次发布时 R2 无文件，返回 null）
+function fetchR2LatestPointer(bucket, prefix, locale) {
+  const key = `${bucket}/${prefix}/${locale}/latest.json`;
+  const outFile = resolve(workDir, 'r2-current-latest.json');
+  mkdirSync(workDir, { recursive: true });
+  const args = [
+    'wrangler', 'r2', 'object', 'get', key,
+    process.env.R2_UPLOAD_LOCAL === '1' ? '--local' : '--remote',
+    '--file', outFile
+  ];
+  const result = process.platform === 'win32'
+    ? spawnSync('cmd.exe', ['/d', '/s', '/c', ['npx', ...args].map(quoteCmdArg).join(' ')], { stdio: 'pipe', shell: false })
+    : spawnSync('npx', args, { stdio: 'pipe', shell: false });
+  if (result.status !== 0) return null;
+  try {
+    return JSON.parse(readFileSync(outFile, 'utf8'));
+  } catch {
+    return null;
+  }
 }
 
 function validatePointer(pointer) {
@@ -79,34 +114,21 @@ function listFiles(directory) {
 function uploadFile(filePath, key, contentType) {
   const target = `${bucket}/${key}`;
   const args = [
-    'wrangler',
-    'r2',
-    'object',
-    'put',
-    target,
+    'wrangler', 'r2', 'object', 'put', target,
     process.env.R2_UPLOAD_LOCAL === '1' ? '--local' : '--remote',
-    '--file',
-    filePath,
-    '--content-type',
-    contentType
+    '--file', filePath,
+    '--content-type', contentType
   ];
   runNpx(args, `wrangler r2 object put failed for ${target}`);
 }
 
 function bulkUpload(filename) {
   const args = [
-    'wrangler',
-    'r2',
-    'bulk',
-    'put',
-    bucket,
+    'wrangler', 'r2', 'bulk', 'put', bucket,
     process.env.R2_UPLOAD_LOCAL === '1' ? '--local' : '--remote',
-    '--filename',
-    filename,
-    '--content-type',
-    'application/json',
-    '--concurrency',
-    String(positiveNumber(process.env.R2_UPLOAD_CONCURRENCY, 20)),
+    '--filename', filename,
+    '--content-type', 'application/json',
+    '--concurrency', String(positiveNumber(process.env.R2_UPLOAD_CONCURRENCY, 50)),
     '--force'
   ];
   runNpx(args, `wrangler r2 bulk put failed for ${bucket}`);

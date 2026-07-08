@@ -59,3 +59,9 @@ id = "76ed0ae024ae4e7ab49eefd9cbe1ad6f"
 [[r2_buckets]]
 binding = "CAREER_R2"
 bucket_name = "destiny2-checkinfo-data"
+
+[[d1_databases]]
+binding = "PLAYER_NAMES_DB"
+database_name = "destiny2"
+database_id = "83ecd9b5-7ec7-41df-9573-b675851cf9bf"
+migrations_dir = "migrations"

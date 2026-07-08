@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { writeSplitGearIndex, mergePerks } from '../src/lib/gear/split-writer.js';
 import {
+  craftablesPath,
   dungeonAliasesPath,
   gearItemPath,
   joinGearPath,
@@ -48,6 +49,24 @@ describe('gear split writer', () => {
       expect(variant.stats).toBeUndefined();
       expect(variant.screenshot).toBeUndefined();
       expect(variant.sockets).toBeUndefined();
+    } finally {
+      await rm(outputDir, { recursive: true, force: true });
+    }
+  });
+
+  it('writes craftable records as a dedicated v2 shard', async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), 'gear-split-'));
+    try {
+      await writeSplitGearIndex(gearFixture(), { outputDir });
+      const craftables = JSON.parse(await readFile(join(outputDir, 'test-manifest', craftablesPath()), 'utf8'));
+
+      expect(craftables.kind).toBe('craftable');
+      expect(craftables.items[0]).toMatchObject({
+        kind: 'craftable',
+        hash: 3001,
+        name: 'Pattern Weapon',
+        patternRecordHash: 7001
+      });
     } finally {
       await rm(outputDir, { recursive: true, force: true });
     }
@@ -150,7 +169,21 @@ function gearFixture() {
       }
     ],
     armors: [],
-    craftables: [],
+    craftables: [
+      {
+        kind: 'craftable',
+        hash: 3001,
+        name: 'Pattern Weapon',
+        icon: '/pattern.png',
+        type: 'Auto Rifle',
+        weaponType: 'Auto Rifle',
+        tier: 'Legendary',
+        source: "King's Fall",
+        sourceHash: 123,
+        patternRecordHash: 7001,
+        patternObjectiveHash: 7002
+      }
+    ],
     weaponPlugs: [
       {
         hash: 4001,

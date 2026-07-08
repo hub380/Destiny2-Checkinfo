@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { normalizeText } from './utils.js';
 import {
   GEAR_SPLIT_SCHEMA_VERSION,
+  craftablesPath,
   dungeonAliasesPath,
   gearItemPath,
   joinGearPath,
@@ -46,6 +47,14 @@ export async function writeSplitGearIndex(gearIndex, options = {}) {
     64,
     (item) => writeJson(files, outputDir, join(root, gearItemPath(item.hash)), itemRecordFile(item, context))
   );
+
+  await writeJson(files, outputDir, join(root, craftablesPath()), {
+    schemaVersion: GEAR_SPLIT_SCHEMA_VERSION,
+    kind: 'craftable',
+    locale,
+    manifestVersion: gearIndex.manifestVersion,
+    items: gearIndex.craftables || []
+  });
 
   const perkWeaponsIndexes = buildPerkWeaponsIndexes(gearIndex);
   await mapWithConcurrency(

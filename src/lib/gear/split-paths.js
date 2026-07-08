@@ -43,6 +43,10 @@ export function sourceAliasesPath() {
   return 'source-aliases.json';
 }
 
+export function craftablesPath() {
+  return 'craftables.json';
+}
+
 export function raidAliasesPath() {
   return 'source-aliases-raids.json';
 }

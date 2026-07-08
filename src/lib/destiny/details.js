@@ -17,7 +17,7 @@ export async function getDestinyDetails(body, env, ctx) {
 
   const target = await resolveDetailsTarget(body, env, ctx);
   const cacheKey = [
-    'profile-details-v3',
+    'profile-details-v5',
     CACHE_VERSION,
     env.BUNGIE_LOCALE || 'zh-chs',
     target.membership.membershipType,

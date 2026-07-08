@@ -6,7 +6,7 @@ import {
   activityDefinitionConcurrency
 } from '../cache/index.js';
 import { readLatestGearPointer } from '../gear/cache.js';
-import { joinGearPath, searchShardPath } from '../gear/split-paths.js';
+import { GEAR_SPLIT_PREFIX, craftablesPath, joinGearPath, searchShardPath } from '../gear/split-paths.js';
 import { CACHE_VERSION } from '../shared/index.js';
 import { itemDefinitionCache } from './state.js';
 import { hasFailures } from './privacy.js';
@@ -159,7 +159,7 @@ export async function getInventoryItemDefinitions(hashes, env, ctx) {
 
 export async function loadStaticGearItems(env, ctx) {
   const locale = env.BUNGIE_LOCALE || 'zh-chs';
-  const cacheKey = ['static-gear-items', CACHE_VERSION, locale].join(':');
+  const cacheKey = ['static-gear-items-v3', CACHE_VERSION, locale].join(':');
   const cached = await getWorkerCachedJson(
     cacheKey,
     positiveNumber(env.GEAR_INDEX_CACHE_TTL_SECONDS, 604800),
@@ -187,13 +187,33 @@ async function loadR2GearItems(env) {
   try {
     const pointer = await readLatestGearPointer(env);
     if (!pointer?.root) return [];
-    const object = await env.CAREER_R2.get(joinGearPath(pointer.root, searchShardPath('weapon')));
-    if (!object) return [];
-    const shard = await object.json();
-    return Array.isArray(shard.items) ? shard.items.filter((item) => item.kind === 'weapon') : [];
+    const root = gearRootPath(pointer, env);
+    const [weaponObject, craftableObject] = await Promise.all([
+      env.CAREER_R2.get(joinGearPath(root, searchShardPath('weapon'))),
+      env.CAREER_R2.get(joinGearPath(root, craftablesPath()))
+    ]);
+    const [weaponShard, craftableShard] = await Promise.all([
+      weaponObject ? weaponObject.json() : Promise.resolve(null),
+      craftableObject ? craftableObject.json() : Promise.resolve(null)
+    ]);
+    return [
+      ...itemsFromShard(weaponShard, 'weapon'),
+      ...itemsFromShard(craftableShard, 'craftable')
+    ];
   } catch {
     return [];
   }
+}
+
+function itemsFromShard(shard, kind) {
+  return Array.isArray(shard?.items) ? shard.items.filter((item) => item.kind === kind) : [];
+}
+
+function gearRootPath(pointer, env) {
+  const root = String(pointer?.root || '');
+  if (!root) return '';
+  if (root.includes('/')) return root;
+  return joinGearPath(env.R2_GEAR_PREFIX || GEAR_SPLIT_PREFIX, env.BUNGIE_LOCALE || 'zh-chs', root);
 }
 
 export function inventoryItemIcon(definition) {

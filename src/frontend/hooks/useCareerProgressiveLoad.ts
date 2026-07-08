@@ -60,10 +60,12 @@ export function useCareerProgressiveLoad({
   const enabledRef = useRef(enabled);
   const careerRef = useRef(career);
 
-  ensureDetailsRef.current = ensureDetails;
-  ensureEndgameModesRef.current = ensureEndgameModes;
-  enabledRef.current = enabled;
-  careerRef.current = career;
+  useEffect(() => {
+    ensureDetailsRef.current = ensureDetails;
+    ensureEndgameModesRef.current = ensureEndgameModes;
+    enabledRef.current = enabled;
+    careerRef.current = career;
+  }, [career, enabled, ensureDetails, ensureEndgameModes]);
 
   const careerKey = career
     ? `${career.account?.membershipId || ''}:${career.queriedName || ''}`

@@ -41,8 +41,10 @@ export function useFireteamProgressiveLoad({
   const enabledRef = useRef(enabled);
   const [scheduled, setScheduled] = useState(false);
 
-  loadRef.current = loadDetailed;
-  enabledRef.current = enabled;
+  useEffect(() => {
+    loadRef.current = loadDetailed;
+    enabledRef.current = enabled;
+  }, [enabled, loadDetailed]);
 
   const key = lookupKey(lookup);
 

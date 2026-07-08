@@ -62,8 +62,6 @@ export function useCareerQuery(options: UseCareerQueryOptions = {}) {
 
   const includeDetails = options.includeDetails ?? true;
 
-  const detailsLazy = includeDetails === 'lazy';
-
   const detailsEager = includeDetails === true;
 
   const [career, setCareer] = useState<CareerSummaryDto | null>(null);
@@ -475,4 +473,3 @@ export function useCareerQuery(options: UseCareerQueryOptions = {}) {
   };
 
 }
-

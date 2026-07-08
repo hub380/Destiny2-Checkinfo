@@ -8,9 +8,12 @@ import { FireteamFeedSection } from './FireteamFeedSection';
 import { HomeCareerSection } from './HomeCareerSection';
 import { cn } from './home-cn';
 
-const REFRESH_SECONDS = 30;
+const REFRESH_INTERVAL_STORAGE_KEY = 'fireteam-refresh-interval';
+const REFRESH_INTERVAL_OPTIONS = [10, 15, 30] as const;
+const DEFAULT_REFRESH_SECONDS = 30;
 
 export function HomePage() {
+  const [refreshSeconds, setRefreshSeconds] = useState(readStoredRefreshInterval);
   const {
     items,
     payload,
@@ -22,7 +25,7 @@ export function HomePage() {
     countdown,
     refresh: refreshFireteams,
     reportNotice
-  } = useHeyboxFeed(REFRESH_SECONDS);
+  } = useHeyboxFeed(refreshSeconds);
   const [filter, setFilter] = useState('');
   const [toast, setToast] = useState('');
   const {
@@ -69,6 +72,15 @@ export function HomePage() {
     window.setTimeout(() => setToast(''), 1800);
   }
 
+  function updateRefreshInterval(value: number) {
+    const nextValue = normalizeRefreshInterval(value);
+    setRefreshSeconds(nextValue);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(REFRESH_INTERVAL_STORAGE_KEY, String(nextValue));
+    }
+    showToast(`刷新间隔已设为 ${nextValue} 秒`);
+  }
+
   const isDemo = payload?.source === 'demo';
 
   return (
@@ -93,7 +105,19 @@ export function HomePage() {
               }}
             />
             <span></span>
-            <b>{autoRefresh ? `${countdown || REFRESH_SECONDS}s` : 'off'}</b>
+            <b>{autoRefresh ? `${countdown || refreshSeconds}s` : 'off'}</b>
+          </label>
+          <label className={cn('refresh-interval')} title="刷新间隔">
+            <span>间隔</span>
+            <select
+              value={refreshSeconds}
+              onChange={(event) => updateRefreshInterval(Number(event.target.value))}
+              aria-label="组队信息刷新间隔"
+            >
+              {REFRESH_INTERVAL_OPTIONS.map((seconds) => (
+                <option value={seconds} key={seconds}>{seconds}s</option>
+              ))}
+            </select>
           </label>
           <button
             className={cn(`icon-button spinOnRefresh ${loading ? 'isSpinning' : ''}`)}
@@ -136,4 +160,15 @@ export function HomePage() {
       </FadeIn>
     </AppShell>
   );
+}
+
+function readStoredRefreshInterval() {
+  if (typeof window === 'undefined') return DEFAULT_REFRESH_SECONDS;
+  return normalizeRefreshInterval(Number(window.localStorage.getItem(REFRESH_INTERVAL_STORAGE_KEY)));
+}
+
+function normalizeRefreshInterval(value: number) {
+  return REFRESH_INTERVAL_OPTIONS.includes(value as (typeof REFRESH_INTERVAL_OPTIONS)[number])
+    ? value
+    : DEFAULT_REFRESH_SECONDS;
 }

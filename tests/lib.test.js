@@ -13,6 +13,17 @@ describe('text-utils', () => {
     expect(parseBungieName('Guardian#2333')).toEqual({ displayName: 'Guardian', displayNameCode: 2333 });
     expect(parseBungieName('bad')).toBeNull();
   });
+
+  it('preserves consecutive spaces inside bungie display names', () => {
+    expect(parseBungieName(' MIИAMI  Yume#5360 ')).toEqual({
+      displayName: 'MIИAMI  Yume',
+      displayNameCode: 5360
+    });
+    expect(parseBungieName('MIИAMI\u00A0\u00A0Yume#5360')).toEqual({
+      displayName: 'MIИAMI  Yume',
+      displayNameCode: 5360
+    });
+  });
 });
 
 describe('heybox-parser', () => {

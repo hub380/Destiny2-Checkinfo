@@ -59,11 +59,20 @@ export async function getEndgameCareer(membership, characters, modes = ['raid', 
 
 export async function collectEndgameHistory(membership, characterId, modeName, mode, pageSize, pageLimit, output, warnings, env) {
   for (let page = 0; page < pageLimit; page += 1) {
-    const payload = await bungieFetch(
-      `/Platform/Destiny2/${membership.membershipType}/Account/${membership.membershipId}/Character/${characterId}/Stats/Activities/?mode=${mode}&count=${pageSize}&page=${page}`,
-      { method: 'GET' },
-      env
-    );
+    let payload;
+    try {
+      payload = await bungieFetch(
+        `/Platform/Destiny2/${membership.membershipType}/Account/${membership.membershipId}/Character/${characterId}/Stats/Activities/?mode=${mode}&count=${pageSize}&page=${page}`,
+        { method: 'GET' },
+        env
+      );
+    } catch (error) {
+      if (isPrivateActivityHistoryError(error)) {
+        warnings.push(`${modeName}:${characterId} activity history is private`);
+        return;
+      }
+      throw error;
+    }
     const activities = Array.isArray(payload.Response?.activities) ? payload.Response.activities : [];
     for (const activity of activities) {
       addEndgameActivity(output, activity, characterId, modeName);
@@ -72,6 +81,15 @@ export async function collectEndgameHistory(membership, characterId, modeName, m
   }
 
   warnings.push(`${modeName}:${characterId} reached page limit ${pageLimit}`);
+}
+
+export function isPrivateActivityHistoryError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return error?.code === 'BUNGIE_API_ERROR' && (
+    message.includes('private') ||
+    message.includes('no peeking') ||
+    message.includes('chosen for this data to be private')
+  );
 }
 
 export function addEndgameActivity(output, activity, characterId, modeName) {

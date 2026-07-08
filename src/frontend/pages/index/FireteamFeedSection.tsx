@@ -4,15 +4,13 @@ import {
   PageEmpty,
   SearchIcon,
   StaggerList,
-  createPageCn,
   relativeTime,
   staggerStyle
 } from '@frontend/ui';
 import type { FireteamDto } from '@frontend/lib/types';
 import { useWindowedSlice } from '@frontend/hooks/useWindowedSlice';
-import styles from './home.module.css';
+import { cn } from './home-cn';
 
-const cn = createPageCn(styles);
 const FIRETEAM_PAGE_SIZE = 48;
 
 type FireteamFeedSectionProps = {

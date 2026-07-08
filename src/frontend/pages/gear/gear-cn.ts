@@ -1,4 +1,5 @@
 import { createPageCn } from '@frontend/ui';
-import styles from './gear.module.css';
+import gearStyles from './gear.module.css';
+import gearDetailStyles from './gear-detail.module.css';
 
-export const cn = createPageCn(styles);
+export const cn = createPageCn(gearStyles, [gearDetailStyles]);

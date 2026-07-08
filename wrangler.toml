@@ -3,6 +3,20 @@ name = "destiny2-fireteam-dashboard"
 main = "src/worker.js"
 compatibility_date = "2026-06-12"
 
+[[routes]]
+pattern = "destiny2.check-info.org"
+zone_name = "check-info.org"
+custom_domain = true
+
+[placement]
+mode = "smart"
+
+[limits]
+cpu_ms = 50
+
+[observability]
+enabled = true
+
 [triggers]
 crons = ["17 6 * * 2"]
 

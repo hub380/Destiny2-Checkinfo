@@ -156,7 +156,7 @@ async function getDestinyFireteamMember(member, anchorAccount, modes, options, e
       status: member.status,
       statusLabel: transitoryStatusLabel(member.status),
       source: member.source,
-      error: error.message || '闃熶紞鎴愬憳璧勬枡璇诲彇澶辫触',
+      error: error.message || '队伍成员资料读取失败',
       elapsedMs: Date.now() - startedAt
     };
   }

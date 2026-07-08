@@ -46,7 +46,7 @@ export function getGearItem(hash: string) {
 }
 
 export function getPerkWeapons(body: JsonRecord) {
-  return postJson<JsonRecord>('/api/gear/perk-weapons', { ...body, limit: 80 });
+  return postJson<JsonRecord>('/api/gear/perk-weapons', { ...body, limit: body.limit ?? 20 });
 }
 
 export function getGuides() {

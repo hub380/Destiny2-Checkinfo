@@ -17,6 +17,11 @@ import {
 import { publicGearItem, publicGearDetail, publicWeaponSockets, publicPerkRef } from './public.js';
 import { perkMap } from './perk-map.js';
 import { sourceKeyFor } from './split-paths.js';
+import { GEAR_INDEX_VERSION } from './constants.js';
+
+const PERK_WEAPONS_DEFAULT_LIMIT = 20;
+const PERK_WEAPONS_MAX_LIMIT = 60;
+const PERK_WEAPONS_CACHE_TTL_SECONDS = 604800;
 
 const SOURCE_TYPE_LABELS = {
   raid: 'Raid 来源',
@@ -301,7 +306,24 @@ export async function getPerkWeapons(body, deps) {
     throw httpError(400, 'INVALID_PERK_QUERY', '请输入 perk 名称或 hash');
   }
 
-  const limit = clampNumber(body?.limit, 1, 120, 80);
+  const limit = clampNumber(body?.limit, 1, PERK_WEAPONS_MAX_LIMIT, PERK_WEAPONS_DEFAULT_LIMIT);
+  const ttlSeconds = deps.cacheTtlSeconds || PERK_WEAPONS_CACHE_TTL_SECONDS;
+  const cacheKey = ['perk-weapons', GEAR_INDEX_VERSION, deps.locale || 'zh-chs', query || hash, limit].join(':');
+
+  if (typeof deps.getCachedJson === 'function') {
+    const cached = await deps.getCachedJson(cacheKey, ttlSeconds, () => buildPerkWeapons(deps, query, hash, limit));
+    return withPerkWeaponsCacheMeta(cached.value, cached);
+  }
+
+  const value = await buildPerkWeapons(deps, query, hash, limit);
+  return withPerkWeaponsCacheMeta(value, {
+    status: 'miss-memory',
+    cachedAt: new Date().toISOString(),
+    ttlSeconds
+  });
+}
+
+async function buildPerkWeapons(deps, query, hash, limit) {
   const cached = await getGearPerksIndex(deps);
   const index = cached.value;
   const terms = normalizeText(query);
@@ -313,9 +335,11 @@ export async function getPerkWeapons(body, deps) {
   const perkHashes = new Set(perkMatches.map((item) => item.hash));
   const perkByHash = perkMap(index);
   const groups = new Map();
+  const perkWeaponsIndexes = await Promise.all(
+    Array.from(perkHashes).map((perkHash) => getOptionalPerkWeaponsIndex(deps, perkHash))
+  );
 
-  for (const perkHash of perkHashes) {
-    const perkWeaponsIndex = await getOptionalPerkWeaponsIndex(deps, perkHash);
+  for (const perkWeaponsIndex of perkWeaponsIndexes) {
     for (const group of perkWeaponsIndex.value?.weapons || []) {
       const key = [group.name, group.weaponType, group.ammo, group.element].join('|');
       if (!groups.has(key)) {
@@ -339,41 +363,10 @@ export async function getPerkWeapons(body, deps) {
   const selectedGroups = Array.from(groups.values())
     .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
     .slice(0, limit);
-  const weapons = [];
-
-  for (const group of selectedGroups) {
-    const outputGroup = {
-      ...group,
-      variants: [],
-      canRoll: {
-        normal: false,
-        enhanced: false
-      }
-    };
-    const variants = group.variants.sort((a, b) => Number(a.adept) - Number(b.adept) || a.name.localeCompare(b.name, 'zh-CN'));
-    for (const weapon of variants) {
-      const weaponRecord = await loadPerkWeaponRecord(deps, weapon);
-      const sockets = publicWeaponSockets(weaponRecord, perkByHash, perkHashes);
-      const matchedPerks = uniqueByHash(sockets.flatMap((socket) => socket.perks.filter((perk) => perk.matched)));
-      if (!matchedPerks.length) continue;
-      const variant = {
-        hash: weapon.hash,
-        name: weapon.name,
-        adept: weapon.adept,
-        icon: weapon.icon,
-        stats: weapon.stats || weaponRecord.stats || [],
-        screenshot: '',
-        sockets,
-        matchedPerks: matchedPerks.map(publicPerkRef)
-      };
-      for (const perk of matchedPerks) {
-        outputGroup.canRoll.normal = outputGroup.canRoll.normal || !perk.enhanced;
-        outputGroup.canRoll.enhanced = outputGroup.canRoll.enhanced || perk.enhanced || perk.enhancedMatched || Boolean(perk.enhancedOptions?.length);
-      }
-      outputGroup.variants.push(variant);
-    }
-    if (outputGroup.variants.length) weapons.push(outputGroup);
-  }
+  const weapons = (await Promise.all(selectedGroups.map(async (group) => {
+    const outputGroup = await buildPerkWeaponOutputGroup(group, deps, perkByHash, perkHashes);
+    return outputGroup.variants.length ? outputGroup : null;
+  }))).filter(Boolean);
 
   return {
     updatedAt: cached.cachedAt || new Date().toISOString(),
@@ -386,6 +379,68 @@ export async function getPerkWeapons(body, deps) {
       gearIndex: cached.status,
       gearIndexCachedAt: cached.cachedAt,
       gearIndexTtlSeconds: cached.ttlSeconds
+    }
+  };
+}
+
+async function buildPerkWeaponOutputGroup(group, deps, perkByHash, perkHashes) {
+  const outputGroup = {
+    ...group,
+    variants: [],
+    canRoll: {
+      normal: false,
+      enhanced: false
+    }
+  };
+  const variants = [...group.variants].sort((a, b) => Number(a.adept) - Number(b.adept) || a.name.localeCompare(b.name, 'zh-CN'));
+  const outputVariants = await Promise.all(variants.map((weapon) => buildPerkWeaponVariant(weapon, deps, perkByHash, perkHashes)));
+
+  for (const entry of outputVariants) {
+    if (!entry) continue;
+    outputGroup.variants.push(entry.variant);
+    outputGroup.canRoll.normal = outputGroup.canRoll.normal || entry.canRoll.normal;
+    outputGroup.canRoll.enhanced = outputGroup.canRoll.enhanced || entry.canRoll.enhanced;
+  }
+
+  return outputGroup;
+}
+
+async function buildPerkWeaponVariant(weapon, deps, perkByHash, perkHashes) {
+  const weaponRecord = await loadPerkWeaponRecord(deps, weapon);
+  const sockets = publicWeaponSockets(weaponRecord, perkByHash, perkHashes);
+  const matchedPerks = uniqueByHash(sockets.flatMap((socket) => socket.perks.filter((perk) => perk.matched)));
+  if (!matchedPerks.length) return null;
+  const canRoll = {
+    normal: false,
+    enhanced: false
+  };
+  for (const perk of matchedPerks) {
+    canRoll.normal = canRoll.normal || !perk.enhanced;
+    canRoll.enhanced = canRoll.enhanced || perk.enhanced || perk.enhancedMatched || Boolean(perk.enhancedOptions?.length);
+  }
+  return {
+    variant: {
+      hash: weapon.hash,
+      name: weapon.name,
+      adept: weapon.adept,
+      icon: weapon.icon,
+      stats: weapon.stats || weaponRecord.stats || [],
+      screenshot: '',
+      sockets,
+      matchedPerks: matchedPerks.map(publicPerkRef)
+    },
+    canRoll
+  };
+}
+
+function withPerkWeaponsCacheMeta(payload, cached) {
+  return {
+    ...payload,
+    cache: {
+      ...(payload.cache || {}),
+      perkWeapons: cached.status,
+      perkWeaponsCachedAt: cached.cachedAt,
+      perkWeaponsTtlSeconds: cached.ttlSeconds
     }
   };
 }

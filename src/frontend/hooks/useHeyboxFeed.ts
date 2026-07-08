@@ -14,6 +14,10 @@ export function useHeyboxFeed(refreshSeconds = 30) {
   const refreshTimer = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
 
+  useEffect(() => {
+    setCountdown(refreshSeconds);
+  }, [refreshSeconds]);
+
   const refresh = useCallback(async () => {
     if (loadingRef.current) return;
     loadingRef.current = true;

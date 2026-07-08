@@ -1,16 +1,13 @@
 import type { ReactNode } from 'react';
 import {
   StaggerList,
-  createPageCn,
   formatBungieName,
   formatMinutes,
   statDisplay,
   staggerStyle
 } from '@frontend/ui';
 import type { CareerSummaryDto } from '@frontend/lib/types';
-import styles from './home.module.css';
-
-const cn = createPageCn(styles);
+import { cn } from './home-cn';
 
 export function CompactCareerPanel({ career }: { career: CareerSummaryDto }) {
   const stats = career.stats || {};

@@ -1,5 +1,7 @@
 import React, { FormEvent, useState } from 'react';
-import { useGuidesLibrary } from '@frontend/hooks';
+import { RecentQueryChips } from '@frontend/components/search';
+import { useGuidesLibrary, usePublicConfig, useRecentQueries } from '@frontend/hooks';
+import { pushRecentQuery } from '@frontend/lib/recent-queries';
 import { useWindowedSlice } from '@frontend/hooks/useWindowedSlice';
 import { copyToClipboard } from '@frontend/lib/clipboard';
 import {
@@ -12,13 +14,15 @@ import {
 } from '@frontend/lib/copy';
 import {
   AppShell,
+  ActionNotice,
   CopyIcon,
   FadeIn,
-  Notice,
   PageEmpty,
   PageLoading,
   SearchIcon,
+  SkeletonCardGrid,
   StaggerList,
+  SystemBanner,
   createPageCn,
   dateOnly
 } from '@frontend/ui';
@@ -30,6 +34,8 @@ const cn = createPageCn(styles);
 const GUIDE_LIST_PAGE_SIZE = 48;
 
 export function GuidesPage() {
+  const { config, ready } = usePublicConfig();
+  const { recent, refresh } = useRecentQueries('guides');
   const {
     index,
     detail,
@@ -45,7 +51,8 @@ export function GuidesPage() {
     visibleItems,
     items,
     openGuide,
-    closeGuide
+    closeGuide,
+    reload
   } = useGuidesLibrary();
   const [copyNotice, setCopyNotice] = useState('');
   const { visible: windowedGuides, hasMore: hasMoreGuides, showMore: showMoreGuides } = useWindowedSlice(
@@ -57,6 +64,11 @@ export function GuidesPage() {
 
   function onSearch(event: FormEvent) {
     event.preventDefault();
+    const value = query.trim();
+    if (value) {
+      pushRecentQuery('guides', value);
+      refresh();
+    }
   }
 
   async function copyGuideLink() {
@@ -68,6 +80,7 @@ export function GuidesPage() {
   return (
     <AppShell title="Destiny 2 攻略/资讯" subtitle="Raid、地牢、地图与机制资料库" current="guides">
       <FadeIn variant="page" className={cn(`guides-layout ${detailOpen ? 'detail-open' : ''}`)}>
+        <SystemBanner hasBungieApiKey={config?.hasBungieApiKey} configReady={ready} />
         <section className={cn('panel guides-list-panel panelEnter')}>
           <div className={cn('panel-header')}>
             <div>
@@ -81,6 +94,14 @@ export function GuidesPage() {
             <SearchIcon />
             <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder={COPY_GUIDES_SEARCH_PLACEHOLDER} />
           </form>
+
+          <RecentQueryChips
+            items={recent}
+            onPick={(value) => {
+              setQuery(value);
+              refresh();
+            }}
+          />
 
           <div className={cn('chip-tabs')} role="tablist" aria-label="攻略分类">
             <button
@@ -108,12 +129,11 @@ export function GuidesPage() {
             ))}
           </div>
 
-          <Notice message={notice} error={error} />
+          <ActionNotice message={notice} error={error} onRetry={error ? () => void reload() : undefined} />
 
           {loading ? (
-            <PageLoading className={cn('guide-list-loading')}>攻略索引加载中</PageLoading>
-          ) : (
-            <>
+            <SkeletonCardGrid count={4} />
+          ) : (            <>
               <StaggerList className={cn('guide-list')} stagger={windowedGuides.length <= 24}>
                 {windowedGuides.map((item) => (
                   <GuideCard

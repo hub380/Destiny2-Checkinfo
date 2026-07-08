@@ -9,6 +9,38 @@
 
 .fireteam-query-panel {
   padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.fireteam-progress-strip {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.fireteam-progress-strip p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.fireteam-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+  overflow: hidden;
+}
+
+.fireteam-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--green), color-mix(in srgb, var(--green) 70%, #7ad7b8));
+  transition: width var(--duration-normal) var(--ease-out);
 }
 
 .fireteam-search {
@@ -183,6 +215,56 @@
   color: var(--amber-text);
 }
 
+.member-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.member-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.member-sort select {
+  min-width: 120px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.load-detailed-button {
+  padding: 6px 12px;
+  border: 1px solid var(--green-border, #b7dccf);
+  border-radius: 8px;
+  background: var(--green-2);
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.load-detailed-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stat-highlight {
+  border-color: var(--green-border, #b7dccf);
+  background: color-mix(in srgb, var(--green-2) 70%, transparent);
+}
+
+.stat-highlight b {
+  color: var(--green);
+}
+
 .fireteam-idle {
   min-height: 260px;
   display: grid;
@@ -238,6 +320,28 @@
 @media (max-width: 640px) {
   .fireteam-page {
     padding: 12px;
+  }
+
+  .section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .member-toolbar {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .member-sort select,
+  .load-detailed-button {
+    width: 100%;
+  }
+
+  .member-count {
+    font-size: 13px;
+    color: var(--muted);
   }
 
   .member-grid,

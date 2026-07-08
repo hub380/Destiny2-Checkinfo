@@ -61,6 +61,11 @@
   box-shadow: var(--shadow);
 }
 
+.crafting-modal-panel {
+  gap: 10px;
+  padding: 12px 14px 14px;
+}
+
 .career-modal-head {
   display: flex;
   align-items: flex-start;
@@ -82,46 +87,178 @@
   font-size: 12px;
 }
 
+.crafting-modal-toolbar {
+  display: grid;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.crafting-modal-summary {
+  margin: 0;
+  gap: 8px;
+}
+
+.crafting-modal-summary > * {
+  padding: 8px 10px;
+}
+
+.crafting-modal-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px 14px;
+}
+
+.crafting-modal-search {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.crafting-modal-search-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.crafting-modal-search input {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-elevated);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.crafting-modal-search input:focus {
+  outline: none;
+  border-color: var(--border-focus, #7ab8a8);
+  box-shadow: 0 0 0 3px var(--focus-ring, rgba(44, 115, 107, 0.18));
+}
+
+.crafting-modal-meta {
+  margin: 0;
+  padding-bottom: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 .career-modal-scroll {
   min-height: 0;
   overflow: auto;
   padding-right: 2px;
 }
 
+.crafting-modal-scroll {
+  padding: 2px 2px 2px 0;
+  border: 1px solid #2a332d;
+  border-radius: 10px;
+  background: #141816;
+}
+
 .crafting-collection-board {
+  display: grid;
+  gap: 14px;
+  padding: 12px;
+}
+
+.crafting-season-group {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.crafting-season-group + .crafting-season-group {
+  padding-top: 12px;
+  border-top: 1px solid #2a332d;
+}
+
+.crafting-season-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid #2a332d;
+  background: transparent;
+  color: #e8f2ec;
+}
+
+.crafting-season-head strong {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.crafting-season-head span {
+  font-size: 12px;
+  color: #9eb5a8;
+}
+
+.crafting-season-group.complete .crafting-season-head strong {
+  color: #8fe0b0;
+}
+
+.crafting-season-sources {
   display: grid;
   gap: 12px;
 }
 
 .crafting-source-group {
   min-width: 0;
-  padding: 14px;
+  padding: 10px;
   border-radius: 8px;
-  background: #202320;
+  background: #1a1f1c;
   border: 1px solid #262d28;
-}
-
-.crafting-source-group.complete .crafting-source-head {
-  background: #2f9966;
 }
 
 .crafting-source-head {
   width: fit-content;
   max-width: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  padding: 6px 12px;
+  margin-bottom: 10px;
+  padding: 5px 11px;
   border-radius: 999px;
-  background: #c84f45;
+  background: #4a4f4c;
   color: #fff;
   line-height: 1.2;
 }
 
+.crafting-source-group.kind-raid .crafting-source-head {
+  background: #b84a42;
+}
+
+.crafting-source-group.kind-dungeon .crafting-source-head {
+  background: #8a5a28;
+}
+
+.crafting-source-group.kind-episode .crafting-source-head {
+  background: #2f7a52;
+}
+
+.crafting-source-group.kind-season .crafting-source-head {
+  background: #2f5f8f;
+}
+
+.crafting-source-group.complete .crafting-source-head {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
 .crafting-source-head strong,
 .crafting-source-head span {
-  font-size: 13px;
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
 
@@ -130,28 +267,36 @@
 }
 
 .crafting-source-head span {
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
 .crafting-source-items {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px 18px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
 }
 
 .crafting-board-item {
   min-width: 0;
   display: grid;
-  grid-template-columns: 58px 7px minmax(0, 1fr);
-  gap: 9px;
+  grid-template-columns: 52px 6px minmax(0, 1fr);
+  gap: 8px;
   align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #2a332d;
+  background: #202420;
   color: #eef4ec;
+}
+
+.crafting-board-item.complete {
+  border-color: #2f5d47;
 }
 
 .crafting-board-icon {
   position: relative;
-  width: 58px;
-  height: 58px;
+  width: 52px;
+  height: 52px;
   border-radius: 7px;
   overflow: hidden;
   background: #3a2c54;
@@ -166,8 +311,8 @@
 
 .crafting-pattern-meter {
   align-self: stretch;
-  width: 7px;
-  min-height: 58px;
+  width: 6px;
+  min-height: 52px;
   border-radius: 999px;
   background: #3bb978;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
@@ -188,40 +333,55 @@
 .crafting-board-copy span,
 .crafting-board-copy em {
   display: block;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .crafting-board-copy b {
   font-size: 13px;
-  line-height: 1.25;
+  line-height: 1.3;
   color: #fff;
 }
 
 .crafting-board-copy span,
 .crafting-board-copy em {
-  color: #cbd7cf;
-  font-size: 12px;
+  color: #b8c7bf;
+  font-size: 11px;
   line-height: 1.25;
   font-style: normal;
 }
 
 .crafting-board-copy em {
-  color: #fff;
+  color: #f2f7f4;
   font-weight: 700;
 }
 
 @media (max-width: 980px) {
   .crafting-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .crafting-modal-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .crafting-modal-controls {
     grid-template-columns: 1fr;
   }
 
+  .crafting-modal-meta {
+    white-space: normal;
+  }
+
   .crafting-source-items {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
 }
 
 @media (max-width: 640px) {
   .crafting-summary,
+  .crafting-modal-summary,
   .crafting-source-items {
     grid-template-columns: 1fr;
   }
@@ -235,5 +395,20 @@
   .crafting-summary-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .career-modal {
+    padding: 10px;
+  }
+
+  .crafting-modal-panel {
+    max-height: 94vh;
+  }
+
+  .crafting-board-copy b,
+  .crafting-board-copy span,
+  .crafting-board-copy em {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }

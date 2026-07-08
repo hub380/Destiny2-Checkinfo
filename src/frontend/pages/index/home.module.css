@@ -8,6 +8,74 @@
   flex: 1;
 }
 
+@media (max-width: 980px) {
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.layout > :global([class*='system-banner']) {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 980px) {
+  .layout > :global([class*='system-banner']) {
+    order: -2;
+  }
+}
+
+.pick-choice {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.pick-choice p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pick-choice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pick-choice-actions button {
+  padding: 6px 10px;
+  border: 1px solid var(--green-border, #b7dccf);
+  border-radius: 8px;
+  background: var(--green-2);
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pick-choice-actions .pick-dismiss {
+  border-color: var(--line);
+  background: var(--surface-elevated);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.summary-note,
+.summary-footnote {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.summary-footnote {
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
 .fireteams-panel {
   padding: 16px;
 }
@@ -473,7 +541,12 @@
   }
 
   .career-panel {
+    order: -1;
     position: static;
+  }
+
+  .fireteams-panel {
+    order: 0;
   }
 
   .filter-box {

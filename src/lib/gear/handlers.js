@@ -1,9 +1,6 @@
 import { normalizeGearKind, sourceSearchText } from './labels.js';
 import { cleanText, clampNumber, httpError, requireApiKey, normalizeText } from './utils.js';
-import {
-  getGearItemIndex,
-  getGearSearchIndex
-} from './index-cache.js';
+import { getGearItemIndex, getGearSearchIndex } from './index-cache.js';
 import {
   compareGearItems,
   armorSetBonusHashSet,

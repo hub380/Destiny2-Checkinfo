@@ -10,6 +10,10 @@
   animation: d2-fade-in-up var(--duration-slow) var(--ease-out);
 }
 
+.guides-layout > :global([class*='system-banner']) {
+  grid-column: 1 / -1;
+}
+
 .guides-list-panel,
 .guide-detail-panel {
   padding: 14px;
@@ -429,10 +433,19 @@
     padding: 8px 12px;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: var(--surface-2);
+    background: var(--surface-elevated);
     color: var(--text);
     font-size: 13px;
     font-weight: 700;
+    position: sticky;
+    top: 8px;
+    z-index: 12;
+    box-shadow: 0 6px 18px var(--shadow-soft);
+    cursor: pointer;
+  }
+
+  .guides-layout.detail-open .guide-detail-panel {
+    min-height: 70vh;
   }
 }
 

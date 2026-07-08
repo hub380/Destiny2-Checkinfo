@@ -176,6 +176,15 @@ html[data-theme="dark"] body {
   }
 }
 
+@keyframes d2-progress-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
 @keyframes d2-shimmer {
   0% {
     background-position: 200% 0;

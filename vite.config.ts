@@ -86,6 +86,12 @@ export default defineConfig({
           if (normalizedId.includes('/node_modules/react/') || normalizedId.includes('/node_modules/react-dom/')) {
             return 'vendor-react';
           }
+          if (normalizedId.includes('/src/frontend/components/')) {
+            return 'shared-ui';
+          }
+          if (normalizedId.includes('/src/frontend/hooks/')) {
+            return 'shared-hooks';
+          }
           return undefined;
         }
       }

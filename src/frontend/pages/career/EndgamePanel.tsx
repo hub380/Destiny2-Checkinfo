@@ -1,4 +1,4 @@
-import { MiniStat, Notice, dateOnly, statDisplay } from '@frontend/ui';
+import { MiniStat, ActionNotice, dateOnly, statDisplay } from '@frontend/ui';
 import type { EndgameActivityDto, EndgameStatBlockDto, EndgameVariantDto } from '@frontend/lib/types';
 import { cn } from './career-cn';
 
@@ -6,12 +6,14 @@ export function EndgamePanel({
   label,
   mode,
   loading,
-  error
+  error,
+  lazyPending
 }: {
   label: string;
   mode: EndgameStatBlockDto;
   loading: boolean;
   error?: string;
+  lazyPending?: boolean;
 }) {
   const total = mode.total || mode || {};
   const activities = Array.isArray(mode.activities) ? mode.activities : [];
@@ -31,10 +33,12 @@ export function EndgamePanel({
         <MiniStat label="时长" value={total.hours ? `${statDisplay(total.hours)} 小时` : '-'} />
         <MiniStat label="Solo 无暇" value={statDisplay(total.soloFlawlessClears)} />
       </div>
-      <Notice message={error} error />
+      <ActionNotice message={error} error />
       <div className={cn('career-activity-grid')}>
         {activities.length ? activities.map((activity) => <EndgameActivity activity={activity} key={`${label}-${activity.name}`} />) : (
-          <div className={cn('detail-loading')}>{loading ? '活动历史加载中' : '没有公开活动历史'}</div>
+          <div className={cn('detail-loading')}>
+            {loading ? '活动历史加载中' : lazyPending ? '即将自动加载完整活动历史' : '没有公开活动历史'}
+          </div>
         )}
       </div>
     </article>

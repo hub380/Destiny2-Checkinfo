@@ -16,6 +16,11 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.{js,ts}']
+    include: ['tests/**/*.test.{js,ts}'],
+    pool: 'threads',
+    environmentMatchGlobs: [
+      ['tests/hooks.test.ts', 'jsdom'],
+      ['tests/gear-catalyst.test.ts', 'jsdom']
+    ]
   }
 });

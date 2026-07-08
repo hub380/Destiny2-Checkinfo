@@ -41,9 +41,9 @@ export function normalizeEndgameModes(value) {
 
 export function historyPageLimit(modeName, env) {
   if (modeName === 'pvp') {
-    return positiveNumber(env.PVP_HISTORY_PAGE_LIMIT, positiveNumber(env.ENDGAME_HISTORY_PAGE_LIMIT, 50));
+    return positiveNumber(env.PVP_HISTORY_PAGE_LIMIT, positiveNumber(env.ENDGAME_HISTORY_PAGE_LIMIT, 10));
   }
-  return positiveNumber(env.ENDGAME_HISTORY_PAGE_LIMIT, 50);
+  return positiveNumber(env.ENDGAME_HISTORY_PAGE_LIMIT, 10);
 }
 
 export function historyPageSize(modeName, env) {

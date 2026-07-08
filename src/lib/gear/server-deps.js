@@ -1,15 +1,19 @@
 import { readFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
+import { getLocalCachedJson } from './local-cache.js';
 
 export function serverGearDeps(env = {}, options = {}) {
   const dataDir = resolve(options.dataDir || env.GEAR_DATA_DIR || 'public/data/gear');
   const sourceAliasesFile = options.sourceAliasesFile || env.GEAR_SOURCE_ALIASES_FILE || '';
+  const cacheTtlSeconds = positiveNumber(env.GEAR_INDEX_CACHE_TTL_SECONDS, 604800);
   return {
     apiKey: env.BUNGIE_API_KEY,
     locale: env.BUNGIE_LOCALE || 'zh-chs',
-    cacheTtlSeconds: positiveNumber(env.GEAR_INDEX_CACHE_TTL_SECONDS, 604800),
+    cacheTtlSeconds,
     getLatestGearPointer: () => readLocalJson(dataDir, 'latest.json'),
-    readGearJson: (relativePath) => readLocalGearJson(dataDir, relativePath, sourceAliasesFile)
+    readGearJson: (relativePath) => readLocalGearJson(dataDir, relativePath, sourceAliasesFile),
+    getCachedJson: (key, ttlSeconds, producer, cacheOptions) =>
+      getLocalCachedJson(key, ttlSeconds ?? cacheTtlSeconds, producer, cacheOptions)
   };
 }
 

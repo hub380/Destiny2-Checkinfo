@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LoadingPulse } from '../motion/primitives';
+import { LoadingPulse } from '../motion/MotionPrimitives';
 import { css, uiClasses } from '@frontend/lib/cn';
 
 const cn = (classNames: string | false | null | undefined) => css(uiClasses, classNames);

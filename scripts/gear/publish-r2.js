@@ -1,12 +1,15 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { manifestRoot, trimSlashes } from '../../src/lib/gear/split-paths.js';
+
+const rootDir = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
+loadEnvFile(resolve(rootDir, '.env'));
 
 const bucket = process.env.R2_BUCKET || 'destiny2-checkinfo-data';
 const prefix = trimSlashes(process.env.R2_GEAR_PREFIX || 'gear-cache/v2');
 const locale = String(process.env.BUNGIE_LOCALE || 'zh-chs').toLowerCase();
-const rootDir = resolve('.');
 const gearDir = resolve(rootDir, process.env.GEAR_SPLIT_DIR || 'public/data/gear');
 const sourceAliasesFile = resolve(rootDir, process.env.GEAR_SOURCE_ALIASES_FILE || 'content/gear/source-aliases.json');
 const workDir = resolve(rootDir, 'work/gear-cache-upload');
@@ -194,4 +197,25 @@ function formatBytes(bytes) {
 function positiveNumber(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? Math.floor(number) : fallback;
+}
+
+function loadEnvFile(filePath) {
+  if (!existsSync(filePath)) return;
+  const lines = readFileSync(filePath, 'utf8').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+    if (!match) continue;
+    const [, key, rawValue] = match;
+    if (process.env[key] !== undefined) continue;
+    process.env[key] = stripEnvQuotes(rawValue.trim());
+  }
+}
+
+function stripEnvQuotes(value) {
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    return value.slice(1, -1);
+  }
+  return value;
 }

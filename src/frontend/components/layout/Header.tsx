@@ -24,10 +24,10 @@ export function Header({ title, subtitle, current, toolbar }: HeaderProps) {
         </div>
       </div>
       <nav className={cn('main-nav')} aria-label="主导航">
-        <a href="/#fireteams" className={cn(current === 'home' ? 'current' : '')}>小黑盒组队</a>
+        <a href="/#fireteams" className={cn(current === 'home' ? 'current' : '')} title="小黑盒组队帖">小黑盒组队</a>
         <a href="/career.html" className={cn(current === 'career' ? 'current' : '')}>玩家生涯</a>
         <a href="/gear.html" className={cn(current === 'gear' ? 'current' : '')}>装备搜索</a>
-        <a href="/fireteam.html" className={cn(current === 'fireteam' ? 'current' : '')}>棒鸡队伍</a>
+        <a href="/fireteam.html" className={cn(current === 'fireteam' ? 'current' : '')} title="Bungie 实时公开队伍">棒鸡队伍</a>
         <a href="/guides.html" className={cn(current === 'guides' ? 'current' : '')}>攻略/资讯</a>
       </nav>
       <div className={cn('header-actions')}>

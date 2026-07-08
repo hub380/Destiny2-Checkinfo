@@ -8,13 +8,14 @@ export function corsHeaders() {
   };
 }
 
-export function json(payload, status = 200) {
+export function json(payload, status = 200, options = {}) {
+  const cacheControl = options.cacheControl || 'no-cache';
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       ...corsHeaders(),
       'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-cache'
+      'cache-control': cacheControl
     }
   });
 }

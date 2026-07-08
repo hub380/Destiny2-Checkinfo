@@ -32,11 +32,21 @@ vi.mock('@frontend/lib/api', () => ({
     slug: 'guide-warlords',
     title: '战争领主的废墟',
     sections: []
-  })
+  }),
+  getBungieFireteamLookup: vi.fn().mockResolvedValue({
+    updatedAt: '2026-06-15T00:00:00.000Z',
+    message: '查询完成。',
+    members: []
+  }),
+  searchPlayers: vi.fn().mockResolvedValue({ items: [] }),
+  warmGearIndex: vi.fn().mockResolvedValue({ ok: true })
 }));
 
 import { useGearSearch } from '@frontend/hooks/useGearSearch';
 import { useGuidesLibrary } from '@frontend/hooks/useGuidesLibrary';
+import { useBungieFireteamLookup } from '@frontend/hooks/useBungieFireteamLookup';
+import { useCareerProgressiveLoad } from '@frontend/hooks/useCareerProgressiveLoad';
+import type { CareerSummaryDto } from '@frontend/lib/types';
 import * as api from '@frontend/lib/api';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -74,6 +84,11 @@ beforeEach(() => {
     title: '战争领主的废墟',
     sections: []
   });
+  vi.mocked(api.getBungieFireteamLookup).mockResolvedValue({
+    updatedAt: '2026-06-15T00:00:00.000Z',
+    message: '查询完成。',
+    members: []
+  });
 });
 
 afterEach(() => {
@@ -96,7 +111,7 @@ describe('useGearSearch popstate regression', () => {
     const { result } = renderHook(() => useGearSearch());
     await waitFor(() => expect(result.current.payload).not.toBeNull());
     expect(result.current.query).toBe('末日先知');
-    expect(api.searchGear).toHaveBeenCalledWith('末日先知');
+    expect(api.searchGear).toHaveBeenCalledWith('末日先知', 'all', expect.any(AbortSignal));
     expect(api.searchGear).toHaveBeenCalledTimes(1);
   });
 
@@ -111,7 +126,7 @@ describe('useGearSearch popstate regression', () => {
     await waitFor(() => expect(result.current.detail).not.toBeNull());
     await waitFor(() => expect(result.current.detail?.loading).toBeFalsy());
     expect(result.current.activeHash).toBe('111');
-    expect(api.getGearItem).toHaveBeenCalledWith('111');
+    expect(api.getGearItem).toHaveBeenCalledWith('111', expect.any(AbortSignal));
   });
 
   it('re-runs search on popstate when q param changes', async () => {
@@ -132,7 +147,7 @@ describe('useGearSearch popstate regression', () => {
     await act(async () => { firePopstate(); });
     await waitFor(() => expect(result.current.query).toBe('全知之眼'));
     expect(api.searchGear).toHaveBeenCalledTimes(2);
-    expect(api.searchGear).toHaveBeenLastCalledWith('全知之眼');
+    expect(api.searchGear).toHaveBeenLastCalledWith('全知之眼', 'all', expect.any(AbortSignal));
   });
 
   it('clears state on popstate to empty URL (back to home)', async () => {
@@ -212,5 +227,168 @@ describe('useGuidesLibrary popstate regression', () => {
     await new Promise((r) => setTimeout(r, 20));
 
     expect(vi.mocked(api.getGuide).mock.calls.length).toBe(callCount);
+  });
+});
+
+// ── useBungieFireteamLookup ───────────────────────────────────────────────────
+
+describe('useBungieFireteamLookup popstate regression', () => {
+  it('mounts idle when URL has no params', () => {
+    const { result } = renderHook(() => useBungieFireteamLookup());
+    expect(result.current.query).toBe('');
+    expect(result.current.lookup).toBeNull();
+    expect(api.getBungieFireteamLookup).not.toHaveBeenCalled();
+  });
+
+  it('auto-runs lookup when URL has ?q= on mount', async () => {
+    setSearch('?q=Player%231234');
+    const { result } = renderHook(() => useBungieFireteamLookup());
+    await waitFor(() => expect(result.current.lookup).not.toBeNull());
+    expect(result.current.query).toBe('Player#1234');
+    expect(api.getBungieFireteamLookup).toHaveBeenCalledWith(
+      expect.objectContaining({ bungieName: 'Player#1234' }),
+      expect.any(AbortSignal)
+    );
+    expect(api.getBungieFireteamLookup).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-runs lookup on popstate when q param changes', async () => {
+    setSearch('?q=Player%231234');
+    const { result } = renderHook(() => useBungieFireteamLookup());
+    await waitFor(() => expect(result.current.lookup).not.toBeNull());
+    expect(api.getBungieFireteamLookup).toHaveBeenCalledTimes(1);
+
+    setSearch('?q=Other%235678');
+    await act(async () => { firePopstate(); });
+    await waitFor(() => expect(result.current.query).toBe('Other#5678'));
+    expect(api.getBungieFireteamLookup).toHaveBeenCalledTimes(2);
+    expect(api.getBungieFireteamLookup).toHaveBeenLastCalledWith(
+      expect.objectContaining({ bungieName: 'Other#5678' }),
+      expect.any(AbortSignal)
+    );
+  });
+
+  it('clears state on popstate to empty URL', async () => {
+    setSearch('?q=Player%231234');
+    const { result } = renderHook(() => useBungieFireteamLookup());
+    await waitFor(() => expect(result.current.lookup).not.toBeNull());
+
+    setSearch('');
+    await act(async () => { firePopstate(); });
+    await waitFor(() => expect(result.current.lookup).toBeNull());
+    expect(result.current.query).toBe('');
+  });
+
+  it('typing does not write URL until submit', async () => {
+    const { result } = renderHook(() => useBungieFireteamLookup());
+    await act(async () => {
+      result.current.updateQuery('Player#1234');
+    });
+    expect(result.current.query).toBe('Player#1234');
+    expect(window.location.search).toBe('');
+    expect(api.getBungieFireteamLookup).not.toHaveBeenCalled();
+  });
+});
+
+// ── useCareerProgressiveLoad ──────────────────────────────────────────────────
+
+function mockCareer(overrides: Partial<CareerSummaryDto> = {}): CareerSummaryDto {
+  return {
+    account: { membershipType: 3, membershipId: '123', displayName: 'Player', membershipTypeName: 'Steam' },
+    characters: [],
+    queriedName: 'Player#1',
+    ...overrides
+  } as CareerSummaryDto;
+}
+
+describe('useCareerProgressiveLoad', () => {
+  it('starts idle without career key', () => {
+    const ensureDetails = vi.fn();
+    const ensureEndgameModes = vi.fn();
+    const { result } = renderHook(() =>
+      useCareerProgressiveLoad({
+        career: null,
+        ensureDetails,
+        ensureEndgameModes
+      })
+    );
+    expect(result.current.stage).toBe('idle');
+    expect(ensureDetails).not.toHaveBeenCalled();
+  });
+
+  it('runs progressive pipeline with summary-first endgame', async () => {
+    vi.useFakeTimers();
+    const ensureDetails = vi.fn().mockResolvedValue(undefined);
+    const ensureEndgameModes = vi.fn().mockResolvedValue(undefined);
+    const career = mockCareer();
+
+    const { result, rerender } = renderHook(
+      ({ current }) =>
+        useCareerProgressiveLoad({
+          career: current,
+          ensureDetails,
+          ensureEndgameModes
+        }),
+      { initialProps: { current: career } }
+    );
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(ensureDetails).toHaveBeenCalledTimes(1);
+    expect(ensureEndgameModes).toHaveBeenCalledWith(['raid', 'dungeon'], {
+      fullHistory: true,
+      reload: false
+    });
+    expect(ensureEndgameModes).toHaveBeenCalledWith(['pvp'], {
+      fullHistory: false,
+      reload: false
+    });
+    expect(result.current.stage).toBe('done');
+
+    rerender({ current: mockCareer({ queriedName: 'Other#2' }) });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    expect(ensureDetails).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('loadAllNow requests full history with reload', async () => {
+    vi.useFakeTimers();
+    const ensureDetails = vi.fn().mockResolvedValue(undefined);
+    const ensureEndgameModes = vi.fn().mockResolvedValue(undefined);
+    const career = mockCareer();
+
+    const { result } = renderHook(() =>
+      useCareerProgressiveLoad({
+        career,
+        ensureDetails,
+        ensureEndgameModes
+      })
+    );
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    ensureEndgameModes.mockClear();
+
+    act(() => {
+      result.current.loadAllNow();
+    });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(ensureEndgameModes).toHaveBeenCalledWith(['raid', 'dungeon'], {
+      fullHistory: true,
+      reload: true
+    });
+    expect(ensureEndgameModes).toHaveBeenCalledWith(['pvp'], {
+      fullHistory: true,
+      reload: true
+    });
+    vi.useRealTimers();
   });
 });

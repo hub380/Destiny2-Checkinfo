@@ -6,7 +6,7 @@ import {
   activityDefinitionConcurrency
 } from '../cache/index.js';
 import { readLatestGearPointer } from '../gear/cache.js';
-import { GEAR_SPLIT_PREFIX, craftablesPath, joinGearPath, searchShardPath } from '../gear/split-paths.js';
+import { GEAR_SPLIT_PREFIX, craftablesPath, gearItemPath, joinGearPath, searchShardPath } from '../gear/split-paths.js';
 import { CACHE_VERSION } from '../shared/index.js';
 import { itemDefinitionCache } from './state.js';
 import { hasFailures } from './privacy.js';
@@ -86,6 +86,7 @@ export async function enrichCraftableItems(items, env, ctx, profileRecords = {})
       patternRecordHash: craftingInfo.patternRecordHash || 0,
       patternObjectiveHash: craftingInfo.patternObjectiveHash || 0,
       pattern,
+      watermark: craftingInfo.watermark || '',
       visible: Boolean(item.visible),
       unlocked: Boolean(item.unlocked),
       failedRequirementCount: numberStat(item.failedRequirementCount),
@@ -102,38 +103,42 @@ export async function getInventoryItemDefinitions(hashes, env, ctx) {
   const uniqueHashes = Array.from(new Set(hashes.filter(Boolean).map(String)));
   const staticItems = await loadStaticGearItems(env, ctx);
   const byHash = new Map(staticItems.map((item) => [String(item.hash), item]));
+  const deps = resolveGearDeps(env);
+  const pointer = deps?.getLatestGearPointer ? await deps.getLatestGearPointer().catch(() => null) : null;
+  const gearRoot = pointer?.root ? resolveGearRoot(pointer, env) : '';
+
   const entries = uniqueHashes.map((hash) => {
     if (itemDefinitionCache.has(hash)) return [hash, itemDefinitionCache.get(hash)];
     const item = byHash.get(hash);
-    const definition = item
-      ? {
-          displayProperties: {
-            name: item.name,
-            icon: item.icon || ''
-          },
-          itemTypeDisplayName: item.weaponType || item.type || '',
-          inventory: {
-            tierTypeName: item.tier || ''
-          },
-          craftingInfo: {
-            source: item.source || '',
-            sourceHash: item.sourceHash || 0,
-            patternRecordHash: item.patternRecordHash || 0,
-            patternObjectiveHash: item.patternObjectiveHash || 0,
-            outputItemHash: item.outputItemHash || 0,
-            outputCollectibleHash: item.outputCollectibleHash || 0,
-            watermark: item.watermark || ''
-          }
-        }
-      : {};
+    const definition = definitionFromGearItem(item);
     itemDefinitionCache.set(hash, definition);
     return [hash, definition];
   });
 
-  const missing = entries
+  let missing = entries
     .filter(([, definition]) => !definition.displayProperties?.name)
-    .slice(0, 18)
     .map(([hash]) => hash);
+
+  if (missing.length && deps && gearRoot) {
+    const fromFiles = await hydrateMissingFromItemFiles(missing, deps, gearRoot);
+    for (const [hash, definition] of fromFiles) {
+      if (definition.displayProperties?.name) {
+        itemDefinitionCache.set(hash, definition);
+      }
+    }
+    missing = uniqueHashes
+      .filter((hash) => !itemDefinitionCache.get(hash)?.displayProperties?.name);
+  }
+
+  if (missing.length && deps && gearRoot) {
+    for (const hash of missing) {
+      itemDefinitionCache.set(hash, {
+        displayProperties: { name: `装备 ${hash}` }
+      });
+    }
+    missing = [];
+  }
+
   const fetched = await mapWithConcurrency(missing, activityDefinitionConcurrency(env), async (hash) => {
     try {
       const payload = await bungieFetch(
@@ -150,22 +155,23 @@ export async function getInventoryItemDefinitions(hashes, env, ctx) {
   });
 
   return new Map(
-    entries.map(([hash, definition]) => {
+    uniqueHashes.map((hash) => {
+      const cached = itemDefinitionCache.get(hash);
       const fallback = fetched.find(([itemHash]) => itemHash === hash);
-      return fallback || [hash, definition];
+      return [hash, fallback?.[1] || cached || {}];
     })
   );
 }
 
 export async function loadStaticGearItems(env, ctx) {
   const locale = env.BUNGIE_LOCALE || 'zh-chs';
-  const cacheKey = ['static-gear-items-v3', CACHE_VERSION, locale].join(':');
+  const cacheKey = ['static-gear-items-v4', CACHE_VERSION, locale].join(':');
   const cached = await getWorkerCachedJson(
     cacheKey,
     positiveNumber(env.GEAR_INDEX_CACHE_TTL_SECONDS, 604800),
     async () => {
-      const r2Items = await loadR2GearItems(env);
-      if (r2Items.length) return r2Items;
+      const splitItems = await loadSplitGearItems(env);
+      if (splitItems.length) return splitItems;
       if (!env.ASSETS?.fetch) return [];
       const response = await env.ASSETS.fetch(new Request(`https://assets.local/data/gear-index-${locale}.json`));
       if (!response.ok) return [];
@@ -182,20 +188,20 @@ export async function loadStaticGearItems(env, ctx) {
   return cached.value || [];
 }
 
-async function loadR2GearItems(env) {
-  if (!env.CAREER_R2?.get) return [];
+async function loadSplitGearItems(env) {
+  const deps = resolveGearDeps(env);
+  if (!deps?.getLatestGearPointer || !deps?.readGearJson) return [];
+
   try {
-    const pointer = await readLatestGearPointer(env);
+    const pointer = await deps.getLatestGearPointer();
     if (!pointer?.root) return [];
-    const root = gearRootPath(pointer, env);
-    const [weaponObject, craftableObject] = await Promise.all([
-      env.CAREER_R2.get(joinGearPath(root, searchShardPath('weapon'))),
-      env.CAREER_R2.get(joinGearPath(root, craftablesPath()))
-    ]);
+
+    const root = resolveGearRoot(pointer, env);
     const [weaponShard, craftableShard] = await Promise.all([
-      weaponObject ? weaponObject.json() : Promise.resolve(null),
-      craftableObject ? craftableObject.json() : Promise.resolve(null)
+      deps.readGearJson(joinGearPath(root, searchShardPath('weapon'))),
+      deps.readGearJson(joinGearPath(root, craftablesPath()))
     ]);
+
     return [
       ...itemsFromShard(weaponShard, 'weapon'),
       ...itemsFromShard(craftableShard, 'craftable')
@@ -205,15 +211,64 @@ async function loadR2GearItems(env) {
   }
 }
 
-function itemsFromShard(shard, kind) {
-  return Array.isArray(shard?.items) ? shard.items.filter((item) => item.kind === kind) : [];
+function resolveGearDeps(env) {
+  if (env.GEAR_DEPS && typeof env.GEAR_DEPS === 'object') return env.GEAR_DEPS;
+  if (!env.CAREER_R2?.get) return null;
+  return {
+    getLatestGearPointer: () => readLatestGearPointer(env),
+    readGearJson: async (key) => {
+      const object = await env.CAREER_R2.get(key);
+      return object ? object.json() : null;
+    }
+  };
 }
 
-function gearRootPath(pointer, env) {
+function resolveGearRoot(pointer, env) {
   const root = String(pointer?.root || '');
   if (!root) return '';
+  if (env.GEAR_DEPS) return root;
   if (root.includes('/')) return root;
   return joinGearPath(env.R2_GEAR_PREFIX || GEAR_SPLIT_PREFIX, env.BUNGIE_LOCALE || 'zh-chs', root);
+}
+
+async function hydrateMissingFromItemFiles(hashes, deps, root) {
+  const output = new Map();
+  const resolved = await mapWithConcurrency(hashes, 12, async (hash) => {
+    const file = await deps.readGearJson(joinGearPath(root, gearItemPath(hash)));
+    const definition = definitionFromGearItem(file?.item);
+    return [hash, definition];
+  });
+  for (const [hash, definition] of resolved) {
+    output.set(hash, definition);
+  }
+  return output;
+}
+
+function definitionFromGearItem(item) {
+  if (!item) return {};
+  return {
+    displayProperties: {
+      name: item.name || '',
+      icon: item.icon || ''
+    },
+    itemTypeDisplayName: item.weaponType || item.type || '',
+    inventory: {
+      tierTypeName: item.tier || ''
+    },
+    craftingInfo: {
+      source: item.source || '',
+      sourceHash: item.sourceHash || 0,
+      patternRecordHash: item.patternRecordHash || 0,
+      patternObjectiveHash: item.patternObjectiveHash || 0,
+      outputItemHash: item.outputItemHash || 0,
+      outputCollectibleHash: item.outputCollectibleHash || 0,
+      watermark: item.watermark || ''
+    }
+  };
+}
+
+function itemsFromShard(shard, kind) {
+  return Array.isArray(shard?.items) ? shard.items.filter((item) => item.kind === kind) : [];
 }
 
 export function inventoryItemIcon(definition) {

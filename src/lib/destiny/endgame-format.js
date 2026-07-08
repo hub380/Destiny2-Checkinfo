@@ -3,7 +3,8 @@ import {
   normalizeEndgameActivityName,
   numberStat,
   percentStat,
-  pvpModeLabel
+  pvpModeLabel,
+  statValue
 } from '../bungie/index.js';
 import { decimalStat, ratioStat, secondsDisplayStat } from './summary-stats.js';
 
@@ -235,4 +236,36 @@ export function formatEndgameTotal(item) {
     winRate: percentStat(numberStat(wins), numberStat(attempts)),
     completionRate: percentStat(numberStat(clears), numberStat(attempts))
   };
+}
+
+/** Build endgame block from Bungie aggregate stats (no activity history pagination). */
+export function buildEndgameModeFromStats(modeName, statsBlock = {}) {
+  const attempts = statValue(statsBlock.activitiesEntered ?? statsBlock.activitiesPlayed ?? statsBlock.attempts);
+  const clears = statValue(statsBlock.activitiesCleared ?? statsBlock.clears);
+  const wins = statValue(statsBlock.activitiesWon ?? statsBlock.wins);
+  const kills = statValue(statsBlock.kills);
+  const deaths = statValue(statsBlock.deaths);
+  const assists = statValue(statsBlock.assists);
+  const seconds = statValue(statsBlock.secondsPlayed ?? statsBlock.seconds);
+  const result = {
+    total: formatEndgameTotal({ attempts, clears, wins, kills, deaths, assists, seconds }),
+    activities: [],
+    summaryOnly: true
+  };
+  if (modeName === 'pvp' && Array.isArray(statsBlock.modes)) {
+    result.subModes = statsBlock.modes.map((entry) => ({
+      modeId: entry.mode || entry.activityMode || 0,
+      label: pvpModeLabel(entry.mode || entry.activityMode || 0),
+      ...formatEndgameTotal({
+        attempts: statValue(entry.count ?? entry.activitiesEntered),
+        wins: statValue(entry.activitiesWon),
+        clears: statValue(entry.activitiesCleared),
+        kills: statValue(entry.kills),
+        deaths: statValue(entry.deaths),
+        assists: statValue(entry.assists),
+        seconds: statValue(entry.secondsPlayed)
+      })
+    }));
+  }
+  return result;
 }

@@ -1,0 +1,104 @@
+---
+description: Destiny2-Checkinfo 目录架构与文件命名规范
+alwaysApply: true
+---
+
+# 目录架构与命名规范
+
+## 顶层架构（Codegraph 依赖流向）
+
+```
+pages/*.html          Vite 多页入口
+    ↓
+src/frontend/pages/<feature>/index.tsx   挂载 *Page.tsx
+    ↓
+src/frontend/hooks/use*Flow.ts           页面查询编排
+    ↓
+src/frontend/hooks/use*Query.ts          数据拉取 / 状态
+    ↓
+src/frontend/lib/api.ts                  fetch 封装
+    ↓
+src/app/router.js → src/lib/*            Worker / 本地 API
+```
+
+- **前端**：`src/frontend/`（React + hooks + components）
+- **共享后端**：`src/lib/`（destiny / gear / guides / bungie / cache）
+- **路由**：`src/app/router.js`
+- **本地服务**：`server/index.js`（静态 + API 代理）
+- **Worker 入口**：`src/worker.js`
+
+## 目录职责
+
+| 路径 | 职责 |
+|------|------|
+| `src/frontend/pages/<name>/` | 单页应用：`index.tsx` 挂载、`*Page.tsx` 布局 |
+| `src/frontend/hooks/` | `use*` 状态与副作用；经 `index.ts` barrel 导出 |
+| `src/frontend/components/layout/` | AppShell、Header、ActionNotice 等全局 UI |
+| `src/frontend/components/search/` | PlayerSearchBox、BungieQueryPanel、RecentQueryChips |
+| `src/frontend/components/motion/` | FadeIn、StaggerList、PageSection |
+| `src/frontend/lib/` | api、types、url、format、career-merge、endgame-tasks |
+| `src/frontend/styles/` | global.css、ui.module.css、motion.module.css |
+| `src/lib/destiny/` | 生涯 / 队伍 / 终局：`summary.js`、`details-*.js`、`endgame-*.js` |
+| `src/lib/gear/` | 装备索引：`build-index.js`、`handlers-*.js`、`server-deps.js` |
+| `tests/` | Vitest；`tests/tsconfig.json` 单独解析 `@frontend/*` |
+
+## 文件命名规则
+
+### React 组件（`.tsx`）
+
+- **PascalCase**，文件名与主 export 一致：
+  - `CareerPage.tsx` → `export function CareerPage`
+  - `EndgamePanel.tsx` → `export function EndgamePanel`
+  - `BungieQueryPanel.tsx` → `export function BungieQueryPanel`
+- **禁止** `CareerEndgamePanels.tsx` 导出 `EndgamePanel`（文件名与 export 不一致）
+- 多 export 组合文件用领域前缀：`CareerInfoPanels.tsx`（CharactersPanel / RecordPanel / PvpPanel）
+
+### Hooks（`.ts`）
+
+- **`use` + PascalCase**：`useCareerQuery.ts`、`useBungieFireteamLookup.ts`
+- 编排层：`*SearchFlow.ts`（`useCareerSearchFlow`）
+- 渐进加载：`*ProgressiveLoad.ts`
+- 全部经 `hooks/index.ts` 导出
+
+### 页面配套文件（kebab-case）
+
+与页面目录同名前缀，放在 `pages/<name>/` 下：
+
+| 类型 | 模式 | 示例 |
+|------|------|------|
+| 样式 | `<page>.module.css` | `career.module.css` |
+| 子域样式 | `<page>-<feature>.module.css` | `career-crafting.module.css` |
+| cn 助手 | `<page>-cn.ts` | `career-cn.ts` |
+| 纯函数 | `<page>-utils.ts` | `career-utils.ts` |
+| 标签/映射 | `<page>-labels.ts` | `gear-labels.ts` |
+
+### 后端 lib（`.js`）
+
+- **kebab-case**
+- 领域-职责：`details-crafting.js`、`endgame-history.js`、`handlers-perk-weapons.js`
+- 环境依赖：`*-deps.js`（`server-deps.js`、`worker-deps.js`）
+- barrel：`index.js` 只做 re-export
+
+### 测试（`tests/`）
+
+- **kebab-case** + `.test.ts` / `.test.js`
+- 按领域前缀：`hooks.test.ts`、`gear-split.test.js`、`destiny-summary.test.js`
+- 需要 `@frontend/*` 别名的 TS 测试放在 `tests/`（由 `tests/tsconfig.json` 覆盖）
+
+### Barrel（`index.ts` / `index.tsx`）
+
+- 每个可导入目录一个 `index.ts`
+- 页面入口：`pages/<name>/index.tsx` 仅负责 `createRoot` 挂载
+
+## 新增文件检查清单
+
+1. 组件文件名是否与主 export 同名（PascalCase）？
+2. Hook 是否以 `use` 开头并已加入 `hooks/index.ts`？
+3. 页面样式是否用 `<page>.module.css` + `createPageCn`？
+4. 后端模块是否 kebab-case 且职责单一？
+5. 测试是否放在 `tests/` 且命名含领域前缀？
+
+## 已废弃
+
+- `Notice.tsx` → 统一使用 `ActionNotice.tsx`
+- `primitives.tsx` → 重命名为 `MotionPrimitives.tsx`

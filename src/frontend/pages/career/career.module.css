@@ -1,9 +1,9 @@
 .career-page {
   width: min(1440px, 100%);
   margin: 0 auto;
-  padding: 18px 22px 28px;
+  padding: 16px 20px 24px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
   animation: d2-fade-in-up var(--duration-slow) var(--ease-out);
 }
 
@@ -13,7 +13,7 @@
 .career-endgame-card,
 .career-crafting-panel {
   min-width: 0;
-  padding: 14px;
+  padding: 12px 14px;
 }
 
 .career-profile-panel,
@@ -32,7 +32,7 @@
 
 .career-detail-root {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .career-detail-root > * {
@@ -97,7 +97,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .career-account-head h2 {
@@ -141,15 +141,58 @@
 .career-mini-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
-.career-section-grid,
-.career-section-wide {
+.career-summary-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.career-section-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.career-section-pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  align-items: start;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.career-characters-card,
+.career-records-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.career-characters-card .career-character-grid,
+.career-records-card .record-panel-grid {
+  flex: 1;
+}
+
+.record-panel-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+}
+
+.record-panel-grid .career-mini-stat {
+  padding: 10px;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.record-panel-grid .career-mini-stat b {
+  font-size: 18px;
+}
+
+.pvp-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .career-card-head {
@@ -157,7 +200,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .career-card-head h3 {
@@ -187,56 +230,79 @@
 
 .career-character-grid {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .career-character {
   min-width: 0;
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) auto;
-  gap: 9px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  padding: 8px;
+  padding: 7px 9px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-2);
 }
 
 .career-character img {
-  width: 54px;
-  height: 54px;
+  width: 48px;
+  height: 48px;
   border-radius: 7px;
   object-fit: cover;
   background: var(--avatar-bg);
 }
 
-.career-character b,
-.career-character span,
-.career-character em {
-  display: block;
+.career-character-body {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.career-character-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .career-character b {
   font-size: 14px;
+  line-height: 1.25;
 }
 
-.career-character span,
+.career-character-light {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--amber) 14%, var(--surface));
+  color: var(--amber);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.career-character-meta,
 .career-character em {
+  display: block;
   color: var(--muted);
   font-size: 12px;
   font-style: normal;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-.career-character strong {
-  color: var(--amber);
-  font-size: 14px;
+.career-section-wide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
 }
 
 .pvp-history-card {
   grid-column: 1 / -1;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .pvp-mode-list {
@@ -391,6 +457,163 @@
   overflow-wrap: anywhere;
 }
 
+.career-load-actions {
+  margin: 12px 0 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.career-load-actions p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.career-load-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.career-load-buttons button {
+  padding: 8px 12px;
+  border: 1px solid var(--green-border, #b7dccf);
+  border-radius: 8px;
+  background: var(--green-2);
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.career-load-buttons button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.career-progress-strip {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface-elevated));
+  animation: d2-fade-in-up var(--duration-normal) var(--ease-out);
+}
+
+.career-progress-sticky {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  margin: 0 0 12px;
+}
+
+.career-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.career-progress-head p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.career-load-all-now {
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-elevated);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, transform var(--duration-fast) ease;
+}
+
+.career-load-all-now:hover:not(:disabled) {
+  border-color: var(--green-border, #b7dccf);
+  transform: translateY(-1px);
+}
+
+.career-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.career-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--green), #7fd4b4, var(--green));
+  background-size: 200% 100%;
+  animation: d2-progress-shimmer 1.8s ease-in-out infinite;
+  transition: width 0.6s var(--ease-out);
+}
+
+.career-progress-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.career-progress-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  transition: color var(--duration-fast) ease;
+}
+
+.career-progress-step.active {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.career-progress-step.done {
+  color: var(--text);
+}
+
+.career-progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: background var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.career-progress-step.active .career-progress-dot {
+  background: var(--green);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--green-2) 80%, transparent);
+  animation: d2-pulse-soft 1.2s ease-in-out infinite;
+}
+
+.career-progress-step.done .career-progress-dot {
+  background: var(--green);
+}
+
+.panelReveal {
+  animation: d2-fade-in-up var(--duration-slow) var(--ease-out) backwards;
+}
+
+.career-detail-root > .contentSwap > *:nth-child(1) .panelReveal:nth-child(1) { animation-delay: 0ms; }
+.career-detail-root > .contentSwap > *:nth-child(1) .panelReveal:nth-child(2) { animation-delay: 80ms; }
+.career-detail-root > .contentSwap > *:nth-child(1) .panelReveal:nth-child(3) { animation-delay: 160ms; }
+.career-detail-root > .contentSwap > *:nth-child(1) .panelReveal:nth-child(4) { animation-delay: 240ms; }
+
 @media (max-width: 980px) {
   .career-page {
     padding-left: 14px;
@@ -398,9 +621,11 @@
   }
 
   .career-metric-grid,
-  .career-section-grid,
+  .career-summary-metrics,
+  .career-section-pair,
   .career-section-wide,
-  .endgame-summary {
+  .endgame-summary,
+  .pvp-summary-grid {
     grid-template-columns: 1fr;
   }
 
@@ -408,12 +633,33 @@
   .pvp-mode-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
 }
 
 @media (max-width: 640px) {
   .career-page {
     padding: 12px;
+  }
+
+  .career-summary-metrics,
+  .record-panel-grid,
+  .pvp-summary-grid,
+  .career-mini-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .career-progress-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .career-load-all-now {
+    width: 100%;
+    text-align: center;
+  }
+
+  .career-progress-steps {
+    flex-direction: column;
+    gap: 6px;
   }
 
   .career-account-head,

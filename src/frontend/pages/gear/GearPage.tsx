@@ -1,17 +1,22 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useGearSearch } from '@frontend/hooks';
+import { RecentQueryChips } from '@frontend/components/search';
+import { useGearSearch, usePublicConfig, useRecentQueries } from '@frontend/hooks';
 import {
   AppShell,
+  ActionNotice,
   FadeIn,
-  Notice,
   PageEmpty,
   PageLoading,
   PageSection,
   SearchIcon,
+  SkeletonCardGrid,
   StaggerList,
+  SystemBanner,
   formatNumber
 } from '@frontend/ui';
+import { warmGearIndex } from '@frontend/lib/api';
+import { copyToClipboard } from '@frontend/lib/clipboard';
 import {
   COPY_GEAR_EMPTY,
   COPY_GEAR_PLACEHOLDER
@@ -21,13 +26,15 @@ import '@frontend/styles/global.css';
 import { GearDetailSlot } from './GearDetailViews';
 import { cn } from './gear-cn';
 import { encounterLabels, gearKindLabel, gearMeta, sourceAliasZh, sourceTypeTag } from './gear-labels';
+import { BREAKPOINT_MD } from '@frontend/lib/breakpoints';
 
 const PAGE_SIZE = 24;
 const VIRTUAL_THRESHOLD = 100;
 const CARD_ROW_HEIGHT = 126;
-const BREAKPOINT_COLS = 980;
 
 export function GearPage() {
+  const { config, ready } = usePublicConfig();
+  const { recent, refresh } = useRecentQueries('gear');
   const {
     query,
     setQuery,
@@ -37,23 +44,31 @@ export function GearPage() {
     subtitle,
     notice,
     error,
+    searching,
+    kind,
+    setKind,
+    resultFilter,
+    setResultFilter,
+    effectiveFilter,
+    retry,
     openItem,
     openPerk,
-    onSubmit
+    onSubmit,
+    runSearch
   } = useGearSearch();
-  const [kindFilter, setKindFilter] = useState('all');
   const [page, setPage] = useState(0);
+  const [copyHint, setCopyHint] = useState('');
   const [cols, setCols] = useState(() => (
-    typeof window === 'undefined' || window.innerWidth > BREAKPOINT_COLS ? 2 : 1
+    typeof window === 'undefined' || window.innerWidth > BREAKPOINT_MD ? 2 : 1
   ));
   const detailRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const items = useMemo(() => Array.isArray(payload?.items) ? payload.items : [], [payload]);
   const filteredItems = useMemo(() => {
-    if (kindFilter === 'all') return items;
-    return items.filter((item) => item.kind === kindFilter);
-  }, [items, kindFilter]);
+    if (effectiveFilter === 'all') return items;
+    return items.filter((item) => item.kind === effectiveFilter);
+  }, [items, effectiveFilter]);
   const useVirtual = filteredItems.length > VIRTUAL_THRESHOLD;
   const rows = useMemo(() => {
     if (!useVirtual) return [];
@@ -76,11 +91,14 @@ export function GearPage() {
   const visibleItems = useVirtual ? [] : filteredItems.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   useEffect(() => {
-    if (!useVirtual) return;
+    void warmGearIndex().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     const element = gridRef.current;
     if (!element) return;
     const observer = new ResizeObserver(([entry]) => {
-      setCols(entry.contentRect.width > BREAKPOINT_COLS ? 2 : 1);
+      setCols(entry.contentRect.width > BREAKPOINT_MD ? 2 : 1);
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -89,24 +107,37 @@ export function GearPage() {
   useEffect(() => {
     setPage(0);
     if (useVirtual) gridRef.current?.scrollTo(0, 0);
-  }, [payload?.query, kindFilter, useVirtual]);
+  }, [payload?.query, effectiveFilter, useVirtual]);
 
   useEffect(() => {
     if (!detail || detail.loading || detail.error) return;
     detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [detail, activeHash]);
 
+  async function copySearchLink() {
+    if (typeof window === 'undefined') return;
+    await copyToClipboard(window.location.href);
+    setCopyHint('链接已复制');
+    window.setTimeout(() => setCopyHint(''), 1800);
+  }
+
   return (
     <AppShell title="Destiny 2 装备搜索" subtitle="统一搜索武器、护甲、Perk 与可出武器" current="gear">
       <FadeIn variant="page" className={cn('layout gear-layout')}>
+        <SystemBanner hasBungieApiKey={config?.hasBungieApiKey} configReady={ready} />
         <PageSection className={cn('panel gear-panel')}>
           <div className={cn('panel-header')}>
             <div>
               <h2>装备搜索</h2>
               <p>{subtitle}</p>
             </div>
+            {payload ? (
+              <button type="button" className={cn('gear-copy-link')} onClick={() => void copySearchLink()}>
+                {copyHint || '复制搜索链接'}
+              </button>
+            ) : null}
           </div>
-          <form className={cn('career-search searchFocus')} onSubmit={onSubmit}>
+          <form className={cn('career-search searchFocus gear-search-form')} onSubmit={onSubmit}>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -114,14 +145,33 @@ export function GearPage() {
               spellCheck={false}
               placeholder={COPY_GEAR_PLACEHOLDER}
             />
-            <button type="submit">
+            <label className={cn('gear-kind-select')}>
+              <span className={cn('gear-field-label')}>搜索类型</span>
+              <select value={kind} onChange={(event) => setKind(event.target.value)} aria-label="搜索类型">
+                <option value="all">全部类型</option>
+                <option value="weapon">武器</option>
+                <option value="armor">护甲</option>
+                <option value="perk">Perk</option>
+              </select>
+            </label>
+            <button type="submit" disabled={searching}>
               <SearchIcon />
-              查询
+              {searching ? '查询中' : '查询'}
             </button>
           </form>
-          <Notice message={notice} error={error} />
-          {payload ? (
-            <div className={cn('chip-tabs gear-kind-tabs')} role="tablist" aria-label="装备类型">
+          <RecentQueryChips
+            items={recent}
+            onPick={(value) => {
+              setQuery(value);
+              void runSearch(value, { kind });
+              refresh();
+            }}
+          />
+          <ActionNotice message={notice} error={error} onRetry={error ? retry : undefined} />
+          {payload && kind === 'all' ? (
+            <div className={cn('gear-filter-row')}>
+              <span className={cn('gear-field-label')}>结果筛选</span>
+              <div className={cn('chip-tabs gear-kind-tabs')} role="tablist" aria-label="结果筛选">
               {[
                 { value: 'all', label: '全部' },
                 { value: 'weapon', label: '武器' },
@@ -132,20 +182,22 @@ export function GearPage() {
                   key={tab.value}
                   type="button"
                   role="tab"
-                  aria-selected={kindFilter === tab.value}
-                  className={cn(`chip-tab ${kindFilter === tab.value ? 'active' : ''}`)}
-                  onClick={() => setKindFilter(tab.value)}
+                  aria-selected={resultFilter === tab.value}
+                  className={cn(`chip-tab ${resultFilter === tab.value ? 'active' : ''}`)}
+                  onClick={() => setResultFilter(tab.value)}
                 >
                   {tab.label}
                 </button>
               ))}
+              </div>
             </div>
           ) : null}
           <div className={cn(`gear-result ${payload ? '' : 'empty'}`)}>
+            {searching && !payload ? <SkeletonCardGrid count={4} /> : null}
             {!payload ? (
               detail?.loading ? (
                 <PageLoading className={cn('detail-loading')}>{detail.message}</PageLoading>
-              ) : (
+              ) : searching ? null : (
                 <PageEmpty>{COPY_GEAR_EMPTY}</PageEmpty>
               )
             ) : (

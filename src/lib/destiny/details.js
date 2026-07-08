@@ -1,4 +1,4 @@
-import { httpError } from '../http/index.js';
+import { httpError, positiveNumber } from '../http/index.js';
 import {
   getWorkerCachedJson,
   summaryCacheTtlSeconds
@@ -30,7 +30,10 @@ export async function getDestinyDetails(body, env, ctx) {
     async () => {
       const profile = await bungieFetch(
         `/Platform/Destiny2/${target.membership.membershipType}/Profile/${target.membership.membershipId}/?components=900,1300`,
-        { method: 'GET' },
+        {
+          method: 'GET',
+          timeoutMs: positiveNumber(env.DETAILS_PROFILE_TIMEOUT_MS, positiveNumber(env.REQUEST_TIMEOUT_MS, 30000))
+        },
         env
       );
       return summarizeDestinyDetails(target.membership, profile.Response || {}, env, ctx);

@@ -260,7 +260,12 @@ export async function getDestinySummary(body, env, ctx) {
     }
 
     try {
-      return await summarizeFirstAccessibleMembership(parsedName, memberships, env);
+      const result = await summarizeFirstAccessibleMembership(parsedName, memberships, env);
+      result.cache = {
+        ...(result.cache || {}),
+        playerName: d1Hit ? 'hit-d1' : 'miss-d1'
+      };
+      return result;
     } catch (error) {
       const fallback = await searchFallbackMembershipsByName(parsedName, membershipType, env);
       const merged = mergeMemberships(memberships, fallback);

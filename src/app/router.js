@@ -1,4 +1,4 @@
-import { getGearItem, getGearSearch, getPerkWeapons, getGearCacheStatus, workerGearDeps } from '#lib/gear/index.js';
+import { getGearItem, getGearSearch, getPerkWeapons, getGearCacheStatus, warmGearSearchIndex, workerGearDeps } from '#lib/gear/index.js';
 import { json, corsHeaders, readJsonBody } from '#lib/http/index.js';
 import { getHeyboxTeams } from '#lib/integrations/index.js';
 import { getGuides, getGuide, getGuideMedia } from '#lib/guides/index.js';
@@ -19,19 +19,23 @@ const routes = [
   {
     match: (url, method) => url.pathname === '/api/config-public' && method === 'GET',
     handle: async ({ env }) =>
-      json({
-        hasBungieApiKey: Boolean(env.BUNGIE_API_KEY),
-        hasHeyboxSource: true,
-        refreshSeconds: 30
-      })
+      json(
+        {
+          hasBungieApiKey: Boolean(env.BUNGIE_API_KEY),
+          hasHeyboxSource: Boolean(env.HEYBOX_SOURCE_URL),
+          refreshSeconds: Number(env.REFRESH_SECONDS) || 30
+        },
+        200,
+        { cacheControl: 'public, max-age=300' }
+      )
   },
   {
     match: (url, method) => url.pathname === '/api/heybox/teams' && method === 'GET',
-    handle: async ({ env }) => json(await getHeyboxTeams(env))
+    handle: async ({ env }) => json(await getHeyboxTeams(env), 200, { cacheControl: 'public, max-age=15' })
   },
   {
     match: (url, method) => url.pathname === '/api/guides' && method === 'GET',
-    handle: async ({ env, ctx }) => json(await getGuides(env, ctx))
+    handle: async ({ env, ctx }) => json(await getGuides(env, ctx), 200, { cacheControl: 'public, max-age=120' })
   },
   {
     match: (url, method) => /^\/api\/guides\/[^/]+\/media\//.test(url.pathname) && method === 'GET',
@@ -70,7 +74,11 @@ const routes = [
   },
   {
     match: (url, method) => url.pathname === '/api/gear/cache-status' && method === 'GET',
-    handle: async ({ env }) => json(await getGearCacheStatus(env))
+    handle: async ({ env }) => json(await getGearCacheStatus(env), 200, { cacheControl: 'public, max-age=60' })
+  },
+  {
+    match: (url, method) => url.pathname === '/api/gear/warm' && method === 'GET',
+    handle: async ({ env, ctx }) => json(await warmGearSearchIndex(workerGearDeps(env, ctx)))
   },
   {
     match: (url, method) => url.pathname === '/api/destiny/summary' && method === 'POST',

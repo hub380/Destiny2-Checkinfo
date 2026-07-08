@@ -1,8 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { getConfig } from '@frontend/lib/api';
 import { copyToClipboard } from '@frontend/lib/clipboard';
-import { AppShell, FadeIn, GitHubBranchLink, PageSection, RefreshIcon, formatTime } from '@frontend/ui';
-import { useHeyboxFeed, useCareerSearchFlow } from '@frontend/hooks';
+import {
+  AppShell,
+  FadeIn,
+  GitHubBranchLink,
+  PageSection,
+  RefreshIcon,
+  SystemBanner,
+  formatTime
+} from '@frontend/ui';
+import { useHeyboxFeed, useCareerSearchFlow, usePublicConfig, useRecentQueries } from '@frontend/hooks';
 import '@frontend/styles/global.css';
 import { FireteamFeedSection } from './FireteamFeedSection';
 import { HomeCareerSection } from './HomeCareerSection';
@@ -14,6 +21,9 @@ const DEFAULT_REFRESH_SECONDS = 30;
 
 export function HomePage() {
   const [refreshSeconds, setRefreshSeconds] = useState(readStoredRefreshInterval);
+  const [pendingPick, setPendingPick] = useState<string | null>(null);
+  const { config, ready: configReady } = usePublicConfig();
+  const { recent: homeRecent, refresh: refreshHomeRecent } = useRecentQueries('home');
   const {
     items,
     payload,
@@ -38,18 +48,21 @@ export function HomePage() {
     playerSearch,
     onSubmit: queryCareer,
     selectPlayer: selectCareerPlayer,
-    pickUsername: pickFireteamUser
+    pickUsername,
+    runNamedQuery,
+    retry: retryCareer
   } = useCareerSearchFlow({
-    modes: ['raid', 'dungeon'],
+    modes: [],
     includeDetails: false,
-    loadingNotice: 'Raid / 地牢完整历史加载中，基础资料已先展示。'
+    loadEndgame: 'none',
+    recentScope: 'home'
   });
 
   useEffect(() => {
-    getConfig().catch((error) => {
-      reportNotice(error instanceof Error ? error.message : '配置加载失败', true);
-    });
-  }, [reportNotice]);
+    if (configReady && !config) {
+      reportNotice('配置加载失败', true);
+    }
+  }, [config, configReady, reportNotice]);
 
   const filteredItems = useMemo(() => {
     const keyword = filter.trim().toLowerCase();
@@ -79,6 +92,29 @@ export function HomePage() {
       window.localStorage.setItem(REFRESH_INTERVAL_STORAGE_KEY, String(nextValue));
     }
     showToast(`刷新间隔已设为 ${nextValue} 秒`);
+  }
+
+  function handlePickUser(username: string) {
+    if (!username) return;
+    if (!username.includes('#')) {
+      pickUsername(username);
+      setPendingPick(null);
+      return;
+    }
+    setPendingPick(username);
+    setCareerQuery(username);
+    document.getElementById('career')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function queryPickedCareer() {
+    if (!pendingPick) return;
+    await runNamedQuery(pendingPick);
+    setPendingPick(null);
+  }
+
+  function openPickedFireteam() {
+    if (!pendingPick) return;
+    window.location.href = `/fireteam.html?q=${encodeURIComponent(pendingPick)}`;
   }
 
   const isDemo = payload?.source === 'demo';
@@ -132,6 +168,11 @@ export function HomePage() {
       }
     >
       <FadeIn variant="page" className={cn('layout')}>
+        <SystemBanner
+          hasBungieApiKey={config?.hasBungieApiKey}
+          demoData={isDemo}
+          configReady={configReady}
+        />
         <PageSection id="fireteams" className={cn('panel fireteams-panel')}>
           <FireteamFeedSection
             items={items}
@@ -142,7 +183,8 @@ export function HomePage() {
             noticeError={noticeError}
             onFilterChange={setFilter}
             onCopy={copyJoinCommand}
-            onPickUser={pickFireteamUser}
+            onPickUser={handlePickUser}
+            onRetry={refreshFireteams}
           />
         </PageSection>
 
@@ -156,6 +198,17 @@ export function HomePage() {
           loading={careerLoading}
           noticeMessage={careerNotice}
           noticeError={careerError}
+          recentQueries={homeRecent}
+          onPickRecent={(value) => {
+            setCareerQuery(value);
+            void runNamedQuery(value);
+            refreshHomeRecent();
+          }}
+          onRetry={retryCareer}
+          pendingPick={pendingPick}
+          onPickCareer={() => void queryPickedCareer()}
+          onPickFireteam={openPickedFireteam}
+          onDismissPick={() => setPendingPick(null)}
         />
       </FadeIn>
     </AppShell>

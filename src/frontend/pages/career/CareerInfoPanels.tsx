@@ -1,6 +1,6 @@
 import {
   MiniStat,
-  Notice,
+  ActionNotice,
   dateOnly,
   formatMinutes,
   privacyText,
@@ -12,7 +12,7 @@ import { cn } from './career-cn';
 
 export function CharactersPanel({ characters }: { characters: CharacterDto[] }) {
   return (
-    <article className={cn('career-info-card')}>
+    <article className={cn('career-info-card career-characters-card')}>
       <div className={cn('career-card-head')}>
         <h3>角色</h3>
         <span>{characters.length} 个</span>
@@ -20,13 +20,17 @@ export function CharactersPanel({ characters }: { characters: CharacterDto[] }) 
       <div className={cn('career-character-grid')}>
         {characters.length ? characters.map((character) => (
           <div className={cn('career-character')} key={character.id}>
-            <img src={character.emblemPath || '/brand.svg'} alt="" />
-            <div>
-              <b>{character.className || '-'}</b>
-              <span>{[character.raceName, character.genderName].filter(Boolean).join(' · ')}</span>
+            <img src={character.emblemPath || '/brand.svg'} alt="" loading="lazy" />
+            <div className={cn('career-character-body')}>
+              <div className={cn('career-character-top')}>
+                <b>{character.className || '-'}</b>
+                <span className={cn('career-character-light')}>{character.light || '-'}</span>
+              </div>
+              <span className={cn('career-character-meta')}>
+                {[character.raceName, character.genderName].filter(Boolean).join(' · ') || '—'}
+              </span>
               <em>{formatMinutes(character.minutesPlayedTotal)}</em>
             </div>
-            <strong>{character.light || '-'}</strong>
           </div>
         )) : <div className={cn('detail-loading')}>没有角色数据</div>}
       </div>
@@ -36,14 +40,14 @@ export function CharactersPanel({ characters }: { characters: CharacterDto[] }) 
 
 export function RecordPanel({ records, loading, error }: { records: CareerRecordsDto; loading?: boolean; error?: string }) {
   return (
-    <article className={cn('career-info-card')}>
+    <article className={cn('career-info-card career-records-card')}>
       <div className={cn('career-card-head')}>
         <h3>成就点数</h3>
         <span>{privacyText(records.privacy)}</span>
       </div>
-      <Notice message={error} error />
+      <ActionNotice message={error} error />
       {loading ? <div className={cn('detail-loading')}>成就数据加载中</div> : (
-        <div className={cn('career-mini-grid')}>
+        <div className={cn('career-mini-grid record-panel-grid')}>
           <MiniStat label="当前分数" value={statDisplay(records.activeScore)} />
           <MiniStat label="生涯分数" value={statDisplay(records.lifetimeScore)} />
           <MiniStat label="传承分数" value={statDisplay(records.legacyScore)} />
@@ -73,7 +77,7 @@ export function PvpPanel({
         <h3>PvP 数据</h3>
         <span>{loading ? '完整历史加载中' : `${statDisplay(total.activitiesEntered)} 场`}</span>
       </div>
-      <div className={cn('career-mini-grid')}>
+      <div className={cn('career-mini-grid pvp-summary-grid')}>
         <MiniStat label="场次" value={statDisplay(total.activitiesEntered)} />
         <MiniStat label="胜场" value={statDisplay(total.activitiesWon)} />
         <MiniStat label="胜率" value={winRate(total)} />
@@ -83,7 +87,7 @@ export function PvpPanel({
         <MiniStat label="效率" value={statDisplay(total.efficiency)} />
         <MiniStat label="时长" value={total.hours ? `${statDisplay(total.hours)} 小时` : statDisplay(total.secondsPlayed)} />
       </div>
-      <Notice message={error} error />
+      <ActionNotice message={error} error />
       <div className={cn('pvp-mode-list')}>
         {subModes.length ? subModes.map((mode: PvpSubModeDto) => (
           <div className={cn('pvp-mode-row')} key={mode.modeId || mode.label}>

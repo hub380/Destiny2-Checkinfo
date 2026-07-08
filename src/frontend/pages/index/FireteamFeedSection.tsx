@@ -1,8 +1,9 @@
 import {
+  ActionNotice,
   CopyIcon,
-  Notice,
   PageEmpty,
   SearchIcon,
+  SkeletonCardGrid,
   StaggerList,
   relativeTime,
   staggerStyle
@@ -23,6 +24,7 @@ type FireteamFeedSectionProps = {
   onFilterChange: (value: string) => void;
   onCopy: (command: string) => void;
   onPickUser: (username: string) => void;
+  onRetry?: () => void;
 };
 
 export function FireteamFeedSection({
@@ -34,9 +36,11 @@ export function FireteamFeedSection({
   noticeError,
   onFilterChange,
   onCopy,
-  onPickUser
+  onPickUser,
+  onRetry
 }: FireteamFeedSectionProps) {
   const { visible, hasMore, showMore } = useWindowedSlice(filteredItems, FIRETEAM_PAGE_SIZE);
+  const initialLoading = loading && !items.length;
 
   return (
     <>
@@ -55,22 +59,26 @@ export function FireteamFeedSection({
           />
         </div>
       </div>
-      <Notice message={notice} error={noticeError} />
-      <StaggerList className={cn(`fireteam-list ${loading ? 'is-loading' : ''}`)} stagger={visible.length <= 20}>
-        {visible.length ? (
-          visible.map((item, index) => (
-            <FireteamCard
-              key={item.id || `${item.username}-${index}`}
-              item={item}
-              index={index}
-              onCopy={onCopy}
-              onPickUser={onPickUser}
-            />
-          ))
-        ) : (
-          <PageEmpty>没有匹配的组队信息</PageEmpty>
-        )}
-      </StaggerList>
+      <ActionNotice message={notice} error={noticeError} onRetry={noticeError ? onRetry : undefined} />
+      {initialLoading ? (
+        <SkeletonCardGrid count={4} />
+      ) : (
+        <StaggerList className={cn(`fireteam-list ${loading ? 'is-loading' : ''}`)} stagger={visible.length <= 20}>
+          {visible.length ? (
+            visible.map((item, index) => (
+              <FireteamCard
+                key={item.id || `${item.username}-${index}`}
+                item={item}
+                index={index}
+                onCopy={onCopy}
+                onPickUser={onPickUser}
+              />
+            ))
+          ) : (
+            <PageEmpty>没有匹配的组队信息</PageEmpty>
+          )}
+        </StaggerList>
+      )}
       {hasMore ? (
         <div className={cn('list-more')}>
           <button type="button" className={cn('list-more-button')} onClick={showMore}>

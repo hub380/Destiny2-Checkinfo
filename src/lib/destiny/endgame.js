@@ -8,7 +8,9 @@ import {
   normalizeEndgameModes
 } from './shared.js';
 import { resolveEndgameTarget } from './targets.js';
+import { getPublicCareerSummaryByMembership } from './summary.js';
 import { getEndgameCareer } from './endgame-history.js';
+import { buildEndgameModeFromStats } from './endgame-format.js';
 
 export {
   getEndgameCareer,
@@ -24,8 +26,14 @@ export {
   formatEndgameVariant,
   definitionForEndgameItem,
   isValidActivityDefinition,
-  formatEndgameTotal
+  formatEndgameTotal,
+  buildEndgameModeFromStats
 } from './endgame-format.js';
+
+function wantsFullEndgameHistory(body) {
+  if (body?.fullHistory === false || body?.summaryOnly === true) return false;
+  return true;
+}
 
 export async function getDestinyEndgame(body, env, ctx) {
   if (!env.BUNGIE_API_KEY) {
@@ -34,6 +42,26 @@ export async function getDestinyEndgame(body, env, ctx) {
 
   const target = await resolveEndgameTarget(body, env, ctx);
   const modes = normalizeEndgameModes(body?.modes || body?.mode);
+
+  if (!wantsFullEndgameHistory(body)) {
+    const summary = await getPublicCareerSummaryByMembership(target.membership, env, ctx);
+    const stats = summary.stats || {};
+    const endgame = Object.fromEntries(modes.map((mode) => [mode, buildEndgameModeFromStats(mode, stats[mode] || {})]));
+    return {
+      updatedAt: new Date().toISOString(),
+      account: {
+        membershipType: target.membership.membershipType,
+        membershipId: target.membership.membershipId
+      },
+      endgame,
+      statsPatch: buildEndgameStatsPatch(endgame),
+      cache: {
+        endgame: 'summary-only',
+        ...(summary.cache || {})
+      }
+    };
+  }
+
   const historyConfig = modes.map((mode) => `${mode}:${historyPageLimit(mode, env)}x${historyPageSize(mode, env)}`).join(',');
   const characterIds = target.characters.map((character) => character.id).filter(Boolean).sort().join(',');
   const cacheKey = [

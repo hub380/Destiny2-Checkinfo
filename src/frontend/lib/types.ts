@@ -159,6 +159,7 @@ export interface CraftingItemDto extends JsonRecord {
   type?: string;
   source?: string;
   sourceHash?: string | number;
+  watermark?: string;
   unlocked?: boolean;
   pattern?: CraftingPatternDto;
 }
@@ -178,6 +179,14 @@ export interface CraftingSourceGroupDto {
   key: string;
   source: string;
   items: CraftingItemDto[];
+  complete: number;
+  total: number;
+}
+
+export interface CraftingSeasonGroupDto {
+  key: string;
+  season: string;
+  sources: CraftingSourceGroupDto[];
   complete: number;
   total: number;
 }

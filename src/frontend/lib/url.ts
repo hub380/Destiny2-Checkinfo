@@ -31,7 +31,3 @@ export function syncUrlParams(
   if (mode === 'push') window.history.pushState(null, '', next);
   else window.history.replaceState(null, '', next);
 }
-
-export function pushUrlParams(updates: Record<string, string | null | undefined>) {
-  syncUrlParams(updates, 'push');
-}

@@ -20,6 +20,8 @@
     "gear:index": "node scripts/data/build-gear-index.js",
     "gear:publish-r2": "node scripts/gear/publish-r2.js",
     "activity:index": "node scripts/data/build-activity-index.js",
+    "indexes:rebuild": "npm run gear:index && npm run activity:index",
+    "indexes:validate": "npm run guides:validate",
     "guides:validate": "node scripts/guides/validate.js",
     "guides:upload": "node scripts/guides/upload.js",
     "codegen:destiny": "node scripts/codegen/split-destiny.mjs",

@@ -6,6 +6,7 @@
         "checkinfo",
         "codegen",
         "fireteam",
-        "topbar"
+        "topbar",
+        "workerd"
     ]
 }

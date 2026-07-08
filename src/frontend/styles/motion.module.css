@@ -52,15 +52,21 @@
 
 .cardHover {
   transition:
-    transform var(--duration-fast) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out),
     border-color var(--duration-fast) ease,
-    box-shadow var(--duration-fast) ease;
+    box-shadow var(--duration-normal) ease,
+    background-color var(--duration-fast) ease;
 }
 
 .cardHover:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.005);
   border-color: var(--border-hover);
-  box-shadow: 0 10px 24px var(--shadow-soft);
+  box-shadow: 0 12px 28px var(--shadow-soft);
+}
+
+.cardHover:active {
+  transform: translateY(-1px) scale(1.002);
+  transition-duration: 0.08s;
 }
 
 .loadingPulse {
@@ -69,4 +75,25 @@
 
 .contentSwap {
   animation: d2-fade-in var(--duration-normal) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageEnter,
+  .layoutEnter,
+  .panelEnter,
+  .detailEnter,
+  .listEnter > *,
+  .staggerItem,
+  .toastEnter,
+  .contentSwap,
+  .cardHover,
+  .loadingPulse {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .cardHover:hover,
+  .cardHover:active {
+    transform: none;
+  }
 }

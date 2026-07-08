@@ -67,14 +67,22 @@ describe('statDisplay', () => {
 });
 
 describe('career crafting utils', () => {
-  it('groups crafting items by source and completion', () => {
+  it('groups crafting items by season and raid/activity source', () => {
     const groups = buildCraftingGroups([
-      { hash: '1', name: 'A', source: '来源: 测试', unlocked: true },
-      { hash: '2', name: 'B', source: '来源: 测试', unlocked: false, pattern: { label: '0/1', percent: 0 } }
+      { hash: '1', name: 'A', source: '奇巫赛季', watermark: 'https://example.com/a.png', unlocked: true },
+      { hash: '2', name: 'B', source: '“克洛塔的末日”突袭', watermark: 'https://example.com/a.png', unlocked: false, pattern: { label: '0/1', percent: 0 } },
+      { hash: '3', name: 'C', source: '篇章：回响活动', watermark: 'https://example.com/b.png', unlocked: true }
     ]);
-    expect(groups.length).toBe(1);
-    expect(groups[0].total).toBe(2);
-    expect(groups[0].complete).toBe(1);
+    expect(groups.length).toBe(2);
+    expect(groups[0].season).toBe('篇章：回响');
+    expect(groups[0].sources[0].source).toBe('篇章活动 · 回响');
+    expect(groups[1].season).toBe('奇巫赛季');
+    expect(groups[1].sources.length).toBe(2);
+    expect(groups[1].sources.map((group) => group.source)).toEqual(
+      expect.arrayContaining(['赛季活动 · 奇巫', '突袭 · 克洛塔的末日'])
+    );
+    expect(groups[1].total).toBe(2);
+    expect(groups[1].complete).toBe(1);
     expect(isCraftingPatternComplete({ unlocked: true })).toBe(true);
     expect(craftingPatternLabel({ unlocked: true, pattern: { label: '-' } })).toBe('1/1');
   });

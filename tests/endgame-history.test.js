@@ -99,3 +99,23 @@ describe('endgame activity history privacy handling', () => {
     })).toBe(false);
   });
 });
+
+describe('buildEndgameModeFromStats', () => {
+  it('reads formatted summary stat objects', async () => {
+    const { buildEndgameModeFromStats } = await import('../src/lib/destiny/endgame-format.js');
+    const mode = buildEndgameModeFromStats('pvp', {
+      activitiesEntered: { value: 705, displayValue: '705' },
+      activitiesWon: { value: 328, displayValue: '328' },
+      kills: { value: 5888, displayValue: '5888' },
+      deaths: { value: 6635, displayValue: '6635' },
+      assists: { value: 2274, displayValue: '2274' },
+      secondsPlayed: { value: 360000, displayValue: '360000' }
+    });
+
+    expect(mode.total.activitiesEntered.value).toBe(705);
+    expect(mode.total.activitiesWon.value).toBe(328);
+    expect(mode.total.kills.value).toBe(5888);
+    expect(mode.summaryOnly).toBe(true);
+    expect(mode.activities).toEqual([]);
+  });
+});

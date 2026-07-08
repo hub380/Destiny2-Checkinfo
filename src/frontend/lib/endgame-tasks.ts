@@ -21,6 +21,7 @@ export async function loadEndgameModesProgressive(
     isCancelled: () => boolean;
     onUpdate: (updater: (current: CareerSummaryDto) => CareerSummaryDto) => void;
     onError?: (mode: EndgameMode, message: string) => void;
+    onModeLoaded?: (mode: EndgameMode) => void;
     errorMessage?: string;
     request?: EndgameRequestOptions;
   }
@@ -34,6 +35,7 @@ export async function loadEndgameModesProgressive(
         const payload = await getEndgame({ ...baseRequest, mode, fullHistory }, signal);
         if (options.isCancelled()) return;
         options.onUpdate((current) => mergeEndgameCareer(current, payload, mode));
+        options.onModeLoaded?.(mode);
       } catch (err: unknown) {
         if (options.isCancelled() || (err instanceof DOMException && err.name === 'AbortError')) return;
         const message = err instanceof Error ? err.message : errorMessage;

@@ -86,7 +86,7 @@ export function useCareerProgressiveLoad({
       if (!skipDelays) await sleep(BETWEEN_STAGES_MS, signal);
       setStage('endgame');
       await ensureEndgameModesRef.current?.(['raid', 'dungeon'], {
-        fullHistory: fullLoad,
+        fullHistory: true,
         reload: fullLoad
       });
 

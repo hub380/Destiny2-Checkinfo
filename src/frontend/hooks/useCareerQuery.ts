@@ -208,6 +208,8 @@ export function useCareerQuery(options: UseCareerQueryOptions = {}) {
 
         onUpdate: (updater) => setCareer((current) => (current ? updater(current) : current)),
 
+        onModeLoaded: (mode) => loadedEndgameRef.current.add(mode),
+
         request: { fullHistory, signal }
 
       });
@@ -283,8 +285,6 @@ export function useCareerQuery(options: UseCareerQueryOptions = {}) {
       const pending = modesToLoad.filter((mode) => !loadedEndgameRef.current.has(mode));
 
       if (!pending.length) return;
-
-      pending.forEach((mode) => loadedEndgameRef.current.add(mode));
 
       const queryId = queryIdRef.current;
 
@@ -395,8 +395,6 @@ export function useCareerQuery(options: UseCareerQueryOptions = {}) {
 
 
       if (loadEndgame === 'eager') {
-
-        modes.forEach((mode) => loadedEndgameRef.current.add(mode));
 
         tasks.push(runEndgame(baseRequest, modes, queryId, begin('endgame'), true));
 

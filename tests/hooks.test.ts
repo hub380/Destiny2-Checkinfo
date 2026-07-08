@@ -338,7 +338,7 @@ describe('useCareerProgressiveLoad', () => {
 
     expect(ensureDetails).toHaveBeenCalledTimes(1);
     expect(ensureEndgameModes).toHaveBeenCalledWith(['raid', 'dungeon'], {
-      fullHistory: false,
+      fullHistory: true,
       reload: false
     });
     expect(ensureEndgameModes).toHaveBeenCalledWith(['pvp'], {

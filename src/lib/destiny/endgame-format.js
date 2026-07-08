@@ -3,7 +3,8 @@ import {
   normalizeEndgameActivityName,
   numberStat,
   percentStat,
-  pvpModeLabel
+  pvpModeLabel,
+  statValue
 } from '../bungie/index.js';
 import { decimalStat, ratioStat, secondsDisplayStat } from './summary-stats.js';
 
@@ -239,13 +240,13 @@ export function formatEndgameTotal(item) {
 
 /** Build endgame block from Bungie aggregate stats (no activity history pagination). */
 export function buildEndgameModeFromStats(modeName, statsBlock = {}) {
-  const attempts = Number(statsBlock.activitiesEntered || statsBlock.activitiesPlayed || statsBlock.attempts || 0);
-  const clears = Number(statsBlock.activitiesCleared || statsBlock.clears || 0);
-  const wins = Number(statsBlock.activitiesWon || statsBlock.wins || 0);
-  const kills = Number(statsBlock.kills || 0);
-  const deaths = Number(statsBlock.deaths || 0);
-  const assists = Number(statsBlock.assists || 0);
-  const seconds = Number(statsBlock.secondsPlayed || statsBlock.seconds || 0);
+  const attempts = statValue(statsBlock.activitiesEntered ?? statsBlock.activitiesPlayed ?? statsBlock.attempts);
+  const clears = statValue(statsBlock.activitiesCleared ?? statsBlock.clears);
+  const wins = statValue(statsBlock.activitiesWon ?? statsBlock.wins);
+  const kills = statValue(statsBlock.kills);
+  const deaths = statValue(statsBlock.deaths);
+  const assists = statValue(statsBlock.assists);
+  const seconds = statValue(statsBlock.secondsPlayed ?? statsBlock.seconds);
   const result = {
     total: formatEndgameTotal({ attempts, clears, wins, kills, deaths, assists, seconds }),
     activities: [],
@@ -256,13 +257,13 @@ export function buildEndgameModeFromStats(modeName, statsBlock = {}) {
       modeId: entry.mode || entry.activityMode || 0,
       label: pvpModeLabel(entry.mode || entry.activityMode || 0),
       ...formatEndgameTotal({
-        attempts: entry.count || entry.activitiesEntered || 0,
-        wins: entry.activitiesWon || 0,
-        clears: entry.activitiesCleared || 0,
-        kills: entry.kills || 0,
-        deaths: entry.deaths || 0,
-        assists: entry.assists || 0,
-        seconds: entry.secondsPlayed || 0
+        attempts: statValue(entry.count ?? entry.activitiesEntered),
+        wins: statValue(entry.activitiesWon),
+        clears: statValue(entry.activitiesCleared),
+        kills: statValue(entry.kills),
+        deaths: statValue(entry.deaths),
+        assists: statValue(entry.assists),
+        seconds: statValue(entry.secondsPlayed)
       })
     }));
   }

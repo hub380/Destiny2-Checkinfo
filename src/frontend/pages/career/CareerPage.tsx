@@ -36,7 +36,7 @@ import {
 
 import '@frontend/styles/global.css';
 
-import { CareerDetail } from './CareerDetailSection';
+import { CareerDetail } from './CareerDetail';
 
 import { CareerProgressStrip } from './CareerProgressStrip';
 

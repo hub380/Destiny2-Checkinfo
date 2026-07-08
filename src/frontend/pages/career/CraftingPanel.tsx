@@ -57,6 +57,7 @@ function countCraftingItems(groups: CraftingSeasonGroupDto[]) {
     0
   );
 }
+
 function CraftingModal({
   crafting,
   groups,

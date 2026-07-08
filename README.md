@@ -151,7 +151,7 @@ npx wrangler secret put BUNGIE_API_KEY
 | URL | `useUrlQuerySync` / `useUrlParamsSync` + `syncUrlParams`；`useUrlPopstate` |
 | 玩家搜索 | `resolveBungieNameSubmit` — 无 `#` 时先前缀搜索再提交 |
 | 首页拆分 | `FireteamFeedSection`、`CompactCareerPanel`、`HomeCareerSection` |
-| Career 页 | `CareerInfoPanels`、`CareerEndgamePanels`、`CareerCraftingPanels` 等子组件 |
+| Career 页 | `CareerDetail`、`EndgamePanel`、`CraftingPanel`、`CareerInfoPanels` 等子组件 |
 | Gear 页 | `GearDetailViews`、`gear-labels`；来源提示可展示 `source-aliases` 中的具体掉落关卡 |
 | 终局加载 | `endgame-tasks.ts` — 生涯多 mode 并行、fireteam 成员顺序拉取 |
 | 长列表 | `useWindowedSlice` — 首页组队 / 攻略默认 48 条 +「显示更多」 |
@@ -282,7 +282,7 @@ src/frontend/
   ui/              barrel：lib + components 重导出
   lib/             api、types、url、format、clipboard、career-merge、endgame-tasks
   components/
-    layout/        AppShell、Header、ThemeToggle、Notice、PageState …
+    layout/        AppShell、Header、ThemeToggle、ActionNotice、PageState …
     search/        PlayerSearchBox
     icons/、motion/
   hooks/
@@ -292,7 +292,7 @@ src/frontend/
     usePlayerSearch
   pages/
     index/         HomePage、FireteamFeedSection、CompactCareerPanel、HomeCareerSection
-    career/        CareerPage + Info / Endgame / Crafting 子组件
+    career/        CareerPage、CareerDetail、EndgamePanel、CraftingPanel、CareerInfoPanels
     gear/          GearPage、GearDetailViews
     fireteam/      FireteamPage
     guides/        GuidesPage

@@ -1,2 +1,2 @@
-export { FadeIn, LoadingPulse, StaggerList } from './primitives';
+export { FadeIn, LoadingPulse, StaggerList } from './MotionPrimitives';
 export { PageSection } from './PageSection';

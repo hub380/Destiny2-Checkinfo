@@ -8,6 +8,7 @@ import {
 import { httpError, positiveNumber } from '../http/index.js';
 import { getWorkerCachedJson } from '../cache/index.js';
 import { CACHE_VERSION } from '../shared/index.js';
+import { searchWarmindProfilesByName } from './warmind-profile-search.js';
 
 export async function getDestinyPlayerSearch(body, env, ctx) {
   if (!env.BUNGIE_API_KEY) {
@@ -33,13 +34,17 @@ export async function getDestinyPlayerSearch(body, env, ctx) {
     limit
   ].join(':');
   const cached = await getWorkerCachedJson(cacheKey, positiveNumber(env.PLAYER_SEARCH_CACHE_TTL_SECONDS, 300), async () => {
-    const search = await searchBungiePlayersByPrefix(query, limit, env);
+    const [search, warmindItems] = await Promise.all([
+      searchBungiePlayersByPrefix(query, limit, env),
+      safeWarmindProfileSearch(query, env)
+    ]);
+    const items = mergePlayerSearchItems(warmindItems, search.items).slice(0, limit);
     return {
       query,
       page: 0,
       pagesScanned: search.pagesScanned,
-      hasMore: search.hasMore,
-      items: search.items
+      hasMore: search.hasMore || warmindItems.length > items.length,
+      items
     };
   }, env, ctx, { memoryOnly: true });
 
@@ -125,4 +130,22 @@ export function normalizePlayerSearchResult(item) {
       icon: bungieAssetUrl(membership.iconPath)
     }))
   };
+}
+
+export async function safeWarmindProfileSearch(query, env) {
+  try {
+    return await searchWarmindProfilesByName(query, env);
+  } catch {
+    return [];
+  }
+}
+
+export function mergePlayerSearchItems(...groups) {
+  const seen = new Set();
+  return groups.flat().filter((item) => {
+    const key = `${item?.membershipType || ''}:${item?.membershipId || ''}`;
+    if (!item?.membershipId || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

@@ -175,6 +175,62 @@ describe('destiny summary membership resolution', () => {
     expect(summary.stats.overall.kills).toBeNull();
   });
 
+  it('prefers a recent Warmind profile when Bungie exact search only exposes an old platform', async () => {
+    const oldXbox = {
+      membershipType: 1,
+      membershipId: '4611686018524065854',
+      crossSaveOverride: 0,
+      displayName: 'pianoforte1548',
+      bungieGlobalDisplayName: 'TeaDog',
+      bungieGlobalDisplayNameCode: 9968,
+      isPublic: false
+    };
+    const recentSteam = {
+      membershipType: 3,
+      membershipId: '4611686018500934441',
+      crossSaveOverride: 0,
+      displayName: 'TeaDog',
+      bungieGlobalDisplayName: 'TeaDog',
+      bungieGlobalDisplayNameCode: 9968,
+      isPublic: true
+    };
+    const fetchMock = vi.fn(async (url) => {
+      const text = String(url);
+      if (text.includes('api.warmind.io/in/profileSearch')) {
+        return new Response(JSON.stringify({
+          response: [
+            {
+              membershipId: recentSteam.membershipId,
+              membershipType: recentSteam.membershipType,
+              lastPlayed: '2026-07-09T10:40:38Z',
+              hoursPlayed: 3541,
+              displayName: 'TeaDog#9968',
+              isBungieName: true,
+              baseBungieName: 'TeaDog',
+              platformName: 'TeaDog'
+            }
+          ],
+          errorCode: 0,
+          errorMessage: 'Success'
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (text.includes('/SearchDestinyPlayerByBungieName/')) return bungieResponse({ Response: [oldXbox] });
+      if (text.includes('/Destiny2/3/Profile/4611686018500934441/')) return profileResponse(recentSteam);
+      if (text.includes('/Destiny2/3/Account/4611686018500934441/')) return statsResponse();
+      throw new Error(`Unexpected request: ${text}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const summary = await getDestinySummary({ bungieName: 'TeaDog#9968' }, testEnv('warmind-profile'));
+
+    expect(summary.account.membershipType).toBe(3);
+    expect(summary.account.membershipId).toBe(recentSteam.membershipId);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('api.warmind.io/in/profileSearch?q=TeaDog%239968'),
+      expect.any(Object)
+    );
+  });
+
   it('falls back to global name search when the legacy Destiny player lookup fails', async () => {
     const fetchMock = vi.fn(async (url) => {
       const text = String(url);

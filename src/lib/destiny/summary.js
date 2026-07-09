@@ -13,7 +13,10 @@ import { getWorkerCachedJson, summaryCacheTtlSeconds } from '../cache/index.js';
 import { CACHE_VERSION } from '../shared/index.js';
 import { findModeBucket, pickEndgameStats, pickStats } from './summary-stats.js';
 import { searchBungiePlayersByPrefix } from './summary-search.js';
+import { searchWarmindProfilesByName } from './warmind-profile-search.js';
 import { getPlayerNameFromD1, putPlayerNameToD1 } from './d1-player-cache.js';
+
+const SUMMARY_RESOLUTION_VERSION = 'warmind-v1';
 
 export async function getPublicCareerSummaryByMembership(membership, env, ctx) {
   const membershipId = cleanText(membership?.membershipId);
@@ -173,6 +176,13 @@ function playerSearchItemMemberships(item) {
     }));
 }
 
+function sameMembership(left, right) {
+  return (
+    String(left?.membershipType || '') === String(right?.membershipType || '') &&
+    String(left?.membershipId || '') === String(right?.membershipId || '')
+  );
+}
+
 async function safeMembershipSearch(searcher) {
   try {
     return await searcher();
@@ -185,6 +195,18 @@ async function searchFallbackMembershipsByName(parsedName, membershipType, env) 
   const legacy = await safeMembershipSearch(() => searchLegacyMembershipsByDisplayName(parsedName, membershipType, env));
   const globalName = await safeMembershipSearch(() => searchMembershipsByGlobalName(parsedName, env));
   return mergeMemberships(legacy, globalName);
+}
+
+async function searchWarmindMembershipsByName(parsedName, env) {
+  const items = await searchWarmindProfilesByName(bungieNameText(parsedName), env);
+  const displayName = cleanText(parsedName.displayName).toLocaleLowerCase();
+  const displayNameCode = Number(parsedName.displayNameCode);
+  return items
+    .filter((item) => (
+      cleanText(item.displayName).toLocaleLowerCase() === displayName &&
+      Number(item.displayNameCode) === displayNameCode
+    ))
+    .flatMap((item) => playerSearchItemMemberships(item));
 }
 
 async function summarizeFirstAccessibleMembership(parsedName, memberships, env) {
@@ -232,6 +254,7 @@ export async function getDestinySummary(body, env, ctx) {
   const cacheKey = [
     'summary',
     CACHE_VERSION,
+    SUMMARY_RESOLUTION_VERSION,
     env.BUNGIE_LOCALE || 'zh-chs',
     membershipType,
     parsedName.displayName.toLocaleLowerCase(),
@@ -240,8 +263,11 @@ export async function getDestinySummary(body, env, ctx) {
   const cached = await getWorkerCachedJson(cacheKey, summaryCacheTtlSeconds(env), async () => {
     // D1 玩家名缓存：先查 D1，命中则跳过 SearchDestinyPlayerByBungieName
     const bungieName = `${parsedName.displayName}#${String(parsedName.displayNameCode).padStart(4, '0')}`;
-    const d1Hit = await getPlayerNameFromD1(bungieName, env);
-    let memberships = d1Hit?.memberships?.length ? d1Hit.memberships : [];
+    const [d1Hit, warmindMemberships] = await Promise.all([
+      getPlayerNameFromD1(bungieName, env),
+      safeMembershipSearch(() => searchWarmindMembershipsByName(parsedName, env))
+    ]);
+    let memberships = mergeMemberships(warmindMemberships, d1Hit?.memberships?.length ? d1Hit.memberships : []);
 
     if (!memberships.length) {
       memberships = await safeMembershipSearch(() => searchMembershipsByBungieName(parsedName, membershipType, env));
@@ -254,8 +280,8 @@ export async function getDestinySummary(body, env, ctx) {
     }
 
     // 写入 D1（首次 / D1 过期后），后台执行不阻塞响应
-    if (!d1Hit) {
-      const primary = selectMembership(memberships);
+    const primary = selectMembership(memberships);
+    if (!d1Hit || !sameMembership(primary, d1Hit)) {
       putPlayerNameToD1(bungieName, primary, memberships, env, ctx);
     }
 

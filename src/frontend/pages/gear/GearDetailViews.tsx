@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatNumber } from '@frontend/ui';
+import { getPerkWeapons } from '@frontend/lib/api';
 import type { GearCatalyst, JsonRecord } from '@frontend/lib/types';
 import { cn } from './gear-cn';
 import {
@@ -8,8 +9,16 @@ import {
   sourceKindLabel
 } from './gear-labels';
 
+const PERK_WEAPON_PAGE_SIZE = 24;
+
 function gearTagKey(value: unknown, index: number) {
   return `${index}-${String(value)}`;
+}
+
+function weaponGroupKey(group: JsonRecord) {
+  return [group.name, group.weaponType, group.ammo, group.element]
+    .map((value) => String(value || ''))
+    .join('|');
 }
 
 export function GearDetailSlot({
@@ -156,36 +165,141 @@ function ArmorSetBonus({ setBonus }: { setBonus: JsonRecord }) {
 }
 
 function PerkWeapons({ payload, onPerkClick }: { payload: JsonRecord; onPerkClick?: (perk: JsonRecord) => void }) {
-  const weapons = Array.isArray(payload.weapons) ? payload.weapons : [];
-  const perks = Array.isArray(payload.perks) ? payload.perks : [];
+  const [pagePayload, setPagePayload] = React.useState<JsonRecord>(payload);
+  const [page, setPage] = React.useState(0);
+  const [loadingPage, setLoadingPage] = React.useState(false);
+  const [pageError, setPageError] = React.useState('');
+  const [selectedGroupKey, setSelectedGroupKey] = React.useState('');
+  const currentPayload = pagePayload || payload;
+  const weapons = Array.isArray(currentPayload.weapons) ? currentPayload.weapons : [];
+  const perks = Array.isArray(currentPayload.perks) ? currentPayload.perks : [];
+  const total = Number(currentPayload.total || weapons.length);
+  const pageCount = Math.max(1, Math.ceil(total / PERK_WEAPON_PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+
+  React.useEffect(() => {
+    setPagePayload(payload);
+    setPage(Math.floor(Number(payload.offset || 0) / PERK_WEAPON_PAGE_SIZE) || 0);
+    setPageError('');
+    setSelectedGroupKey('');
+  }, [payload]);
+
+  const loadPage = async (nextPage: number) => {
+    const targetPage = Math.max(0, Math.min(pageCount - 1, nextPage));
+    const query = String(currentPayload.query || payload.query || '').trim();
+    const hash = String(currentPayload.hash || payload.hash || '').trim();
+    if (!query && !hash) return;
+    setLoadingPage(true);
+    setPageError('');
+    try {
+      const body: JsonRecord = {
+        limit: PERK_WEAPON_PAGE_SIZE,
+        offset: targetPage * PERK_WEAPON_PAGE_SIZE
+      };
+      if (query) body.query = query;
+      if (hash) body.hash = hash;
+      const nextPayload = await getPerkWeapons(body);
+      setPagePayload(nextPayload);
+      setPage(targetPage);
+      setSelectedGroupKey('');
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : 'Page load failed');
+    } finally {
+      setLoadingPage(false);
+    }
+  };
+
   return (
     <section className={cn('gear-detail-panel')}>
       <div className={cn('gear-summary')}>
-        <b>Perk 反查：{payload.query}</b>
+        <b>Perk 反查：{currentPayload.query}</b>
         <span>命中 Perk {formatNumber(perks.length)} 个</span>
-        <span>武器 {formatNumber(payload.total || 0)} 组</span>
+        <span>武器 {formatNumber(total)} 组</span>
       </div>
       {perks.length ? <div className={cn('perk-strip')}>{perks.slice(0, 12).map((perk: JsonRecord) => <PerkChip perk={perk} onPerkClick={onPerkClick} key={perk.hash || perk.name} />)}</div> : null}
-      {weapons.length ? <div className={cn('weapon-group-list')}>{weapons.map((group: JsonRecord) => <WeaponGroup group={group} onPerkClick={onPerkClick} key={group.hash || group.name} />)}</div> : <div className={cn('detail-loading')}>没有找到可出该 Perk 的武器</div>}
+      {pageError ? <div className={cn('notice error')}>{pageError}</div> : null}
+      {loadingPage ? <div className={cn('detail-loading')}>加载中...</div> : null}
+      {weapons.length ? (
+        <>
+          <div className={cn('weapon-group-list')}>
+            {weapons.map((group: JsonRecord) => {
+              const key = weaponGroupKey(group);
+              const selected = key === selectedGroupKey;
+              return (
+                <React.Fragment key={key}>
+                  <WeaponGroup
+                    group={group}
+                    selected={selected}
+                    onSelect={() => setSelectedGroupKey(key)}
+                  />
+                  {selected ? (
+                    <SelectedWeaponPerks group={group} onPerkClick={onPerkClick} onClose={() => setSelectedGroupKey('')} />
+                  ) : null}
+                </React.Fragment>
+              );
+            })}
+          </div>
+          {pageCount > 1 ? (
+            <div className={cn('gear-pagination')}>
+              <button
+                type="button"
+                aria-label="Previous perk weapon page"
+                disabled={loadingPage || safePage <= 0}
+                onClick={() => { void loadPage(safePage - 1); }}
+              >
+                上一页
+              </button>
+              <span>{safePage + 1} / {pageCount}</span>
+              <button
+                type="button"
+                aria-label="Next perk weapon page"
+                disabled={loadingPage || safePage >= pageCount - 1}
+                onClick={() => { void loadPage(safePage + 1); }}
+              >
+                下一页
+              </button>
+            </div>
+          ) : null}
+        </>
+      ) : <div className={cn('detail-loading')}>没有找到可出该 Perk 的武器</div>}
     </section>
   );
 }
 
-function WeaponGroup({ group, onPerkClick }: { group: JsonRecord; onPerkClick?: (perk: JsonRecord) => void }) {
+function WeaponGroup({
+  group,
+  selected,
+  onSelect
+}: {
+  group: JsonRecord;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   const variants = Array.isArray(group.variants) ? group.variants : [];
   const primary = variants[0] || {};
   const sockets = Array.isArray(primary.sockets) ? primary.sockets : [];
   const frameSocket = sockets.find(isFrameSocket);
-  const perkSockets = sockets.filter((socket: JsonRecord) => socket !== frameSocket);
   const canRoll = [group.canRoll?.normal ? '普通可出' : '', group.canRoll?.enhanced ? '强化可出' : ''].filter(Boolean);
   const meta = [group.weaponType, group.ammo, group.element, `${variants.length} 个变体`].filter(Boolean);
   return (
-    <article className={cn('weapon-group expanded')}>
+    <article className={cn(`weapon-group ${selected ? 'selected' : ''}`)}>
       <img className={cn('gear-icon')} src={primary.icon || '/brand.svg'} alt="" />
       <div className={cn('gear-main')}>
-        <div className={cn('gear-title')}>
+        <div
+          className={cn('gear-title gear-title-toggle')}
+          onClick={onSelect}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onSelect();
+            }
+          }}
+          aria-pressed={selected}
+        >
           <h3>{group.name || '未知武器'}</h3>
-          <span>{canRoll.join(' / ') || '可出'}</span>
+          <span>{selected ? '正在查看' : canRoll.join(' / ') || '查看词条'}</span>
         </div>
         <div className={cn('gear-tags')}>
           {meta.map((value, index) => <span className={cn('gear-tag')} key={gearTagKey(value, index)}>{value}</span>)}
@@ -195,9 +309,48 @@ function WeaponGroup({ group, onPerkClick }: { group: JsonRecord; onPerkClick?: 
           {variants.slice(0, 10).map((variant: JsonRecord) => <span key={variant.hash || variant.name}>{variant.name || '未知变体'}{variant.adept ? ' · 专家' : ''}</span>)}
           {variants.length > 10 ? <span>+{variants.length - 10}</span> : null}
         </div>
-        <PerkColumns sockets={perkSockets} onPerkClick={onPerkClick} />
       </div>
     </article>
+  );
+}
+
+function SelectedWeaponPerks({
+  group,
+  onPerkClick,
+  onClose
+}: {
+  group: JsonRecord;
+  onPerkClick?: (perk: JsonRecord) => void;
+  onClose: () => void;
+}) {
+  const variants = Array.isArray(group.variants) ? group.variants : [];
+  const primary = variants[0] || {};
+  const sockets = Array.isArray(primary.sockets) ? primary.sockets : [];
+  const frameSocket = sockets.find(isFrameSocket);
+  const perkSockets = sockets.filter((socket: JsonRecord) => socket !== frameSocket);
+  const canRoll = [group.canRoll?.normal ? '普通可出' : '', group.canRoll?.enhanced ? '强化可出' : ''].filter(Boolean);
+  const meta = [group.weaponType, group.ammo, group.element, `${variants.length} 个变体`].filter(Boolean);
+
+  return (
+    <div className={cn('selected-perk-panel')} aria-live="polite">
+      <div className={cn('selected-perk-head')}>
+        <img className={cn('gear-icon')} src={primary.icon || '/brand.svg'} alt="" />
+        <div>
+          <h3>{group.name || '未知武器'}</h3>
+          <div className={cn('gear-tags')}>
+            {meta.map((value, index) => <span className={cn('gear-tag')} key={gearTagKey(value, index)}>{value}</span>)}
+            {canRoll.length ? <span className={cn('gear-tag')}>{canRoll.join(' / ')}</span> : null}
+            <InlineFrameSocket socket={frameSocket} />
+          </div>
+        </div>
+        <button type="button" onClick={onClose} aria-label="关闭武器词条详情">关闭</button>
+      </div>
+      <div className={cn('variant-pills selected-variants')}>
+        {variants.slice(0, 12).map((variant: JsonRecord) => <span key={variant.hash || variant.name}>{variant.name || '未知变体'}{variant.adept ? ' · 专家' : ''}</span>)}
+        {variants.length > 12 ? <span>+{variants.length - 12}</span> : null}
+      </div>
+      <PerkColumns sockets={perkSockets} onPerkClick={onPerkClick} />
+    </div>
   );
 }
 

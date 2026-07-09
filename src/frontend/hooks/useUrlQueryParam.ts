@@ -63,6 +63,7 @@ export function useUrlParamsSync(
 ) {
   const handlerRef = useRef(handler);
   const bootedRef = useRef(false);
+  const paramsRef = useRef(params);
   const paramsKey = params.join('\0');
 
   useEffect(() => {
@@ -70,13 +71,17 @@ export function useUrlParamsSync(
   }, [handler]);
 
   useEffect(() => {
+    paramsRef.current = params;
+  }, [paramsKey, params]);
+
+  useEffect(() => {
     if (options?.skipMount) return;
     if (bootedRef.current) return;
     bootedRef.current = true;
-    handlerRef.current(readUrlParams(params), 'mount');
+    handlerRef.current(readUrlParams(paramsRef.current), 'mount');
   }, [paramsKey, options?.skipMount]);
 
   useUrlPopstate(() => {
-    handlerRef.current(readUrlParams(params), 'popstate');
+    handlerRef.current(readUrlParams(paramsRef.current), 'popstate');
   });
 }

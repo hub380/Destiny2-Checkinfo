@@ -21,7 +21,7 @@ describe('frontend gear API client', () => {
       '/api/gear/perk-weapons',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ hash: '984655331', query: '羸弱能量球', limit: 20 })
+        body: JSON.stringify({ hash: '984655331', query: '羸弱能量球', limit: 24, offset: 0 })
       })
     );
   });
@@ -37,6 +37,6 @@ describe('frontend gear API client', () => {
 
     await getPerkWeapons({ hash: '984655331', limit: 12 });
 
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({ hash: '984655331', limit: 12 });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({ hash: '984655331', limit: 12, offset: 0 });
   });
 });

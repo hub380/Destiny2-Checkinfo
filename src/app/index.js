@@ -1,5 +1,6 @@
 import { runGearCacheCheck } from '#lib/gear/index.js';
 import { json } from '#lib/http/index.js';
+import { trackVisitor } from '#lib/stats/visitor-stats.js';
 import { corsPreflightResponse, dispatchApiRequest } from './router.js';
 
 export async function handleAppRequest(request, env = {}, ctx = {}, options = {}) {
@@ -9,6 +10,8 @@ export async function handleAppRequest(request, env = {}, ctx = {}, options = {}
     if (request.method === 'OPTIONS') {
       return corsPreflightResponse();
     }
+
+    trackVisitor(request, env, ctx);
 
     const response = await dispatchApiRequest({ request, url, env, ctx, options });
     if (response) return response;

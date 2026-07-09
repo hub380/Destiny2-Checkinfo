@@ -62,7 +62,7 @@ export function getGearItem(hash: string, signal?: AbortSignal) {
 }
 
 export function getPerkWeapons(body: JsonRecord, signal?: AbortSignal) {
-  return postJson<JsonRecord>('/api/gear/perk-weapons', { ...body, limit: body.limit ?? 20 }, signal);
+  return postJson<JsonRecord>('/api/gear/perk-weapons', { ...body, limit: body.limit ?? 24, offset: body.offset ?? 0 }, signal);
 }
 
 export function warmGearIndex(signal?: AbortSignal) {

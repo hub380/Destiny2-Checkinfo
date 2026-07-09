@@ -31,7 +31,7 @@ export function mapHeyboxTeam(item, index, sourceUrl) {
     content,
     author: item.user?.username || '',
     username,
-    joinCommand: username ? `/j ${username}` : '',
+    joinCommand: username ? `/加入 ${username}` : '',
     slots: parseHeyboxSlots(content),
     link: sourceUrl,
     createdAt: parseTime(item.modify_at) || null,

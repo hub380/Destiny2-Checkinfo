@@ -16,11 +16,12 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.{js,ts}'],
+    include: ['tests/**/*.test.{js,ts,tsx}'],
     pool: 'threads',
     environmentMatchGlobs: [
       ['tests/hooks.test.ts', 'jsdom'],
-      ['tests/gear-catalyst.test.ts', 'jsdom']
+      ['tests/gear-catalyst.test.ts', 'jsdom'],
+      ['tests/gear-detail-views.test.tsx', 'jsdom']
     ]
   }
 });

@@ -30,3 +30,4 @@ export { useTheme, initTheme, themeLabel, type ThemePreference } from './useThem
 
 export { usePlayerSearch, type PlayerSearchState } from './usePlayerSearch';
 
+export { useVisitorStats, type VisitorStats } from './useVisitorStats';

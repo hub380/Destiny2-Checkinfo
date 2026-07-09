@@ -6,6 +6,7 @@ import {
   displayDescription,
   iconUrl,
   imageUrl,
+  makeSearchText,
   isWeapon,
   isArmor,
   isTraitPlug
@@ -82,19 +83,31 @@ export function makeCraftableRecords(items, craftingInfoByHash) {
     .filter(Boolean);
 }
 
+function localizedSearchText(item, enItemDefs, chtItemDefs) {
+  const hash = String(item?.hash || '');
+  return makeSearchText({
+    ...item,
+    enName: enItemDefs?.[hash]?.displayProperties?.name || '',
+    chtName: chtItemDefs?.[hash]?.displayProperties?.name || ''
+  });
+}
+
 export async function buildGearIndex(deps) {
   const locale = deps.locale || 'zh-chs';
   const manifest = await bungieFetchJson('/Platform/Destiny2/Manifest/', deps);
+  const allLocalePaths = manifest.Response?.jsonWorldComponentContentPaths || {};
   const paths =
-    manifest.Response?.jsonWorldComponentContentPaths?.[locale] ||
-    manifest.Response?.jsonWorldComponentContentPaths?.['zh-chs'] ||
-    manifest.Response?.jsonWorldComponentContentPaths?.en;
+    allLocalePaths[locale] ||
+    allLocalePaths['zh-chs'] ||
+    allLocalePaths.en;
 
   if (!paths?.DestinyInventoryItemDefinition || !paths?.DestinyPlugSetDefinition) {
     throw httpError(502, 'MANIFEST_PATH_MISSING', 'Bungie Manifest 缺少装备定义表');
   }
 
-  const [items, plugSets, damageTypes, statDefs, itemSets, sandboxPerks, collectibles, recordDefs, rewardSources, vendors, objectiveDefs] = await Promise.all([
+  const enItemPaths = locale !== 'en' ? allLocalePaths.en : null;
+  const chtItemPaths = locale !== 'zh-cht' ? allLocalePaths['zh-cht'] : null;
+  const [items, plugSets, damageTypes, statDefs, itemSets, sandboxPerks, collectibles, recordDefs, rewardSources, vendors, objectiveDefs, enItemDefs, chtItemDefs] = await Promise.all([
     bungieFetchJson(paths.DestinyInventoryItemDefinition, deps),
     bungieFetchJson(paths.DestinyPlugSetDefinition, deps),
     paths.DestinyDamageTypeDefinition ? bungieFetchJson(paths.DestinyDamageTypeDefinition, deps) : Promise.resolve({}),
@@ -105,7 +118,9 @@ export async function buildGearIndex(deps) {
     paths.DestinyRecordDefinition ? bungieFetchJson(paths.DestinyRecordDefinition, deps) : Promise.resolve({}),
     paths.DestinyRewardSourceDefinition ? bungieFetchJson(paths.DestinyRewardSourceDefinition, deps) : Promise.resolve({}),
     paths.DestinyVendorDefinition ? bungieFetchJson(paths.DestinyVendorDefinition, deps) : Promise.resolve({}),
-    paths.DestinyObjectiveDefinition ? bungieFetchJson(paths.DestinyObjectiveDefinition, deps) : Promise.resolve({})
+    paths.DestinyObjectiveDefinition ? bungieFetchJson(paths.DestinyObjectiveDefinition, deps) : Promise.resolve({}),
+    enItemPaths?.DestinyInventoryItemDefinition ? bungieFetchJson(enItemPaths.DestinyInventoryItemDefinition, deps) : Promise.resolve(null),
+    chtItemPaths?.DestinyInventoryItemDefinition ? bungieFetchJson(chtItemPaths.DestinyInventoryItemDefinition, deps) : Promise.resolve(null)
   ]);
 
   const records = [];
@@ -121,6 +136,7 @@ export async function buildGearIndex(deps) {
 
     if (isWeapon(definition)) {
       const item = makeWeaponItem(definition, damageTypes, craftingInfoByHash, collectibles, rewardSources, vendors);
+      item.searchText = localizedSearchText(item, enItemDefs, chtItemDefs);
       records.push(item);
       weapons.push(makeWeaponRecord(definition, item, items, plugSets, statDefs, weaponPlugs, craftingInfoByHash, sandboxPerks, objectiveDefs));
       continue;
@@ -128,13 +144,16 @@ export async function buildGearIndex(deps) {
 
     if (isArmor(definition)) {
       const item = makeArmorItem(definition, itemSetByItemHash, collectibles, rewardSources, vendors);
+      item.searchText = localizedSearchText(item, enItemDefs, chtItemDefs);
       records.push(item);
       armors.push(makeArmorRecord(definition, item, items, itemSetByItemHash, statDefs));
       continue;
     }
 
     if (isTraitPlug(definition)) {
-      records.push(makePerkItem(definition, statDefs));
+      const perk = makePerkItem(definition, statDefs);
+      perk.searchText = localizedSearchText(perk, enItemDefs, chtItemDefs);
+      records.push(perk);
     }
   }
 
@@ -147,6 +166,9 @@ export async function buildGearIndex(deps) {
     weapons,
     armors,
     craftables,
-    weaponPlugs: Array.from(weaponPlugs.values())
+    weaponPlugs: Array.from(weaponPlugs.values()).map((plug) => ({
+      ...plug,
+      searchText: localizedSearchText(plug, enItemDefs, chtItemDefs)
+    }))
   };
 }

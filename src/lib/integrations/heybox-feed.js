@@ -14,7 +14,7 @@ const SAMPLE_HEYBOX_TEAMS = [
     content: '缺 1，带反勇士，语音可不开。',
     author: '示例队长',
     username: 'GuardianCN#2333',
-    joinCommand: '/j GuardianCN#2333',
+    joinCommand: '/加入 GuardianCN#2333',
     slots: { current: 2, max: 3 },
     createdAt: new Date(Date.now() - 8 * 60_000).toISOString(),
     tags: ['演示数据']

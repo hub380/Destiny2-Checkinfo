@@ -9,6 +9,7 @@ import {
   staggerStyle
 } from '@frontend/ui';
 import type { FireteamDto } from '@frontend/lib/types';
+import { englishJoinCommandForCopy, joinCommandForCopy } from '@frontend/lib/fireteam-copy';
 import { useWindowedSlice } from '@frontend/hooks/useWindowedSlice';
 import { cn } from './home-cn';
 
@@ -102,7 +103,8 @@ function FireteamCard({
   onPickUser: (username: string) => void;
 }) {
   const username = item.username || '';
-  const command = item.joinCommand || (username ? `/j ${username}` : '');
+  const command = joinCommandForCopy(item.joinCommand, username);
+  const englishCommand = englishJoinCommandForCopy(username);
   const meta = [
     item.activity,
     item.author ? `队长 ${item.author}` : '',
@@ -133,10 +135,20 @@ function FireteamCard({
         <button className={cn(`username ${username ? 'clickable' : ''}`)} type="button" onClick={() => username && onPickUser(username)}>
           {username || '未识别用户名'}
         </button>
-        <button className={cn('copy-button')} disabled={!command} onClick={() => command && onCopy(command)}>
-          <CopyIcon />
-          复制
-        </button>
+        <div className={cn('copy-actions')}>
+          <button className={cn('copy-button')} disabled={!command} onClick={() => command && onCopy(command)}>
+            <CopyIcon />
+            复制
+          </button>
+          <button
+            className={cn('copy-button copy-button-secondary')}
+            title="复制英文客户端 /join 命令"
+            disabled={!englishCommand}
+            onClick={() => englishCommand && onCopy(englishCommand)}
+          >
+            /join
+          </button>
+        </div>
         {item.link ? <a className={cn('tag')} href={item.link} target="_blank" rel="noreferrer">来源</a> : null}
         {username.includes('#') ? (
           <a className={cn('tag')} href={`/fireteam.html?q=${encodeURIComponent(username)}`}>查棒鸡队伍</a>

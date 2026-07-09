@@ -17,7 +17,7 @@ import {
 } from './handlers-source.js';
 import { buildPerkWeapons, withPerkWeaponsCacheMeta } from './handlers-perk-weapons.js';
 
-const PERK_WEAPONS_DEFAULT_LIMIT = 20;
+const PERK_WEAPONS_DEFAULT_LIMIT = 24;
 const PERK_WEAPONS_MAX_LIMIT = 60;
 const PERK_WEAPONS_CACHE_TTL_SECONDS = 604800;
 
@@ -140,15 +140,16 @@ export async function getPerkWeapons(body, deps) {
   }
 
   const limit = clampNumber(body?.limit, 1, PERK_WEAPONS_MAX_LIMIT, PERK_WEAPONS_DEFAULT_LIMIT);
+  const offset = clampNumber(body?.offset, 0, Number.MAX_SAFE_INTEGER, 0);
   const ttlSeconds = deps.cacheTtlSeconds || PERK_WEAPONS_CACHE_TTL_SECONDS;
-  const cacheKey = ['perk-weapons', GEAR_INDEX_VERSION, deps.locale || 'zh-chs', query || hash, limit].join(':');
+  const cacheKey = ['perk-weapons', GEAR_INDEX_VERSION, deps.locale || 'zh-chs', query || hash, limit, offset].join(':');
 
   if (typeof deps.getCachedJson === 'function') {
-    const cached = await deps.getCachedJson(cacheKey, ttlSeconds, () => buildPerkWeapons(deps, query, hash, limit));
+    const cached = await deps.getCachedJson(cacheKey, ttlSeconds, () => buildPerkWeapons(deps, query, hash, limit, offset));
     return withPerkWeaponsCacheMeta(cached.value, cached);
   }
 
-  const value = await buildPerkWeapons(deps, query, hash, limit);
+  const value = await buildPerkWeapons(deps, query, hash, limit, offset);
   return withPerkWeaponsCacheMeta(value, {
     status: 'miss-memory',
     cachedAt: new Date().toISOString(),

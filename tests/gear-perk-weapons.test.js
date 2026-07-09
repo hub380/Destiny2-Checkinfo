@@ -3,12 +3,29 @@ import { getPerkWeapons } from '../src/lib/gear/handlers.js';
 import { gearItemPath, perkWeaponsPath, searchShardPath } from '../src/lib/gear/split-paths.js';
 
 describe('gear perk weapon reverse search', () => {
-  it('defaults reverse search to 20 weapon groups', async () => {
+  it('defaults reverse search to 24 weapon groups', async () => {
     const payload = await getPerkWeapons({ query: 'Bait and Switch' }, gearDepsWithFiles(gearFilesWithWeaponGroups(25)));
 
-    expect(payload.weapons).toHaveLength(20);
+    expect(payload.weapons).toHaveLength(24);
     expect(payload.total).toBe(25);
+    expect(payload.limit).toBe(24);
+    expect(payload.offset).toBe(0);
+    expect(payload.hasMore).toBe(true);
     expect(payload.cache.perkWeapons).toBe('miss-memory');
+  });
+
+  it('uses offset to return later reverse-search pages', async () => {
+    const payload = await getPerkWeapons(
+      { query: 'Bait and Switch', limit: 10, offset: 20 },
+      gearDepsWithFiles(gearFilesWithWeaponGroups(25))
+    );
+
+    expect(payload.weapons).toHaveLength(5);
+    expect(payload.total).toBe(25);
+    expect(payload.limit).toBe(10);
+    expect(payload.offset).toBe(20);
+    expect(payload.hasMore).toBe(false);
+    expect(payload.weapons[0].name).toBe('Weapon 20');
   });
 
   it('uses a whole-result cache when deps provide getCachedJson', async () => {
@@ -42,13 +59,14 @@ describe('gear perk weapon reverse search', () => {
       }
     });
 
-    const first = await getPerkWeapons({ hash: '2001' }, deps);
-    const second = await getPerkWeapons({ hash: '2001' }, deps);
+    const first = await getPerkWeapons({ hash: '2001', limit: 1, offset: 0 }, deps);
+    const second = await getPerkWeapons({ hash: '2001', limit: 1, offset: 0 }, deps);
+    await getPerkWeapons({ hash: '2001', limit: 1, offset: 1 }, deps);
     const resultCacheKeys = Array.from(producerCalls.keys()).filter((key) => key.startsWith('perk-weapons:'));
 
     expect(first.cache.perkWeapons).toBe('miss');
     expect(second.cache.perkWeapons).toBe('hit-memory');
-    expect(resultCacheKeys).toHaveLength(1);
+    expect(resultCacheKeys).toHaveLength(2);
     expect(producerCalls.get(resultCacheKeys[0])).toBe(1);
     expect(second.weapons[0].variants[0].sockets[0].perks[0].matched).toBe(true);
   });

@@ -36,7 +36,9 @@ import styles from './fireteam.module.css';
 
 const cn = createPageCn(styles);
 
-type MemberSort = 'default' | 'light' | 'raid' | 'dungeon';
+type MemberSort = 'default' | 'light' | 'raid' | 'dungeon';
+
+const EMPTY_MEMBERS: FireteamMemberLookupDto[] = [];
 
 export function FireteamPage() {
   const { config, ready } = usePublicConfig();
@@ -125,7 +127,7 @@ function FireteamResult({
   onLoadDetailed: () => void;
 }) {
   const [sort, setSort] = useState<MemberSort>('default');
-  const members = lookup.members || [];
+  const members = lookup.members || EMPTY_MEMBERS;
   const sortedMembers = useMemo(() => sortMembers(members, sort), [members, sort]);
   const highlights = useMemo(() => memberHighlights(members), [members]);
 

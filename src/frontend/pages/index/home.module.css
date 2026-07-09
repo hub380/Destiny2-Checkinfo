@@ -80,6 +80,20 @@
   padding: 16px;
 }
 
+.visitor-stats-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stats-sep {
+  opacity: 0.45;
+}
+
 .career-panel {
   padding: 16px;
   align-self: start;
@@ -321,6 +335,19 @@
   cursor: not-allowed;
   color: var(--disabled-text);
   background: var(--disabled-bg);
+}
+
+.copy-actions {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.copy-button-secondary {
+  min-width: 68px;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
 }
 
 .list-more {
@@ -572,6 +599,14 @@
   .username {
     justify-content: flex-start;
     text-align: left;
+  }
+
+  .copy-actions {
+    justify-content: flex-start;
+  }
+
+  .copy-actions .copy-button {
+    flex: 1 1 88px;
   }
 
   .stat-grid {

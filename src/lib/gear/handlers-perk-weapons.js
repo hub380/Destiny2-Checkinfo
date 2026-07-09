@@ -4,7 +4,7 @@ import { publicGearItem, publicWeaponSockets, publicPerkRef } from './public.js'
 import { perkMap } from './perk-map.js';
 import { scoreGearItem } from './search.js';
 
-export async function buildPerkWeapons(deps, query, hash, limit) {
+export async function buildPerkWeapons(deps, query, hash, limit, offset = 0) {
   const cached = await getGearPerksIndex(deps);
   const index = cached.value;
   const terms = normalizeText(query);
@@ -41,9 +41,9 @@ export async function buildPerkWeapons(deps, query, hash, limit) {
     }
   }
 
-  const selectedGroups = Array.from(groups.values())
-    .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
-    .slice(0, limit);
+  const sortedGroups = Array.from(groups.values())
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+  const selectedGroups = sortedGroups.slice(offset, offset + limit);
   const weapons = (await Promise.all(selectedGroups.map(async (group) => {
     const outputGroup = await buildPerkWeaponOutputGroup(group, deps, perkByHash, perkHashes);
     return outputGroup.variants.length ? outputGroup : null;
@@ -53,8 +53,12 @@ export async function buildPerkWeapons(deps, query, hash, limit) {
     updatedAt: cached.cachedAt || new Date().toISOString(),
     manifestVersion: index.manifestVersion,
     query: query || hash,
+    hash,
     perks: perkMatches.map(publicGearItem),
     total: groups.size,
+    limit,
+    offset,
+    hasMore: offset + limit < groups.size,
     weapons,
     cache: {
       gearIndex: cached.status,

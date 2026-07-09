@@ -30,20 +30,20 @@ function prefetchSiblingPages(current: HeaderProps['current']) {
   }
 }
 
-export function AppShell({ children, toast, ...header }: AppShellProps) {
+export function AppShell({ children, toast, current, ...header }: AppShellProps) {
   useEffect(() => {
     const schedule = window.requestIdleCallback ?? ((callback: IdleRequestCallback) => window.setTimeout(() => callback({ didTimeout: false, timeRemaining: () => 0 }), 1200));
-    const id = schedule(() => prefetchSiblingPages(header.current));
+    const id = schedule(() => prefetchSiblingPages(current));
     return () => {
       if (window.cancelIdleCallback) window.cancelIdleCallback(id as number);
       else window.clearTimeout(id as number);
     };
-  }, [header.current]);
+  }, [current]);
 
   return (
     <div className={cn('app-shell')}>
       <a className={cn('skip-link')} href="#main-content">跳到主要内容</a>
-      <Header {...header} />
+      <Header {...header} current={current} />
       <main id="main-content">{children}</main>
       <div className={cn(`toast ${toast ? 'show toastEnter' : ''}`)} role="status" aria-live="polite">
         {toast || ''}

@@ -2,6 +2,7 @@ import { getGearItem, getGearSearch, getPerkWeapons, getGearCacheStatus, warmGea
 import { json, corsHeaders, readJsonBody } from '#lib/http/index.js';
 import { getHeyboxTeams } from '#lib/integrations/index.js';
 import { getGuides, getGuide, getGuideMedia } from '#lib/guides/index.js';
+import { getVisitorStats } from '#lib/stats/visitor-stats.js';
 import {
   getDestinyCareer,
   getDestinyPlayerSearch,
@@ -121,6 +122,10 @@ const routes = [
       const body = await readJsonBody(request);
       return json(await getDestinyCareer(body, env, ctx));
     }
+  },
+  {
+    match: (url, method) => url.pathname === '/api/stats' && method === 'GET',
+    handle: async ({ env }) => json(await getVisitorStats(env), 200, { cacheControl: 'public, max-age=10' })
   }
 ];
 

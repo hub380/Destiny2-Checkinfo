@@ -179,6 +179,11 @@
   background: var(--surface-elevated);
 }
 
+.weapon-group.selected {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green-border);
+}
+
 .gear-card-button {
   width: 100%;
   color: inherit;
@@ -231,6 +236,54 @@
   font-size: 12px;
   font-weight: 760;
   white-space: nowrap;
+}
+
+.gear-title-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.gear-title-toggle:hover h3 {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.selected-perk-panel {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--green-border);
+  border-radius: 10px;
+  background: var(--surface-elevated);
+  box-shadow: 0 12px 32px rgba(12, 18, 16, 0.12);
+}
+
+.selected-perk-head {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.selected-perk-head h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.selected-perk-head button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 760;
+}
+
+.selected-variants {
+  margin-bottom: 10px;
 }
 
 .gear-tags {
@@ -409,6 +462,15 @@
   .gear-card,
   .weapon-group {
     grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .selected-perk-head {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .selected-perk-head button {
+    grid-column: 1 / -1;
+    justify-self: flex-start;
   }
 
   .gear-icon {

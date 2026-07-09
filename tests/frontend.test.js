@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mergeEndgameCareer } from '@frontend/lib/career-merge';
 import { formatBungieName, formatSeconds, formatMinutes, statDisplay } from '@frontend/lib/format';
+import { englishJoinCommandForCopy, joinCommandForCopy, normalizeJoinCommand } from '@frontend/lib/fireteam-copy';
 import { bungieNameSubmitHint, resolveBungieNameSubmit } from '@frontend/lib/player-search-submit';
 import {
   buildCraftingGroups,
@@ -47,6 +48,22 @@ describe('resolveBungieNameSubmit', () => {
         refreshSuggestions: async () => []
       })
     ).toBe('请选择一个完整的棒鸡名称后查询');
+  });
+});
+
+describe('fireteam join command copy', () => {
+  it('builds Chinese-client join commands for the default copy button', () => {
+    expect(normalizeJoinCommand('/j Captain#1024')).toBe('/\u52a0\u5165 Captain#1024');
+    expect(normalizeJoinCommand('/join Captain#1024')).toBe('/\u52a0\u5165 Captain#1024');
+    expect(normalizeJoinCommand('/\u52a0\u5165 Captain#1024')).toBe('/\u52a0\u5165 Captain#1024');
+  });
+
+  it('builds the new join command when payload command is missing', () => {
+    expect(joinCommandForCopy('', 'Captain#1024')).toBe('/\u52a0\u5165 Captain#1024');
+  });
+
+  it('builds English-client join commands for the /join button', () => {
+    expect(englishJoinCommandForCopy('Captain#1024')).toBe('/join Captain#1024');
   });
 });
 

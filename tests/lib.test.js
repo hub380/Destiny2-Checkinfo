@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { extractDestinyName, parseBungieName, parseJsonEnv } from '@lib/utils/index.js';
 import { mapHeyboxTeam, normalizeHeyboxHomePayload, parseHeyboxSlots } from '@lib/integrations/index.js';
 import { selectMembership, formatEndgameTotal, normalizeEndgameActivityName, pvpModeLabel } from '@lib/bungie/index.js';
+import { buildGearIndex } from '@lib/gear/index.js';
+import { makeSearchText, simplifiedChineseAlias } from '@lib/gear/labels.js';
+import { mergePerks } from '@lib/gear/split-writer.js';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('text-utils', () => {
   it('extracts destiny names from text', () => {
@@ -41,7 +48,7 @@ describe('heybox-parser', () => {
       'https://api.example'
     );
     expect(item.username).toBe('Captain#1024');
-    expect(item.joinCommand).toBe('/j Captain#1024');
+    expect(item.joinCommand).toBe('/加入 Captain#1024');
     expect(item.slots).toEqual({ current: 3, max: 6 });
   });
 
@@ -95,5 +102,107 @@ describe('stats-format', () => {
 
   it('labels pvp modes', () => {
     expect(pvpModeLabel(25)).toBe('狂欢');
+  });
+});
+
+describe('gear multilingual search', () => {
+  it('derives simplified Chinese aliases from traditional Chinese names', () => {
+    expect(simplifiedChineseAlias('\u8a98\u990c\u5207\u63db')).toBe('\u8bf1\u9975\u5207\u6362');
+    expect(simplifiedChineseAlias('\u707d\u8b8a')).toBe('\u707e\u53d8');
+  });
+
+  it('includes simplified aliases derived from traditional names in search text', () => {
+    const searchText = makeSearchText({
+      name: '\u8bf1\u5bfc\u63a8\u9500',
+      enName: 'Bait and Switch',
+      chtName: '\u8a98\u990c\u5207\u63db',
+      hash: 200
+    });
+    expect(searchText).toContain('bait and switch');
+    expect(searchText).toContain('\u8a98\u990c\u5207\u63db');
+    expect(searchText).toContain('\u8bf1\u9975\u5207\u6362');
+  });
+
+  it('includes temporary English and traditional Chinese names in search text', () => {
+    const searchText = makeSearchText({
+      name: '灾变',
+      enName: 'Cataclysmic',
+      chtName: '災變',
+      weaponType: '线性融合步枪',
+      hash: 999
+    });
+    expect(searchText).toContain('cataclysmic');
+    expect(searchText).toContain('災變');
+  });
+
+  it('adds multilingual names to searchText without keeping temporary fields', async () => {
+    const responses = new Map([
+      ['/Platform/Destiny2/Manifest/', {
+        Response: {
+          version: 'manifest-test',
+          jsonWorldComponentContentPaths: {
+            'zh-chs': {
+              DestinyInventoryItemDefinition: '/zh-items.json',
+              DestinyPlugSetDefinition: '/plug-sets.json'
+            },
+            en: {
+              DestinyInventoryItemDefinition: '/en-items.json'
+            },
+            'zh-cht': {
+              DestinyInventoryItemDefinition: '/cht-items.json'
+            }
+          }
+        }
+      }],
+      ['/zh-items.json', {
+        100: {
+          hash: 100,
+          itemType: 3,
+          itemCategoryHashes: [1, 2],
+          displayProperties: { name: '灾变', description: '描述', icon: '/weapon.png' },
+          itemTypeDisplayName: '线性融合步枪',
+          inventory: { tierTypeName: '传说' },
+          damageTypeHashes: [],
+          sockets: { socketEntries: [{ reusablePlugItems: [{ plugItemHash: 200 }] }] }
+        },
+        200: {
+          hash: 200,
+          displayProperties: { name: '\u8bf1\u5bfc\u63a8\u9500', description: 'perk description', icon: '/perk.png' },
+          itemTypeDisplayName: 'Trait',
+          plug: { plugCategoryIdentifier: 'trait' },
+          investmentStats: []
+        }
+      }],
+      ['/en-items.json', {
+        100: { displayProperties: { name: 'Cataclysmic' } },
+        200: { displayProperties: { name: 'Bait and Switch' } }
+      }],
+      ['/cht-items.json', {
+        100: { displayProperties: { name: '災變' } }
+        ,200: { displayProperties: { name: '\u8a98\u5c0e\u63a8\u92b7' } }
+      }],
+      ['/plug-sets.json', {}]
+    ]);
+    vi.stubGlobal('fetch', async (url) => {
+      const parsed = new URL(String(url));
+      const payload = responses.get(parsed.pathname);
+      if (!payload) throw new Error(`Unexpected URL ${parsed.pathname}`);
+      return new Response(JSON.stringify(payload), { status: 200 });
+    });
+
+    const index = await buildGearIndex({ apiKey: 'test-key', locale: 'zh-chs' });
+    const item = index.items.find((entry) => entry.hash === 100);
+    const perk = index.items.find((entry) => entry.hash === 200);
+    const weaponPlug = index.weaponPlugs.find((entry) => entry.hash === 200);
+    const mergedPerk = mergePerks(index).find((entry) => entry.hash === 200);
+
+    expect(item.searchText).toContain('cataclysmic');
+    expect(item.searchText).toContain('災變');
+    expect(item).not.toHaveProperty('enName');
+    expect(item).not.toHaveProperty('chtName');
+    expect(perk.searchText).toContain('bait and switch');
+    expect(weaponPlug.searchText).toContain('bait and switch');
+    expect(weaponPlug.searchText).toContain('\u8a98\u5c0e\u63a8\u92b7');
+    expect(mergedPerk.searchText).toContain('bait and switch');
   });
 });

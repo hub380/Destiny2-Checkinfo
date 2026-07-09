@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { handleAppRequest } from '../src/app/index.js';
+import { getVisitorStats, trackVisitor } from '../src/lib/stats/visitor-stats.js';
 import {
   gearItemPath,
   perkWeaponsPath,
@@ -193,6 +194,56 @@ function envWithStaticGearIndex() {
   };
 }
 
+function createVisitorDb(initialRows = []) {
+  const rows = new Map(initialRows.map((row) => [row.visitor_key, { ...row }]));
+  const binds = [];
+  return {
+    rows,
+    binds,
+    prepare(sql) {
+      let params = [];
+      return {
+        bind(...values) {
+          params = values;
+          binds.push(values);
+          return this;
+        },
+        async run() {
+          if (!sql.includes('INSERT INTO visitor_keys')) return {};
+          const [visitorKey, firstSeen, lastSeen] = params;
+          const existing = rows.get(visitorKey);
+          rows.set(visitorKey, {
+            visitor_key: visitorKey,
+            first_seen: existing?.first_seen || firstSeen,
+            last_seen: lastSeen
+          });
+          return { success: true };
+        },
+        async first() {
+          if (sql.includes('WHERE last_seen >=')) {
+            const [windowStart] = params;
+            return {
+              count: Array.from(rows.values()).filter((row) => Number(row.last_seen) >= Number(windowStart)).length
+            };
+          }
+          if (sql.includes('COUNT(*) AS total')) {
+            const values = Array.from(rows.values());
+            return {
+              total: values.length,
+              started_at: values.length ? Math.min(...values.map((row) => Number(row.first_seen))) : null
+            };
+          }
+          return null;
+        }
+      };
+    }
+  };
+}
+
+async function flushWaitUntil(ctx) {
+  await Promise.all(ctx.tasks || []);
+}
+
 describe('handleAppRequest API integration', () => {
   it('returns health JSON with CORS headers', async () => {
     const response = await handleAppRequest(request('/api/health'));
@@ -209,6 +260,72 @@ describe('handleAppRequest API integration', () => {
 
     expect(response.status).toBe(204);
     expect(response.headers.get('access-control-allow-methods')).toContain('POST');
+  });
+
+  it('does not track visitors for CORS preflight or static asset paths', async () => {
+    const db = createVisitorDb();
+    const ctx = { tasks: [], waitUntil(task) { this.tasks.push(task); } };
+    const env = { PLAYER_NAMES_DB: db, VISITOR_HASH_SALT: 'test-salt' };
+
+    await handleAppRequest(
+      request('/api/gear/search', {
+        method: 'OPTIONS',
+        headers: { 'CF-Connecting-IP': '203.0.113.10' }
+      }),
+      env,
+      ctx
+    );
+    await handleAppRequest(
+      request('/assets/app.js', {
+        headers: { 'CF-Connecting-IP': '203.0.113.11' }
+      }),
+      env,
+      ctx,
+      { assetsFetch: async () => new Response('ok') }
+    );
+    await flushWaitUntil(ctx);
+
+    expect(db.rows.size).toBe(0);
+  });
+
+  it('tracks visitors with hashed keys and updates repeat visits', async () => {
+    const db = createVisitorDb();
+    const ctx = { tasks: [], waitUntil(task) { this.tasks.push(task); } };
+    const env = { PLAYER_NAMES_DB: db, VISITOR_HASH_SALT: 'test-salt' };
+    const now = vi.spyOn(Date, 'now');
+    now.mockReturnValueOnce(1000).mockReturnValueOnce(2000);
+
+    trackVisitor(request('/api/health', { headers: { 'CF-Connecting-IP': '203.0.113.20' } }), env, ctx);
+    trackVisitor(request('/api/health', { headers: { 'CF-Connecting-IP': '203.0.113.20' } }), env, ctx);
+    await flushWaitUntil(ctx);
+    now.mockRestore();
+
+    const rows = Array.from(db.rows.values());
+    expect(rows.length).toBe(1);
+    expect(rows[0].visitor_key).toMatch(/^[a-f0-9]{64}$/);
+    expect(rows[0].visitor_key).not.toContain('203.0.113.20');
+    expect(rows[0].first_seen).toBe(1000);
+    expect(rows[0].last_seen).toBe(2000);
+    expect(db.binds.flat()).not.toContain('203.0.113.20');
+  });
+
+  it('returns visitor stats through the app router', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(10 * 60_000);
+    const db = createVisitorDb([
+      { visitor_key: 'active', first_seen: 1000, last_seen: 9 * 60_000 },
+      { visitor_key: 'old', first_seen: 500, last_seen: 60_000 }
+    ]);
+    const response = await handleAppRequest(request('/api/stats'), { PLAYER_NAMES_DB: db });
+    const payload = await responseJson(response);
+    now.mockRestore();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toContain('max-age=10');
+    expect(payload).toEqual({ onlineCount: 1, totalCount: 2, startedAt: 500 });
+  });
+
+  it('returns zero visitor stats when D1 is not bound', async () => {
+    await expect(getVisitorStats({})).resolves.toEqual({ onlineCount: 0, totalCount: 0, startedAt: null });
   });
 
   it('returns JSON 404 when no API route or asset handler exists', async () => {

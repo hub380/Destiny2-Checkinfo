@@ -13,6 +13,7 @@ import { useHeyboxFeed, useCareerSearchFlow, usePublicConfig, useRecentQueries }
 import '@frontend/styles/global.css';
 import { FireteamFeedSection } from './FireteamFeedSection';
 import { HomeCareerSection } from './HomeCareerSection';
+import { VisitorStatsBar } from './VisitorStatsBar';
 import { cn } from './home-cn';
 
 const REFRESH_INTERVAL_STORAGE_KEY = 'fireteam-refresh-interval';
@@ -76,8 +77,9 @@ export function HomePage() {
   }, [filter, items]);
 
   async function copyJoinCommand(command: string) {
-    await copyToClipboard(command);
-    showToast(`已复制 ${command}`);
+    const value = command.trim();
+    await copyToClipboard(value);
+    showToast(`已复制 ${value}`);
   }
 
   function showToast(message: string) {
@@ -174,6 +176,7 @@ export function HomePage() {
           configReady={configReady}
         />
         <PageSection id="fireteams" className={cn('panel fireteams-panel')}>
+          <VisitorStatsBar />
           <FireteamFeedSection
             items={items}
             filteredItems={filteredItems}

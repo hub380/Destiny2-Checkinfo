@@ -16,7 +16,7 @@ import { searchBungiePlayersByPrefix } from './summary-search.js';
 import { searchWarmindProfilesByName } from './warmind-profile-search.js';
 import { getPlayerNameFromD1, putPlayerNameToD1 } from './d1-player-cache.js';
 
-const SUMMARY_RESOLUTION_VERSION = 'warmind-v1';
+const SUMMARY_RESOLUTION_VERSION = 'warmind-v2';
 
 export async function getPublicCareerSummaryByMembership(membership, env, ctx) {
   const membershipId = cleanText(membership?.membershipId);

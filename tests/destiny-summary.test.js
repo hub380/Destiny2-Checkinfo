@@ -287,6 +287,15 @@ describe('destiny summary membership resolution', () => {
     expect(ordered.map((item) => item.membershipId)).toEqual(['epic', 'steam']);
   });
 
+  it('orders the membership referenced by crossSaveOverride before the empty linked account', () => {
+    const ordered = orderedMembershipCandidates([
+      { membershipType: 3, membershipId: 'steam-active', crossSaveOverride: 0 },
+      { membershipType: 6, membershipId: 'epic-empty', crossSaveOverride: 3 }
+    ]);
+
+    expect(ordered.map((item) => item.membershipId)).toEqual(['steam-active', 'epic-empty']);
+  });
+
   it('formats the legacy lookup name with a padded Bungie code', () => {
     expect(bungieNameText({ displayName: '洛梓qwq。', displayNameCode: 8923 })).toBe('洛梓qwq。#8923');
   });

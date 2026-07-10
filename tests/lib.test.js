@@ -79,6 +79,14 @@ describe('bungie-utils', () => {
     ];
     expect(selectMembership(memberships).membershipId).toBe('2');
   });
+
+  it('uses crossSaveOverride as the active membership type when another row points to it', () => {
+    const memberships = [
+      { membershipType: 3, membershipId: 'steam', crossSaveOverride: 0 },
+      { membershipType: 6, membershipId: 'epic-empty', crossSaveOverride: 3 }
+    ];
+    expect(selectMembership(memberships).membershipId).toBe('steam');
+  });
 });
 
 describe('env-utils', () => {

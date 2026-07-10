@@ -1,8 +1,10 @@
 import { cleanText } from '../utils/index.js';
 
 export function selectMembership(memberships) {
+  const crossSaveType = memberships.find((item) => Number(item.crossSaveOverride) > 0)?.crossSaveOverride;
   return (
     memberships.find((item) => Number(item.crossSaveOverride) > 0 && Number(item.crossSaveOverride) === Number(item.membershipType)) ||
+    memberships.find((item) => Number(crossSaveType) > 0 && Number(item.membershipType) === Number(crossSaveType)) ||
     memberships.find((item) => Number(item.crossSaveOverride) > 0) ||
     memberships[0]
   );

@@ -129,6 +129,29 @@ describe('useGearSearch popstate regression', () => {
     expect(api.getGearItem).toHaveBeenCalledWith('111', expect.any(AbortSignal));
   });
 
+  it('uses perk lookup instead of item detail when URL hash belongs to a perk search result', async () => {
+    setSearch('?q=圣人&hash=1186480754');
+    vi.mocked(api.searchGear).mockResolvedValue({
+      query: '圣人',
+      total: 1,
+      items: [{ hash: '1186480754', name: '圣人之拳', kind: 'perk' }]
+    });
+    vi.mocked(api.getPerkWeapons).mockResolvedValue({
+      perks: [{ hash: '1186480754', name: '圣人之拳' }],
+      weapons: []
+    });
+
+    const { result } = renderHook(() => useGearSearch());
+    await waitFor(() => expect(result.current.detail).not.toBeNull());
+    await waitFor(() => expect(result.current.detail?.loading).toBeFalsy());
+
+    expect(api.getGearItem).not.toHaveBeenCalled();
+    expect(api.getPerkWeapons).toHaveBeenCalledWith(
+      { hash: '1186480754', query: '圣人之拳' },
+      expect.any(AbortSignal)
+    );
+  });
+
   it('re-runs search on popstate when q param changes', async () => {
     const { result } = renderHook(() => useGearSearch());
 

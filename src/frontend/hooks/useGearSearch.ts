@@ -177,10 +177,13 @@ export function useGearSearch() {
 
       if (urlQ) {
         const needsSearch = !payloadRef.current || payloadRef.current.query !== urlQ;
-        await Promise.all([
-          needsSearch ? runSearch(urlQ, { skipUrlWrite: true, signal, keepDetail: Boolean(urlHash), kind: urlKind }) : Promise.resolve(),
-          urlHash ? openItemByHash(urlHash, signal) : Promise.resolve()
-        ]);
+        if (needsSearch) {
+          await runSearch(urlQ, { skipUrlWrite: true, signal, keepDetail: Boolean(urlHash), kind: urlKind });
+        }
+        if (signal.aborted) return;
+        if (urlHash) {
+          await openItemByHash(urlHash, signal);
+        }
         if (!urlHash) setDetail(null);
       } else {
         payloadRef.current = null;

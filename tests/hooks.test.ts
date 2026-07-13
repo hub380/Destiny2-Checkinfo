@@ -152,6 +152,30 @@ describe('useGearSearch popstate regression', () => {
     );
   });
 
+  it('tries perk lookup before item detail when URL hash is absent from search results', async () => {
+    setSearch('?q=威胁等级&hash=996573084');
+    vi.mocked(api.searchGear).mockResolvedValue({
+      query: '威胁等级',
+      total: 1,
+      items: [{ hash: '950894542', name: '威胁等级', kind: 'weapon' }]
+    });
+    vi.mocked(api.getPerkWeapons).mockResolvedValue({
+      perks: [{ hash: '996573084', name: '速射框架' }],
+      total: 1,
+      weapons: []
+    });
+
+    const { result } = renderHook(() => useGearSearch());
+    await waitFor(() => expect(result.current.detail).not.toBeNull());
+    await waitFor(() => expect(result.current.detail?.loading).toBeFalsy());
+
+    expect(api.getPerkWeapons).toHaveBeenCalledWith(
+      { hash: '996573084' },
+      expect.any(AbortSignal)
+    );
+    expect(api.getGearItem).not.toHaveBeenCalled();
+  });
+
   it('re-runs search on popstate when q param changes', async () => {
     const { result } = renderHook(() => useGearSearch());
 

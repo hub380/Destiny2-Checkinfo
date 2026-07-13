@@ -32,6 +32,13 @@ function normalizeKind(value: string | undefined) {
   return KIND_VALUES.has(next) ? next : 'all';
 }
 
+function hasPerkLookupResult(detail: JsonRecord) {
+  const total = Number(detail.total || 0);
+  const perks = Array.isArray(detail.perks) ? detail.perks : [];
+  const weapons = Array.isArray(detail.weapons) ? detail.weapons : [];
+  return total > 0 || perks.length > 0 || weapons.length > 0;
+}
+
 export function useGearSearch() {
   const [query, setQueryState] = useState('');
   const [payload, setPayload] = useState<GearSearchDto | null>(null);
@@ -149,15 +156,20 @@ export function useGearSearch() {
       setActiveHash(hash);
       setDetail({ loading: true, message: '加载装备详情中' });
       try {
-        setDetail(await getGearItem(hash, signal));
-      } catch {
-        try {
-          setDetail(await getPerkWeapons({ hash }, signal));
-        } catch (err: unknown) {
-          if (err instanceof DOMException && err.name === 'AbortError') return;
-          const message = err instanceof Error ? err.message : '详情加载失败';
-          setDetail({ error: message });
+        const perkDetail = await getPerkWeapons({ hash }, signal);
+        if (hasPerkLookupResult(perkDetail)) {
+          setDetail(perkDetail);
+          return;
         }
+      } catch (firstError: unknown) {
+        if (firstError instanceof DOMException && firstError.name === 'AbortError') return;
+      }
+      try {
+        setDetail(await getGearItem(hash, signal));
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        const message = err instanceof Error ? err.message : '详情加载失败';
+        setDetail({ error: message });
       }
     },
     [openItem]

@@ -16,6 +16,23 @@ const EMPTY_TRAIT_SOCKET = '空特征插槽';
 const ADEPT_SUFFIX = '（专家）';
 const GEAR_INDEX_VERSION = 'gear-index-v5-source-hints';
 
+// 多 Perk 反查武器：属性关键词别名 → 实际 element 字段值
+const ELEMENT_ALIASES = {
+  '电': '电弧伤害', '电弧': '电弧伤害', '_arc': '电弧伤害',
+  '虚空': '虚空伤害', 'void': '虚空伤害',
+  '动能': '动能伤害', 'kinetic': '动能伤害',
+  '冰': '冰影', '冰影': '冰影', 'stasis': '冰影',
+  '烈日': '烈日伤害', '灼烧': '烈日伤害', '火': '烈日伤害', 'solar': '烈日伤害',
+  '缚丝': '缚丝', '线': '缚丝', 'strand': '缚丝'
+};
+
+// 弹药槽关键词
+const AMMO_ALIASES = {
+  '动能槽': '动能槽', 'kinetic_slot': '动能槽',
+  '能量槽': '能量槽', 'energy_slot': '能量槽',
+  '威能槽': '威能槽', 'power_slot': '威能槽'
+};
+
 export async function getGearSearch(body, deps) {
   requireApiKey(deps);
   const query = cleanText(body?.query || body?.name || '');
@@ -24,19 +41,48 @@ export async function getGearSearch(body, deps) {
   }
 
   const kind = normalizeGearKind(body?.kind || body?.type || 'all');
-  const limit = clampNumber(body?.limit, 1, 120, 60);
+  const limit = clampNumber(body?.limit, 1, 200, 80);
   const cached = await getGearIndex(deps);
   const index = cached.value;
-  const terms = normalizeText(query);
   const armorSetBonusHashes = armorSetBonusHashSet(index);
 
+  // 多 Perk 反查分支：查询被空格 / + / 和 等分隔为多个词时触发
+  const terms = splitMultiPerkQuery(query);
+  const isMultiPerkQuery = terms.length >= 2;
+
+  if (isMultiPerkQuery) {
+    const result = findMultiPerkWeapons(terms, index, kind);
+    const items = result.matchedWeapons
+      .slice(0, limit)
+      .map(({ weapon, matchedPerkHashes }) => multiPerkWeaponItem(weapon, index, matchedPerkHashes));
+
+    return {
+      updatedAt: cached.cachedAt || new Date().toISOString(),
+      manifestVersion: index.manifestVersion,
+      query,
+      kind,
+      total: result.matchedWeapons.length,
+      items,
+      multiPerk: true,
+      parsedTerms: result.parsedTerms,
+      filters: result.filters,
+      cache: {
+        gearIndex: cached.status,
+        gearIndexCachedAt: cached.cachedAt,
+        gearIndexTtlSeconds: cached.ttlSeconds
+      }
+    };
+  }
+
+  // 普通统一搜索
+  const normalizedTerms = normalizeText(query);
   const candidates = index.items.filter((item) => {
     if (kind !== 'all' && item.kind !== kind) return false;
-    return item.searchText.includes(terms) || sourceSearchText(item).includes(terms) || String(item.hash) === query;
+    return item.searchText.includes(normalizedTerms) || sourceSearchText(item).includes(normalizedTerms) || String(item.hash) === query;
   });
 
   const items = candidates
-    .sort((a, b) => compareGearItems(a, b, terms, query, armorSetBonusHashes))
+    .sort((a, b) => compareGearItems(a, b, normalizedTerms, query, armorSetBonusHashes))
     .slice(0, limit)
     .map((item) => publicGearItem(enrichGearSearchItem(item, index, armorSetBonusHashes)));
 
@@ -62,6 +108,10 @@ export async function getGearItem(body, deps) {
     throw httpError(400, 'INVALID_GEAR_HASH', '请输入装备 hash');
   }
 
+  const matchedPerkHashes = Array.isArray(body?.matchedPerkHashes)
+    ? new Set(body.matchedPerkHashes.map((value) => Number(value)).filter(Number.isFinite))
+    : new Set();
+
   const cached = await getGearIndex(deps);
   const index = cached.value;
   const item = index.items.find((entry) => String(entry.hash) === hash);
@@ -73,7 +123,7 @@ export async function getGearItem(body, deps) {
     updatedAt: cached.cachedAt || new Date().toISOString(),
     manifestVersion: index.manifestVersion,
     item: publicGearItem(item),
-    detail: publicGearDetail(item, index),
+    detail: publicGearDetail(item, index, matchedPerkHashes),
     cache: {
       gearIndex: cached.status,
       gearIndexCachedAt: cached.cachedAt,
@@ -885,10 +935,10 @@ function publicGearItem(item) {
   return publicItem;
 }
 
-function publicGearDetail(item, index) {
+function publicGearDetail(item, index, matchedHashes = new Set()) {
   if (item.kind === 'weapon') {
     const record = index.weapons.find((weapon) => weapon.hash === item.hash);
-    return record ? publicWeaponRecord(record, index) : null;
+    return record ? publicWeaponRecord(record, index, matchedHashes) : null;
   }
   if (item.kind === 'armor') {
     const record = (index.armors || []).find((armor) => armor.hash === item.hash) || null;
@@ -1143,4 +1193,244 @@ function httpError(status, code, message) {
   error.status = status;
   error.code = code;
   return error;
+}
+
+// ============================================================
+// 多 Perk 反查武器功能
+// ============================================================
+
+// 武器类型列表（用于查询词分类）
+const WEAPON_TYPE_KEYWORDS = [
+  '偃月', '刀剑', '微型冲锋枪', '战斗弓箭', '手枪', '手炮',
+  '斥候步枪', '机枪', '榴弹发射器', '火箭发射器', '狙击步枪',
+  '线性融合步枪', '脉冲步枪', '自动步枪', '融合步枪', '追踪步枪', '霰弹枪'
+];
+
+/**
+ * 将查询字符串拆分为多个词，支持空格 / + / 和 / 逗号 等分隔符
+ */
+function splitMultiPerkQuery(query) {
+  return cleanText(query)
+    .split(/[\s+和,，;；]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+/**
+ * 分类单个查询词：element / ammo / weaponType / perk
+ */
+function classifyQueryTerm(term, index) {
+  const normalized = normalizeText(term);
+
+  // 检查弹药槽关键词（精确匹配，避免与属性冲突）
+  for (const [alias, ammo] of Object.entries(AMMO_ALIASES)) {
+    if (normalizeText(alias) === normalized) {
+      return { type: 'ammo', value: ammo, raw: term };
+    }
+  }
+
+  // 检查属性关键词（精确匹配别名）
+  for (const [alias, element] of Object.entries(ELEMENT_ALIASES)) {
+    if (normalizeText(alias) === normalized) {
+      return { type: 'element', value: element, raw: term };
+    }
+  }
+
+  // 检查武器类型关键词（精确匹配）
+  for (const weaponType of WEAPON_TYPE_KEYWORDS) {
+    if (normalizeText(weaponType) === normalized) {
+      return { type: 'weaponType', value: weaponType, raw: term };
+    }
+  }
+
+  // 默认为 perk 查询词
+  return { type: 'perk', value: term, raw: term };
+}
+
+/**
+ * 为 perk 查询词找到所有匹配的 perk hash（包含普通版与强化版）
+ */
+function findPerkHashesForTerm(term, index) {
+  const normalized = normalizeText(term);
+  const hashes = new Set();
+
+  for (const item of index.items) {
+    if (item.kind !== 'perk') continue;
+    if (normalizeText(item.name).includes(normalized)) {
+      hashes.add(item.hash);
+    }
+  }
+
+  for (const plug of index.weaponPlugs || []) {
+    if (normalizeText(plug.name).includes(normalized)) {
+      hashes.add(plug.hash);
+    }
+  }
+
+  return hashes;
+}
+
+/**
+ * 二分图匹配（匈牙利算法）：判断能否为每个 perk 分配一个唯一的 socket
+ * perkSocketOptions[i] = 该 perk 可用的 socket 索引集合（数组形式）
+ */
+function canAssignPerksToSockets(perkSocketOptions) {
+  const perkCount = perkSocketOptions.length;
+  if (perkCount === 0) return true;
+
+  // 收集所有 socket 索引并建立映射
+  const socketIndexSet = new Set();
+  for (const options of perkSocketOptions) {
+    for (const idx of options) socketIndexSet.add(idx);
+  }
+  const socketList = [...socketIndexSet];
+  const socketCount = socketList.length;
+  const socketIndexMap = new Map(socketList.map((idx, i) => [idx, i]));
+
+  if (perkCount > socketCount) return false;
+
+  const mappedOptions = perkSocketOptions.map((options) =>
+    [...options].map((idx) => socketIndexMap.get(idx))
+  );
+
+  const assign = new Array(socketCount).fill(-1); // assign[socket] = perkIndex
+  const visited = new Array(socketCount).fill(false);
+
+  function tryMatch(perkIdx) {
+    for (const socketIdx of mappedOptions[perkIdx]) {
+      if (visited[socketIdx]) continue;
+      visited[socketIdx] = true;
+      if (assign[socketIdx] === -1 || tryMatch(assign[socketIdx])) {
+        assign[socketIdx] = perkIdx;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  for (let i = 0; i < perkCount; i++) {
+    visited.fill(false);
+    if (!tryMatch(i)) return false;
+  }
+  return true;
+}
+
+/**
+ * 多 Perk 反查武器核心：找到同时满足所有 perk 条件（且分布在不同 socket）的武器
+ */
+function findMultiPerkWeapons(terms, index, kind) {
+  const parsedTerms = terms.map((term) => classifyQueryTerm(term, index));
+
+  const perkTerms = parsedTerms.filter((c) => c.type === 'perk');
+  const elementFilters = parsedTerms.filter((c) => c.type === 'element').map((c) => c.value);
+  const ammoFilters = parsedTerms.filter((c) => c.type === 'ammo').map((c) => c.value);
+  const weaponTypeFilters = parsedTerms.filter((c) => c.type === 'weaponType').map((c) => c.value);
+
+  // 为每个 perk 词预先计算匹配的 hash 集合
+  const perkHashSets = perkTerms.map((term) => findPerkHashesForTerm(term.value, index));
+
+  const matchedWeapons = [];
+
+  for (const weapon of index.weapons) {
+    // 应用武器类型过滤
+    if (weaponTypeFilters.length && !weaponTypeFilters.every((wt) => weapon.weaponType === wt)) continue;
+    // 应用弹药过滤
+    if (ammoFilters.length && !ammoFilters.every((am) => weapon.ammo === am)) continue;
+    // 应用属性过滤（动能 同时匹配 动能伤害 与 动能槽，二者在游戏中是等价的）
+    if (elementFilters.length) {
+      const ok = elementFilters.every((el) => {
+        if (weapon.element === el) return true;
+        if (el === '动能伤害' && weapon.ammo === '动能槽') return true;
+        return false;
+      });
+      if (!ok) continue;
+    }
+
+    // 没有 perk 词时，仅按过滤条件匹配
+    if (!perkTerms.length) {
+      matchedWeapons.push({ weapon, matchedPerkHashes: [] });
+      continue;
+    }
+
+    // 对每个 perk 词，找到该武器中包含该 perk 的 socket 索引集合
+    const perkSocketOptions = [];
+    const perkMatchedHashes = [];
+    let allPerksFound = true;
+
+    for (let i = 0; i < perkHashSets.length; i++) {
+      const hashSet = perkHashSets[i];
+      const socketsForPerk = new Set();
+      let firstMatchedHash = null;
+
+      for (const socket of weapon.sockets) {
+        for (const perkHash of socket.perks) {
+          if (hashSet.has(perkHash)) {
+            socketsForPerk.add(socket.socketIndex);
+            if (firstMatchedHash === null) firstMatchedHash = perkHash;
+          }
+        }
+      }
+
+      if (socketsForPerk.size === 0) {
+        allPerksFound = false;
+        break;
+      }
+      perkSocketOptions.push(socketsForPerk);
+      perkMatchedHashes.push(firstMatchedHash);
+    }
+
+    if (!allPerksFound) continue;
+
+    // 使用二分图匹配检查能否为每个 perk 分配唯一 socket
+    if (!canAssignPerksToSockets(perkSocketOptions)) continue;
+
+    matchedWeapons.push({ weapon, matchedPerkHashes: perkMatchedHashes });
+  }
+
+  // 按武器名称排序
+  matchedWeapons.sort((a, b) => {
+    const nameA = a.weapon.baseName || a.weapon.name || '';
+    const nameB = b.weapon.baseName || b.weapon.name || '';
+    return nameA.localeCompare(nameB, 'zh-CN');
+  });
+
+  return {
+    matchedWeapons,
+    parsedTerms,
+    filters: {
+      elements: elementFilters,
+      ammos: ammoFilters,
+      weaponTypes: weaponTypeFilters,
+      perks: perkTerms.map((t) => t.value)
+    }
+  };
+}
+
+/**
+ * 构造多 Perk 搜索结果中的武器条目（用于前端卡片展示）
+ */
+function multiPerkWeaponItem(weapon, index, matchedPerkHashes) {
+  const matchedSet = new Set(matchedPerkHashes);
+  const perkByHash = perkMap(index);
+  const matchedPerks = matchedPerkHashes
+    .map((hash) => perkByHash.get(hash))
+    .filter(Boolean)
+    .map((perk) => publicPerkRef(perk));
+
+  return {
+    kind: 'weapon',
+    hash: weapon.hash,
+    name: weapon.name,
+    icon: weapon.icon,
+    type: weapon.weaponType,
+    weaponType: weapon.weaponType,
+    ammo: weapon.ammo,
+    element: weapon.element,
+    tier: '',
+    adept: weapon.adept,
+    description: '',
+    sourceHints: weapon.sourceHints || [],
+    matchedPerkHashes: matchedPerkHashes,
+    matchedPerks
+  };
 }

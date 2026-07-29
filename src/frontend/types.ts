@@ -117,6 +117,14 @@ export interface GearSearchDto extends JsonRecord {
   total?: number;
   manifestVersion?: string;
   items?: JsonRecord[];
+  multiPerk?: boolean;
+  parsedTerms?: JsonRecord[];
+  filters?: {
+    elements?: string[];
+    ammos?: string[];
+    weaponTypes?: string[];
+    perks?: string[];
+  };
   cache?: JsonRecord;
 }
 

@@ -61,7 +61,10 @@ function GearPage() {
       if (item.kind === 'perk') {
         setDetail(await getPerkWeapons({ hash: item.hash, query: item.name }));
       } else {
-        setDetail(await getGearItem(String(item.hash)));
+        const matchedPerkHashes = Array.isArray(item.matchedPerkHashes)
+          ? item.matchedPerkHashes.map((value: number) => Number(value)).filter(Number.isFinite)
+          : undefined;
+        setDetail(await getGearItem(String(item.hash), matchedPerkHashes));
       }
     } catch (err: any) {
       setDetail({ error: err.message });
@@ -83,7 +86,7 @@ function GearPage() {
           </div>
           <form className={cn('gear-search')} onSubmit={onSubmit}>
             <div className={cn('gear-query')}>
-              <input value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" spellCheck={false} placeholder="灾变 / 诱导推销 / 狂野飞禽" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" spellCheck={false} placeholder="单名称：灾变 / 诱导推销；多 Perk 反查：高爆载荷 边打边劫 手炮 动能" />
               <button type="submit">
                 <SearchIcon />
                 查询
@@ -93,13 +96,15 @@ function GearPage() {
           <Notice message={notice} error={error} />
           <div className={cn(`gear-result ${payload ? '' : 'empty'}`)}>
             {!payload ? (
-              detail?.loading ? <div className={cn('detail-loading')}>{detail.message}</div> : '输入装备或 Perk 名称开始查询'
+              detail?.loading ? <div className={cn('detail-loading')}>{detail.message}</div> : '输入装备或 Perk 名称开始查询；多个词用空格 / + / 和 分隔可触发多 Perk 反查'
             ) : (
               <>
-                <div className={cn('gear-summary')}>
-                  <b>{payload.query}</b>
-                  <span>显示 {formatNumber(items.length)} / {formatNumber(payload.total || 0)}</span>
-                </div>
+                {payload.multiPerk ? <MultiPerkSummary payload={payload} /> : (
+                  <div className={cn('gear-summary')}>
+                    <b>{payload.query}</b>
+                    <span>显示 {formatNumber(items.length)} / {formatNumber(payload.total || 0)}</span>
+                  </div>
+                )}
                 <GearDetailSlot detail={detail} />
                 <div className={cn('gear-grid')}>
                   {items.length ? items.map((item) => <GearResultCard item={item} onOpen={() => openItem(item)} key={`${item.kind}-${item.hash}`} />) : <div className={cn('detail-loading')}>没有匹配的装备数据</div>}
@@ -116,6 +121,7 @@ function GearPage() {
 function GearResultCard({ item, onOpen }: { item: JsonRecord; onOpen: () => void }) {
   const meta = gearMeta(item);
   const action = item.kind === 'perk' ? '反查武器' : '查看详情';
+  const matchedPerks = Array.isArray(item.matchedPerks) ? item.matchedPerks : [];
   return (
     <button className={cn('gear-card gear-card-button')} type="button" onClick={onOpen}>
       <img className={cn('gear-icon')} src={item.icon || '/brand.svg'} alt="" />
@@ -125,6 +131,15 @@ function GearResultCard({ item, onOpen }: { item: JsonRecord; onOpen: () => void
           <span>{gearKindLabel(item.kind)}</span>
         </div>
         {meta.length ? <div className={cn('gear-tags')}>{meta.map((value) => <span className={cn('gear-tag')} key={value}>{value}</span>)}</div> : null}
+        {matchedPerks.length ? (
+          <div className={cn('gear-tags matched-perks')}>
+            {matchedPerks.map((perk: JsonRecord) => (
+              <span className={cn('gear-tag matched-perk-tag')} key={perk.hash || perk.name} title={perk.description || ''}>
+                {perk.enhanced ? '强化 ' : ''}{perk.name}
+              </span>
+            ))}
+          </div>
+        ) : null}
         {item.description ? <p className={cn('gear-description')}>{item.description}</p> : null}
         {primarySourceLabel(item) ? <p className={cn('gear-source-line')}>来源：{primarySourceLabel(item)}</p> : null}
         <div className={cn('gear-card-foot')}>
@@ -132,6 +147,27 @@ function GearResultCard({ item, onOpen }: { item: JsonRecord; onOpen: () => void
         </div>
       </div>
     </button>
+  );
+}
+
+function MultiPerkSummary({ payload }: { payload: JsonRecord }) {
+  const filters = payload.filters || {};
+  const perkTerms = Array.isArray(filters.perks) ? filters.perks : [];
+  const elementTerms = Array.isArray(filters.elements) ? filters.elements : [];
+  const ammoTerms = Array.isArray(filters.ammos) ? filters.ammos : [];
+  const weaponTypeTerms = Array.isArray(filters.weaponTypes) ? filters.weaponTypes : [];
+  return (
+    <div className={cn('gear-summary multi-perk-summary')}>
+      <b>多 Perk 反查：{payload.query}</b>
+      <span>命中武器 {formatNumber(payload.total || 0)} 把</span>
+      <div className={cn('multi-perk-terms')}>
+        {perkTerms.length ? <span className={cn('term-group')}><em>Perk</em>{perkTerms.map((t: string) => <span className={cn('gear-tag')} key={t}>{t}</span>)}</span> : null}
+        {weaponTypeTerms.length ? <span className={cn('term-group')}><em>类型</em>{weaponTypeTerms.map((t: string) => <span className={cn('gear-tag')} key={t}>{t}</span>)}</span> : null}
+        {elementTerms.length ? <span className={cn('term-group')}><em>属性</em>{elementTerms.map((t: string) => <span className={cn('gear-tag')} key={t}>{t}</span>)}</span> : null}
+        {ammoTerms.length ? <span className={cn('term-group')}><em>弹药</em>{ammoTerms.map((t: string) => <span className={cn('gear-tag')} key={t}>{t}</span>)}</span> : null}
+      </div>
+      <p className={cn('multi-perk-hint')}>已要求每个 Perk 分布在不同插槽（同插槽的 Perk 组合会被排除）</p>
+    </div>
   );
 }
 

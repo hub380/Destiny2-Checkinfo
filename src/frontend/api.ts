@@ -38,11 +38,15 @@ export function getFireteamLookup(body: JsonRecord) {
 }
 
 export function searchGear(query: string) {
-  return postJson<GearSearchDto>('/api/gear/search', { query, kind: 'all', limit: 80 });
+  return postJson<GearSearchDto>('/api/gear/search', { query, kind: 'all', limit: 200 });
 }
 
-export function getGearItem(hash: string) {
-  return postJson<JsonRecord>('/api/gear/item', { hash });
+export function getGearItem(hash: string, matchedPerkHashes?: number[]) {
+  const body: JsonRecord = { hash };
+  if (Array.isArray(matchedPerkHashes) && matchedPerkHashes.length) {
+    body.matchedPerkHashes = matchedPerkHashes;
+  }
+  return postJson<JsonRecord>('/api/gear/item', body);
 }
 
 export function getPerkWeapons(body: JsonRecord) {

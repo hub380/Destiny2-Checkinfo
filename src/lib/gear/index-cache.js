@@ -2,9 +2,12 @@ import { GEAR_INDEX_VERSION } from './constants.js';
 import { httpError } from './utils.js';
 import {
   GEAR_SPLIT_PREFIX,
+  gearItemBucketPath,
   gearItemPath,
   joinGearPath,
+  perkWeaponsBucketPath,
   perkWeaponsPath,
+  rollRecommendationsBucketPath,
   searchShardPath,
   sourceAliasesPath,
   sourceIndexPath
@@ -39,7 +42,12 @@ export async function getGearPerksIndex(deps) {
 }
 
 export async function getGearItemIndex(deps, hash) {
-  const itemFile = await readRequiredGearJson(deps, gearItemPath(hash));
+  const latestPointer = await getLatestPointer(deps);
+  const packed = isPackedPointer(latestPointer)
+    ? await readOptionalGearJsonWithPointer(deps, latestPointer, gearItemBucketPath(hash))
+    : { value: null };
+  const packedItem = packed.value?.items?.[String(hash)] || null;
+  const itemFile = packedItem || await readRequiredGearJsonWithPointer(deps, latestPointer, gearItemPath(hash));
   if (!itemFile?.item) {
     throw httpError(404, 'GEAR_ITEM_NOT_FOUND', 'Gear item not found');
   }
@@ -52,21 +60,49 @@ export async function getGearItemIndex(deps, hash) {
     manifestVersion: itemFile.manifestVersion,
     locale: itemFile.locale
   };
-  return withMeta(deps, [itemFile], index);
+  return withMeta(deps, [{ ...itemFile, cacheMeta: packedItem ? cacheMeta(packed) : itemFile.cacheMeta }], index);
 }
 
 export async function getPerkWeaponsIndex(deps, perkHash) {
-  const index = await readRequiredGearJson(deps, perkWeaponsPath(perkHash));
-  return withMeta(deps, [index], index);
+  const latestPointer = await getLatestPointer(deps);
+  const packed = isPackedPointer(latestPointer)
+    ? await readOptionalGearJsonWithPointer(deps, latestPointer, perkWeaponsBucketPath(perkHash))
+    : { value: null };
+  const packedIndex = packed.value?.perks?.[String(perkHash)] || null;
+  const index = packedIndex || await readRequiredGearJsonWithPointer(deps, latestPointer, perkWeaponsPath(perkHash));
+  return withMeta(deps, [{ ...index, cacheMeta: packedIndex ? cacheMeta(packed) : index.cacheMeta }], index);
 }
 
 export async function getOptionalPerkWeaponsIndex(deps, perkHash) {
-  const cached = await readOptionalGearJson(deps, perkWeaponsPath(perkHash));
+  const latestPointer = await getLatestPointer(deps);
+  const packed = isPackedPointer(latestPointer)
+    ? await readOptionalGearJsonWithPointer(deps, latestPointer, perkWeaponsBucketPath(perkHash))
+    : { value: null };
+  const cached = packed.value?.perks?.[String(perkHash)]
+    ? {
+        ...packed,
+        value: packed.value.perks[String(perkHash)]
+      }
+    : await readOptionalGearJsonWithPointer(deps, latestPointer, perkWeaponsPath(perkHash));
   return {
     value: cached.value || null,
     status: cached.status,
     cachedAt: cached.cachedAt,
     ttlSeconds: cached.ttlSeconds
+  };
+}
+
+export async function getRollRecommendationsIndex(deps, hash) {
+  const latestPointer = await getLatestPointer(deps);
+  if (!isPackedPointer(latestPointer)) {
+    return { value: null, status: 'miss-memory', cachedAt: new Date().toISOString(), ttlSeconds: deps.cacheTtlSeconds || 604800 };
+  }
+  const packed = await readOptionalGearJsonWithPointer(deps, latestPointer, rollRecommendationsBucketPath(hash));
+  return {
+    value: packed.value?.items?.[String(hash)] || null,
+    status: packed.status,
+    cachedAt: packed.cachedAt,
+    ttlSeconds: packed.ttlSeconds
   };
 }
 
@@ -80,12 +116,21 @@ export async function getSourceIndex(deps, sourceKey) {
 
 export async function readOptionalGearJson(deps, relativePath) {
   const latestPointer = await getLatestPointer(deps);
-  const path = joinGearPath(gearRootPath(latestPointer, deps), relativePath);
-  return cachedGearJson(deps, path, async () => deps.readGearJson(path));
+  return readOptionalGearJsonWithPointer(deps, latestPointer, relativePath);
 }
 
 async function readRequiredGearJson(deps, relativePath) {
   const latestPointer = await getLatestPointer(deps);
+  return readRequiredGearJsonWithPointer(deps, latestPointer, relativePath);
+}
+
+async function readOptionalGearJsonWithPointer(deps, latestPointer, relativePath) {
+  const path = joinGearPath(gearRootPath(latestPointer, deps), relativePath);
+  const cached = await cachedGearJson(deps, path, async () => deps.readGearJson(path));
+  return cached;
+}
+
+async function readRequiredGearJsonWithPointer(deps, latestPointer, relativePath) {
   const path = joinGearPath(gearRootPath(latestPointer, deps), relativePath);
   const cached = await cachedGearJson(deps, path, async () => deps.readGearJson(path));
   if (!cached.value) {
@@ -95,6 +140,10 @@ async function readRequiredGearJson(deps, relativePath) {
     ...cached.value,
     cacheMeta: cacheMeta(cached)
   };
+}
+
+function isPackedPointer(pointer) {
+  return Number(pointer?.schemaVersion || 0) >= 3;
 }
 
 async function getLatestPointer(deps) {

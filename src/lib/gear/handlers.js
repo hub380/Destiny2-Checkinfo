@@ -1,6 +1,6 @@
 import { normalizeGearKind, sourceSearchText } from './labels.js';
 import { cleanText, clampNumber, httpError, requireApiKey, normalizeText } from './utils.js';
-import { getGearItemIndex, getGearSearchIndex } from './index-cache.js';
+import { getGearItemIndex, getGearSearchIndex, getRollRecommendationsIndex } from './index-cache.js';
 import {
   compareGearItems,
   armorSetBonusHashSet,
@@ -115,18 +115,26 @@ export async function getGearItem(body, deps) {
     throw httpError(404, 'GEAR_ITEM_NOT_FOUND', '没有找到这个装备');
   }
   const aliases = await loadSourceAliases(deps);
+  const rollRecommendations = item.kind === 'weapon'
+    ? await getRollRecommendationsIndex(deps, hash)
+    : { value: null };
   const enrichedIndex = enrichGearIndexSources(index, aliases);
   const enrichedItem = enrichGearItemSources(item, aliases);
+  const detail = publicGearDetail(enrichedItem, enrichedIndex);
+  if (detail && rollRecommendations.value?.recommendations) {
+    detail.recommendations = rollRecommendations.value.recommendations;
+  }
 
   return {
     updatedAt: cached.cachedAt || new Date().toISOString(),
     manifestVersion: index.manifestVersion,
     item: publicGearItem(enrichedItem),
-    detail: publicGearDetail(enrichedItem, enrichedIndex),
+    detail,
     cache: {
       gearIndex: cached.status,
       gearIndexCachedAt: cached.cachedAt,
-      gearIndexTtlSeconds: cached.ttlSeconds
+      gearIndexTtlSeconds: cached.ttlSeconds,
+      rollRecommendations: rollRecommendations.status || 'none'
     }
   };
 }

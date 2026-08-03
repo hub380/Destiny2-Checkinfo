@@ -238,6 +238,32 @@ export interface GearCatalyst {
   progressDescription: string;
 }
 
+export interface GearRollRecommendationSocket {
+  socketIndex: number;
+  label?: string;
+  role?: string;
+  perkHashes: number[];
+}
+
+export interface GearRollRecommendation {
+  id: string;
+  mode: 'pve' | 'pvp' | 'general';
+  label: string;
+  source: string;
+  sourceUrl?: string;
+  confidence?: string;
+  notes?: string;
+  sockets?: GearRollRecommendationSocket[];
+}
+
+export interface GearPerkEffectDetails {
+  source: 'light.gg' | string;
+  sourceUrl?: string;
+  collectedAt?: string;
+  updatedAt?: string;
+  lines: string[];
+}
+
 export interface GearSearchEncounterContext {
   sourceText: string;
   encounterZh: string;

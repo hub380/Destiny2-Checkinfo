@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatNumber } from '@frontend/ui';
 import { getPerkWeapons } from '@frontend/lib/api';
-import type { GearCatalyst, JsonRecord } from '@frontend/lib/types';
+import type { GearCatalyst, GearPerkEffectDetails, GearRollRecommendation, JsonRecord } from '@frontend/lib/types';
 import { cn } from './gear-cn';
 import {
   enhancedLines,
@@ -59,6 +59,9 @@ function WeaponDetail({
   detail: JsonRecord;
   onPerkClick?: (perk: JsonRecord) => void;
 }) {
+  const recommendations = Array.isArray(detail.recommendations)
+    ? detail.recommendations as GearRollRecommendation[]
+    : [];
   return (
     <section className={cn('gear-detail-panel')}>
       <div className={cn('gear-detail-head')}>
@@ -73,7 +76,7 @@ function WeaponDetail({
       </div>
       <SourceHints hints={detail.sourceHints || item.sourceHints || []} />
       <Stats stats={detail.stats || []} />
-      <PerkColumns sockets={detail.sockets || []} onPerkClick={onPerkClick} />
+      <PerkColumns sockets={detail.sockets || []} recommendations={recommendations} onPerkClick={onPerkClick} />
       {detail.catalyst ? <CatalystSection catalyst={detail.catalyst as GearCatalyst} /> : null}
     </section>
   );
@@ -373,25 +376,55 @@ function Stats({ stats }: { stats: JsonRecord[] }) {
   );
 }
 
-function PerkColumns({ sockets, onPerkClick }: { sockets: JsonRecord[]; onPerkClick?: (perk: JsonRecord) => void }) {
+function PerkColumns({ sockets, recommendations = [], onPerkClick }: { sockets: JsonRecord[]; recommendations?: GearRollRecommendation[]; onPerkClick?: (perk: JsonRecord) => void }) {
+  const recommendedByHash = React.useMemo(() => recommendationHashMap(recommendations), [recommendations]);
   if (!sockets.length) return <div className={cn('detail-loading')}>没有可展示的 Perk 池</div>;
+  const originSocket = sockets.find(isOriginSocket);
+  const frameSocket = sockets.find(isFrameOrIntrinsicSocket);
+  const inlineOrigin = Boolean(originSocket && frameSocket);
+  const displaySockets = inlineOrigin ? sockets.filter((socket) => socket !== originSocket) : sockets;
   return (
     <div className={cn('perk-columns')}>
-      {sockets.map((socket) => (
+      {displaySockets.map((socket) => (
         <div className={cn('perk-column')} key={socket.socketIndex || socket.label}>
           <h4>{socket.label || `第 ${Number(socket.socketIndex || 0) + 1} 列`}</h4>
-          {(socket.perks || []).map((perk: JsonRecord) => <PerkCard perk={perk} onPerkClick={onPerkClick} key={perk.hash || perk.name} />)}
+          {(socket.perks || []).map((perk: JsonRecord) => <PerkCard perk={perk} recommendations={recommendedByHash.get(Number(perk.hash)) || []} onPerkClick={onPerkClick} key={perk.hash || perk.name} />)}
+          {inlineOrigin && originSocket && socket === frameSocket ? (
+            <div className={cn('perk-origin-inline')}>
+              <h4>{originSocket.label || '起源特性'}</h4>
+              {(originSocket.perks || []).map((perk: JsonRecord) => <PerkCard perk={perk} recommendations={recommendedByHash.get(Number(perk.hash)) || []} onPerkClick={onPerkClick} key={perk.hash || perk.name} />)}
+            </div>
+          ) : null}
         </div>
       ))}
     </div>
   );
 }
 
-function PerkCard({ perk, onPerkClick }: { perk: JsonRecord; onPerkClick?: (perk: JsonRecord) => void }) {
+function isOriginSocket(socket: JsonRecord) {
+  const label = String(socket.label || '');
+  return label.includes('起源') || label.toLowerCase().includes('origin');
+}
+
+function isFrameOrIntrinsicSocket(socket: JsonRecord) {
+  const label = String(socket.label || '');
+  return label.includes('框架') || label.includes('固有') || label.toLowerCase().includes('frame') || label.toLowerCase().includes('intrinsic');
+}
+
+function PerkCard({ perk, recommendations = [], onPerkClick }: { perk: JsonRecord; recommendations?: GearRollRecommendation[]; onPerkClick?: (perk: JsonRecord) => void }) {
   const clickable = Boolean(onPerkClick && perk.hash);
+  const badges = recommendationBadges(recommendations);
+  const visibleBadges = badges.filter((badge) => !isPopularityBadge(badge.label));
+  const popularityBadges = badges.filter((badge) => isPopularityBadge(badge.label));
+  const championCounters = championCounterBadges(perk);
+  const hasEffectValues = hasPerkEffectValues(perk);
+  const enhanced = perkEnhancedLines(perk);
+  const [showEffectValues, setShowEffectValues] = React.useState(false);
+  const [showEnhanced, setShowEnhanced] = React.useState(false);
+  const [showPopularity, setShowPopularity] = React.useState(false);
   return (
     <div
-      className={cn(`perk-card ${perk.matched ? 'matched' : ''} ${clickable ? 'perk-card-clickable' : ''}`)}
+      className={cn(`perk-card ${perk.matched ? 'matched' : ''} ${clickable ? 'perk-card-clickable' : ''} ${showEffectValues || showEnhanced ? 'values-open' : ''}`)}
       onClick={clickable ? () => onPerkClick?.(perk) : undefined}
       onKeyDown={clickable ? (event) => event.key === 'Enter' && onPerkClick?.(perk) : undefined}
       role={clickable ? 'button' : undefined}
@@ -402,10 +435,235 @@ function PerkCard({ perk, onPerkClick }: { perk: JsonRecord; onPerkClick?: (perk
         <b>{perk.name || '-'}</b>
         <span>{perkTypeLabel(perk)}</span>
         {perk.description ? <p>{perk.description}</p> : null}
-        <EnhancedNotes perk={perk} />
+        {championCounters.length ? (
+          <div className={cn('perk-champion-badges')} aria-label="反勇士特性">
+            {championCounters.map((counter) => (
+              <em className={cn(`perk-champion-badge champion-${counter.type}`)} key={counter.type}>
+                {counter.label}
+              </em>
+            ))}
+          </div>
+        ) : null}
+        {visibleBadges.length ? (
+          <div className={cn('perk-rec-badges')}>
+            {visibleBadges.map((badge) => (
+              <em
+                className={cn(`perk-rec-badge perk-rec-badge-${badge.mode}`)}
+                key={badge.key}
+                title={badge.title}
+              >
+                {badge.label}
+              </em>
+            ))}
+          </div>
+        ) : null}
+        {(popularityBadges.length || enhanced.length || hasEffectValues) ? (
+          <div className={cn('perk-card-actions')}>
+            {popularityBadges.length ? (
+              <button
+                type="button"
+                className={cn('perk-popularity-toggle')}
+                aria-expanded={showPopularity}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setShowEffectValues(false);
+                  setShowEnhanced(false);
+                  setShowPopularity((value) => !value);
+                }}
+              >
+                热度 {popularityBadges.length}
+              </button>
+            ) : null}
+            {enhanced.length ? (
+              <button
+                type="button"
+                className={cn('perk-enhanced-toggle')}
+                aria-expanded={showEnhanced}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setShowEffectValues(false);
+                  setShowPopularity(false);
+                  setShowEnhanced((value) => !value);
+                }}
+              >
+                强化差异
+              </button>
+            ) : null}
+            {hasEffectValues ? (
+              <button
+                type="button"
+                className={cn('perk-effect-toggle')}
+                aria-expanded={showEffectValues}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setShowEnhanced(false);
+                  setShowPopularity(false);
+                  setShowEffectValues((value) => !value);
+                }}
+              >
+                具体数值
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
+      {showPopularity ? (
+        <div className={cn('perk-info-popover perk-popularity-popover')} onClick={(event) => event.stopPropagation()}>
+          <RecommendationNotes badges={popularityBadges} />
+        </div>
+      ) : null}
+      {showEnhanced ? (
+        <div className={cn('perk-info-popover perk-enhanced-popover')} onClick={(event) => event.stopPropagation()}>
+          <EnhancedNotes perk={perk} />
+        </div>
+      ) : null}
+      {showEffectValues ? (
+        <div className={cn('perk-info-popover perk-effect-popover')} onClick={(event) => event.stopPropagation()}>
+          <PerkEffectNotes perk={perk} />
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function isPopularityBadge(label: string) {
+  return String(label || '').startsWith('社区热度');
+}
+
+function championCounterBadges(perk: JsonRecord) {
+  const counters = Array.isArray(perk.championCounters) ? perk.championCounters : [];
+  return counters
+    .map((counter: JsonRecord | string) => {
+      if (typeof counter === 'string') return championCounterFromType(counter);
+      return championCounterFromType(counter.type, counter.label);
+    })
+    .filter(Boolean) as Array<{ type: string; label: string }>;
+}
+
+function championCounterFromType(type: unknown, label?: unknown) {
+  const value = String(type || '').toLowerCase();
+  if (value === 'barrier') return { type: 'barrier', label: String(label || '反屏障') };
+  if (value === 'overload') return { type: 'overload', label: String(label || '反过载') };
+  if (value === 'unstoppable') return { type: 'unstoppable', label: String(label || '反势不可挡') };
+  return null;
+}
+
+function RecommendationNotes({ badges }: { badges: ReturnType<typeof recommendationBadges> }) {
+  return (
+    <div className={cn('perk-popularity-notes')}>
+      <strong>社区热度</strong>
+      <ul>
+        {badges.map((badge) => <li key={badge.key}>{badge.label.replace(/^社区热度\s*/, '')}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function perkEnhancedLines(perk: JsonRecord) {
+  const options = Array.isArray(perk.enhancedOptions) ? perk.enhancedOptions : [];
+  return options.flatMap((option: JsonRecord) => enhancedLines(option));
+}
+
+function hasPerkEffectValues(perk: JsonRecord) {
+  const normal = effectDetailsFrom(perk.effectDetails);
+  const enhancedOptions = Array.isArray(perk.enhancedOptions) ? perk.enhancedOptions : [];
+  const enhanced = enhancedOptions
+    .map((option: JsonRecord) => effectDetailsFrom(option.effectDetails))
+    .find((details) => details?.lines?.length);
+  return Boolean(normal?.lines?.length || enhanced?.lines?.length);
+}
+
+function PerkEffectNotes({ perk }: { perk: JsonRecord }) {
+  const normal = effectDetailsFrom(perk.effectDetails);
+  const enhancedOptions = Array.isArray(perk.enhancedOptions) ? perk.enhancedOptions : [];
+  const enhanced = enhancedOptions
+    .map((option: JsonRecord) => effectDetailsFrom(option.effectDetails))
+    .find((details) => details?.lines?.length);
+  if (!normal?.lines?.length && !enhanced?.lines?.length) return null;
+
+  return (
+    <div className={cn('perk-effect-notes')}>
+      <strong>具体数值</strong>
+      {normal?.lines?.length ? <EffectLineGroup label="普通数值" details={normal} /> : null}
+      {enhanced?.lines?.length ? <EffectLineGroup label="强化数值" details={enhanced} /> : null}
+    </div>
+  );
+}
+
+function EffectLineGroup({ label, details }: { label: string; details: GearPerkEffectDetails }) {
+  return (
+    <div className={cn('perk-effect-group')}>
+      <span>{label}</span>
+      <ul>
+        {details.lines.slice(0, 6).map((line) => <li key={line}>{line}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function effectDetailsFrom(value: unknown): GearPerkEffectDetails | null {
+  const details = value as GearPerkEffectDetails | null;
+  if (!details || !Array.isArray(details.lines) || !details.lines.length) return null;
+  return details;
+}
+
+function recommendationHashMap(recommendations: GearRollRecommendation[]) {
+  const byHash = new Map<number, GearRollRecommendation[]>();
+  for (const recommendation of recommendations) {
+    for (const socket of recommendation.sockets || []) {
+      for (const hash of socket.perkHashes || []) {
+        const key = Number(hash);
+        if (!Number.isFinite(key)) continue;
+        const entries = byHash.get(key) || [];
+        if (!entries.some((entry) => entry.id === recommendation.id)) entries.push(recommendation);
+        byHash.set(key, entries);
+      }
+    }
+  }
+  return byHash;
+}
+
+function rollModeLabel(mode: GearRollRecommendation['mode'] | string) {
+  if (mode === 'pve') return 'PvE';
+  if (mode === 'pvp') return 'PvP';
+  return '通用';
+}
+
+function recommendationBadges(recommendations: GearRollRecommendation[]) {
+  const unique = Array.from(new Map(recommendations.map((entry) => [entry.id, entry])).values());
+  const baseLabels = unique.map(recommendationBadgeLabel);
+  const totals = new Map<string, number>();
+  for (const label of baseLabels) totals.set(label, (totals.get(label) || 0) + 1);
+  const occurrences = new Map<string, number>();
+
+  return unique.map((recommendation, index) => {
+    const baseLabel = baseLabels[index];
+    const occurrence = (occurrences.get(baseLabel) || 0) + 1;
+    occurrences.set(baseLabel, occurrence);
+    const label = (totals.get(baseLabel) || 0) > 1 ? `${baseLabel} ${occurrence}` : baseLabel;
+    const mode = recommendation.mode === 'pve' || recommendation.mode === 'pvp'
+      ? recommendation.mode
+      : 'general';
+    return {
+      key: recommendation.id || `${label}-${index}`,
+      label,
+      mode,
+      title: [recommendation.label, recommendation.notes, recommendation.source]
+        .filter(Boolean)
+        .join(' · ')
+    };
+  });
+}
+
+function recommendationBadgeLabel(recommendation: GearRollRecommendation) {
+  if (recommendation.source === 'light.gg') {
+    return String(recommendation.label || 'Light.gg').trim() || 'Light.gg';
+  }
+  const mode = rollModeLabel(recommendation.mode);
+  const label = String(recommendation.label || '').trim();
+  if (!label) return mode;
+  if (label.toLowerCase().includes(mode.toLowerCase())) return label;
+  return `${mode} · ${label}`;
 }
 
 function EnhancedNotes({ perk }: { perk: JsonRecord }) {

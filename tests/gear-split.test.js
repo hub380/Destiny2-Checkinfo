@@ -2,15 +2,22 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { compileLightggPerkDetails, parseLightggPerkSnapshot } from '../src/lib/gear/lightgg-perk-details.js';
+import { normalizeLightggRollRecommendations } from '../src/lib/gear/lightgg-recommendations.js';
 import { writeSplitGearIndex, mergePerks } from '../src/lib/gear/split-writer.js';
+import { buildRollRecommendations } from '../src/lib/gear/roll-recommendations.js';
 import {
   craftablesPath,
   dungeonAliasesPath,
+  gearItemBucketPath,
   gearItemPath,
   joinGearPath,
+  perkWeaponsBucketPath,
   perkWeaponsPath,
   raidAliasesPath,
-  sourceAliasesPath
+  rollRecommendationsBucketPath,
+  sourceAliasesPath,
+  uploadManifestPath
 } from '../src/lib/gear/split-paths.js';
 
 describe('gear split writer', () => {
@@ -32,6 +39,7 @@ describe('gear split writer', () => {
 
       expect(itemFile.itemRecord.sockets[0].perks[0].name).toBe('Bait and Switch');
       expect(itemFile.itemRecord.sockets[0].perks[1].name).toBe('Plug Override');
+      expect(itemFile.itemRecord.sockets[0].perks[1].championCounters).toEqual([{ type: 'barrier', label: '反屏障' }]);
       expect(itemFile.itemRecord.catalyst?.perk.name).toBe('Catalyst Spark');
       expect(itemFile.itemRecord.perkColumns).toBeUndefined();
     } finally {
@@ -49,6 +57,184 @@ describe('gear split writer', () => {
       expect(variant.stats).toBeUndefined();
       expect(variant.screenshot).toBeUndefined();
       expect(variant.sockets).toBeUndefined();
+    } finally {
+      await rm(outputDir, { recursive: true, force: true });
+    }
+  });
+
+  it('enriches item detail perks with light.gg effect values without bloating search shards', async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), 'gear-split-'));
+    const perkDetailsFile = join(outputDir, 'lightgg-perk-details.json');
+    try {
+      await writeFile(perkDetailsFile, JSON.stringify({
+        schemaVersion: 1,
+        source: 'light.gg',
+        items: [{
+          perkHash: 2001,
+          sourceUrl: 'https://www.light.gg/db/items/2001/',
+          collectedAt: '2026-07-21T00:00:00.000Z',
+          communityResearch: {
+            updatedAt: '2026-07-20',
+            lines: ['Grants 30% increased damage for 10 seconds.']
+          }
+        }]
+      }));
+
+      await writeSplitGearIndex(gearFixture(), { outputDir, perkDetailsFile });
+      const itemFile = JSON.parse(await readFile(join(outputDir, 'test-manifest', gearItemPath(1001)), 'utf8'));
+      const perkSearch = JSON.parse(await readFile(join(outputDir, 'test-manifest', 'search', 'perks.json'), 'utf8'));
+
+      expect(itemFile.itemRecord.sockets[0].perks[0].effectDetails).toMatchObject({
+        source: 'light.gg',
+        updatedAt: '2026-07-20',
+        lines: ['获得 30% 增伤，持续 10 秒。']
+      });
+      expect(perkSearch.items.find((perk) => perk.hash === 2001).effectDetails).toBeUndefined();
+    } finally {
+      await rm(outputDir, { recursive: true, force: true });
+    }
+  });
+
+  it('writes v3 packed buckets, roll recommendations, and upload manifest', async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), 'gear-split-'));
+    const rollFile = join(outputDir, 'roll-recommendations-source.json');
+    try {
+      await writeFile(rollFile, JSON.stringify({
+        schemaVersion: 1,
+        items: [
+          {
+            weaponHash: 1001,
+            recommendations: [
+              {
+                id: 'pve-main',
+                mode: 'pve',
+                label: 'PvE',
+                source: 'manual',
+                sockets: [{ socketIndex: 3, label: 'Trait', perkHashes: [2001] }]
+              }
+            ]
+          }
+        ]
+      }));
+      await writeSplitGearIndex(gearFixture(), { outputDir, rollRecommendationsFile: rollFile });
+
+      const latest = JSON.parse(await readFile(join(outputDir, 'latest.json'), 'utf8'));
+      const itemBucket = JSON.parse(await readFile(join(outputDir, 'test-manifest', gearItemBucketPath(1001)), 'utf8'));
+      const perkBucket = JSON.parse(await readFile(join(outputDir, 'test-manifest', perkWeaponsBucketPath(2001)), 'utf8'));
+      const rollBucket = JSON.parse(await readFile(join(outputDir, 'test-manifest', rollRecommendationsBucketPath(1001)), 'utf8'));
+      const uploadManifest = JSON.parse(await readFile(join(outputDir, uploadManifestPath()), 'utf8'));
+
+      expect(latest.schemaVersion).toBe(3);
+      expect(latest.counts.recommendedWeapons).toBe(1);
+      expect(latest.counts.recommendationSets).toBe(1);
+      expect(itemBucket.items['1001'].itemRecord.sockets[0].perks[0].name).toBe('Bait and Switch');
+      expect(perkBucket.perks['2001'].weapons[0].name).toBe('Calamity');
+      expect(rollBucket.items['1001'].recommendations[0].sockets[0].perkHashes).toEqual([2001]);
+      expect(uploadManifest.files['test-manifest/items/01.json']).toBeTruthy();
+    } finally {
+      await rm(outputDir, { recursive: true, force: true });
+    }
+  });
+
+  it('builds baseline recommendations for every random-roll weapon', () => {
+    const recommendations = buildRollRecommendations(gearFixture());
+
+    expect(recommendations).toHaveLength(1);
+    expect(recommendations[0].weaponHash).toBe(1001);
+    expect(recommendations[0].recommendations.map((entry) => entry.id)).toEqual([
+      'pve-clear',
+      'pve-damage',
+      'pvp'
+    ]);
+    expect(recommendations[0].recommendations[0]).toMatchObject({
+      source: 'local-heuristic',
+      confidence: 'baseline'
+    });
+  });
+
+  it('uses curated recommendation files as authoritative weapon overrides', () => {
+    const recommendations = buildRollRecommendations(gearFixture(), [{
+      weaponHash: 1001,
+      recommendations: [{ id: 'curated', mode: 'pve', label: 'Curated', sockets: [] }]
+    }]);
+
+    expect(recommendations[0].recommendations).toEqual([
+      { id: 'curated', mode: 'pve', label: 'Curated', sockets: [] }
+    ]);
+  });
+
+  it('appends light.gg community recommendations without replacing local profiles', () => {
+    const lightgg = normalizeLightggRollRecommendations({
+      source: 'light.gg',
+      items: [{
+        weaponHash: 1001,
+        popularTraitCombos: [{
+          popularity: 18.4,
+          sockets: [
+            { socketIndex: 3, perkHashes: [2001] },
+            { socketIndex: 4, perkHashes: [4001] }
+          ]
+        }],
+        popularIndividualPerks: [{
+          columnIndex: 3,
+          perks: [{ perkHash: 2001, popularity: 24.6 }]
+        }]
+      }]
+    });
+
+    const recommendations = buildRollRecommendations(gearFixture(), lightgg);
+
+    expect(recommendations[0].recommendations.map((entry) => entry.id)).toEqual([
+      'pve-clear',
+      'pve-damage',
+      'pvp',
+      'lightgg-1001-2001-4001',
+      'lightgg-individual-1001-4-2001'
+    ]);
+    expect(recommendations[0].recommendations[3]).toMatchObject({
+      mode: 'general',
+      label: '社区热度 18%',
+      source: 'light.gg',
+      sockets: [
+        { socketIndex: 3, perkHashes: [2001] },
+        { socketIndex: 4, perkHashes: [4001] }
+      ]
+    });
+    expect(recommendations[0].recommendations[4]).toMatchObject({
+      mode: 'general',
+      label: '社区热度 25%',
+      source: 'light.gg',
+      sockets: [
+        { socketIndex: 4, perkHashes: [2001] }
+      ]
+    });
+  });
+
+  it('merges light.gg recommendation files into generated roll buckets', async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), 'gear-split-'));
+    const lightggFile = join(outputDir, 'lightgg-rolls.json');
+    try {
+      await writeFile(lightggFile, JSON.stringify({
+        source: 'light.gg',
+        items: [{
+          weaponHash: 1001,
+          popularTraitCombos: [{
+            popularity: 12.2,
+            sockets: [
+              { socketIndex: 3, perkHashes: [2001] },
+              { socketIndex: 4, perkHashes: [4001] }
+            ]
+          }]
+        }]
+      }));
+
+      await writeSplitGearIndex(gearFixture(), { outputDir, rollRecommendationFiles: [lightggFile] });
+
+      const rollBucket = JSON.parse(await readFile(join(outputDir, 'test-manifest', rollRecommendationsBucketPath(1001)), 'utf8'));
+      const recommendations = rollBucket.items['1001'].recommendations;
+
+      expect(recommendations.some((entry) => entry.source === 'local-heuristic')).toBe(true);
+      expect(recommendations.some((entry) => entry.source === 'light.gg')).toBe(true);
     } finally {
       await rm(outputDir, { recursive: true, force: true });
     }
@@ -101,6 +287,50 @@ describe('gear split writer', () => {
       await rm(outputDir, { recursive: true, force: true });
       await rm(aliasesDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('light.gg perk detail cache', () => {
+  it('keeps concrete community research values and drops generic chrome text', () => {
+    const parsed = parseLightggPerkSnapshot({
+      perkHash: 3078487919,
+      title: 'Bait and Switch - Destiny 2 Basic Trait - light.gg',
+      sourceUrl: 'https://www.light.gg/db/items/3078487919/bait-and-switch/',
+      collectedAt: '2026-07-21T00:00:00.000Z',
+      communityResearchText: [
+        'Community Research',
+        'Credits',
+        'Dealing damage with a weapon starts a 7 second timer.',
+        'Grants 30% increased damage for 10 seconds.',
+        'Timer is disabled while active.',
+        'Last Updated 2024-11-07',
+        'Remove All Ads'
+      ].join('\n')
+    });
+
+    expect(parsed.communityResearch.updatedAt).toBe('2024-11-07');
+    expect(parsed.communityResearch.lines).toEqual([
+      '造成武器伤害会启动 7 秒计时器。',
+      '获得 30% 增伤，持续 10 秒。'
+    ]);
+  });
+
+  it('compiles latest perk detail snapshot per hash', () => {
+    const compiled = compileLightggPerkDetails([
+      {
+        perkHash: 2001,
+        collectedAt: '2026-07-20T00:00:00.000Z',
+        communityResearchText: 'Community Research\n5 seconds.\nLast Updated 2026-07-20'
+      },
+      {
+        perkHash: 2001,
+        collectedAt: '2026-07-21T00:00:00.000Z',
+        communityResearchText: 'Community Research\n10 seconds.\nLast Updated 2026-07-21'
+      }
+    ]);
+
+    expect(compiled.counts).toEqual({ perks: 1, lines: 1 });
+    expect(compiled.items[0].communityResearch.lines).toEqual(['10 秒.']);
   });
 });
 
@@ -159,7 +389,10 @@ function gearFixture() {
         baseName: 'Calamity',
         stats: [{ hash: 10, name: 'Impact', value: 92 }],
         screenshot: '/screenshot.jpg',
-        sockets: [{ socketIndex: 3, label: 'Trait', perks: [2001, 4001] }],
+        sockets: [
+          { socketIndex: 3, label: 'Trait 1', perks: [2001, 4001] },
+          { socketIndex: 4, label: 'Trait 2', perks: [2001, 4001] }
+        ],
         catalyst: {
           perk: { name: 'Catalyst Spark', description: 'Effect.', icon: '/catalyst.png' },
           statBonuses: [{ name: 'Stability', value: 20 }],
@@ -194,6 +427,7 @@ function gearFixture() {
         description: 'Plug version.',
         category: 'trait',
         stats: [],
+        championCounters: [{ type: 'barrier', label: '反屏障' }],
         searchText: 'plug override'
       }
     ]

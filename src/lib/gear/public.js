@@ -92,7 +92,7 @@ export function publicSocketPerks(perks, matchedHashes) {
 }
 
 export function publicPerkRef(perk) {
-  return {
+  const output = {
     hash: perk.hash,
     name: perk.name,
     type: perk.type,
@@ -101,6 +101,11 @@ export function publicPerkRef(perk) {
     description: perk.description || '',
     stats: Array.isArray(perk.stats) ? perk.stats : []
   };
+  if (perk.effectDetails) output.effectDetails = perk.effectDetails;
+  if (Array.isArray(perk.championCounters) && perk.championCounters.length) {
+    output.championCounters = perk.championCounters;
+  }
+  return output;
 }
 
 export function publicEnhancedPerkRef(normal, enhanced) {

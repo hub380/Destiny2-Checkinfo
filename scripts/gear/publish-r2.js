@@ -2,16 +2,21 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, wri
 import { join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { manifestRoot, trimSlashes } from '../../src/lib/gear/split-paths.js';
+import {
+  GEAR_PACKED_PREFIX,
+  GEAR_SPLIT_PREFIX,
+  manifestRoot,
+  trimSlashes,
+  uploadManifestPath
+} from '../../src/lib/gear/split-paths.js';
 
 const rootDir = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 loadEnvFile(resolve(rootDir, '.env'));
 
 const bucket = process.env.R2_BUCKET || 'destiny2-checkinfo-data';
-const prefix = trimSlashes(process.env.R2_GEAR_PREFIX || 'gear-cache/v2');
+let prefix = trimSlashes(process.env.R2_GEAR_PREFIX || '');
 const locale = String(process.env.BUNGIE_LOCALE || 'zh-chs').toLowerCase();
 const gearDir = resolve(rootDir, process.env.GEAR_SPLIT_DIR || 'public/data/gear');
-const sourceAliasesFile = resolve(rootDir, process.env.GEAR_SOURCE_ALIASES_FILE || 'content/gear/source-aliases.json');
 const workDir = resolve(rootDir, 'work/gear-cache-upload');
 const dryRunSamples = [];
 let dryRunCount = 0;
@@ -19,6 +24,9 @@ let dryRunCount = 0;
 try {
   const localPointer = JSON.parse(readFileSync(resolve(gearDir, 'latest.json'), 'utf8'));
   validatePointer(localPointer);
+  if (!prefix) {
+    prefix = Number(localPointer.schemaVersion) >= 3 ? GEAR_PACKED_PREFIX : GEAR_SPLIT_PREFIX;
+  }
 
   const pointer = {
     ...localPointer,
@@ -28,42 +36,34 @@ try {
 
   rmSync(workDir, { recursive: true, force: true });
   mkdirSync(workDir, { recursive: true });
+
   const latestPath = resolve(workDir, 'latest.json');
   writeFileSync(latestPath, JSON.stringify(pointer, null, 2), 'utf8');
 
-  // 检查 R2 上已有的 manifest version，相同则跳过 bulk 上传
   const forceUpload = process.env.GEAR_CACHE_FORCE === '1';
-  const r2Current = forceUpload ? null : fetchR2LatestPointer(bucket, prefix, locale);
-  const manifestUnchanged = !forceUpload && r2Current?.manifestVersion === localPointer.manifestVersion;
+  const localUploadManifest = readLocalUploadManifest();
+  const remoteUploadManifest = forceUpload ? null : fetchR2Json(bucket, prefix, locale, uploadManifestPath());
+  const bulkEntries = buildBulkEntries(localUploadManifest, remoteUploadManifest, forceUpload);
 
-  if (manifestUnchanged) {
-    console.log(`R2 已有 manifest ${localPointer.manifestVersion}，跳过 bulk 上传（${localPointer.counts?.files || '?'} 个文件已存在）。`);
-    uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json');
-    publishKvPointer(pointer);
-    const action = process.env.GEAR_CACHE_DRY_RUN === '1' ? 'Prepared' : 'Published';
-    console.log(`${action} latest.json for manifest ${pointer.manifestVersion} (no bulk upload needed).`);
-  } else {
-    const files = listFiles(gearDir).filter((filePath) => filePath !== resolve(gearDir, 'latest.json'));
-    const bulkEntries = [];
-    for (const filePath of files) {
-      const relativePath = toPosix(relative(gearDir, filePath));
-      bulkEntries.push({
-        key: `${prefix}/${locale}/${relativePath}`,
-        file: filePath
-      });
-    }
-    const aliasesUploaded = appendSourceAliases(bulkEntries, localPointer.root);
+  if (bulkEntries.length) {
     const bulkManifestPath = resolve(workDir, 'bulk-manifest.json');
     writeFileSync(bulkManifestPath, JSON.stringify(bulkEntries, null, 2), 'utf8');
-    if (bulkEntries.length) bulkUpload(bulkManifestPath);
-    uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json');
-    publishKvPointer(pointer);
-
-    const byteSize = bulkEntries.reduce((sum, entry) => sum + statSync(entry.file).size, 0) + statSync(latestPath).size;
-    const action = process.env.GEAR_CACHE_DRY_RUN === '1' ? 'Prepared' : 'Published';
-    console.log(`${action} gear cache ${pointer.manifestVersion} to R2 bucket ${bucket}.`);
-    console.log(`Files: ${bulkEntries.length + 1}, items: ${pointer.counts?.items || 0}, size: ${formatBytes(byteSize)}, aliases: ${aliasesUploaded ? 'yes' : 'no'}`);
+    bulkUpload(bulkManifestPath);
+  } else {
+    console.log(`Gear cache ${pointer.manifestVersion} has no changed object files to upload.`);
   }
+
+  const uploadManifestFile = resolve(gearDir, uploadManifestPath());
+  if (existsSync(uploadManifestFile)) {
+    uploadFile(uploadManifestFile, `${prefix}/${locale}/${uploadManifestPath()}`, 'application/json');
+  }
+  uploadFile(latestPath, `${prefix}/${locale}/latest.json`, 'application/json');
+  publishKvPointer(pointer);
+
+  const byteSize = bulkEntries.reduce((sum, entry) => sum + statSync(entry.file).size, 0) + statSync(latestPath).size;
+  const action = process.env.GEAR_CACHE_DRY_RUN === '1' ? 'Prepared' : 'Published';
+  console.log(`${action} gear cache ${pointer.manifestVersion} to R2 bucket ${bucket}.`);
+  console.log(`Changed files: ${bulkEntries.length}, items: ${pointer.counts?.items || 0}, uploaded size: ${formatBytes(byteSize)}`);
 
   if (dryRunCount) {
     console.log(`Dry run commands: ${dryRunCount}`);
@@ -74,10 +74,50 @@ try {
   process.exitCode = 1;
 }
 
-// 从 R2 拉取当前 latest.json，返回 pointer 对象或 null（首次发布时 R2 无文件，返回 null）
-function fetchR2LatestPointer(bucket, prefix, locale) {
-  const key = `${bucket}/${prefix}/${locale}/latest.json`;
-  const outFile = resolve(workDir, 'r2-current-latest.json');
+function readLocalUploadManifest() {
+  const filePath = resolve(gearDir, uploadManifestPath());
+  if (!existsSync(filePath)) return null;
+  return JSON.parse(readFileSync(filePath, 'utf8'));
+}
+
+function buildBulkEntries(localUploadManifest, remoteUploadManifest, forceUpload) {
+  const entries = localUploadManifest?.files && typeof localUploadManifest.files === 'object'
+    ? Object.entries(localUploadManifest.files)
+    : null;
+
+  if (!entries) {
+    return listFiles(gearDir)
+      .filter((filePath) => filePath !== resolve(gearDir, 'latest.json'))
+      .map((filePath) => {
+        const relativePath = toPosix(relative(gearDir, filePath));
+        return {
+          key: `${prefix}/${locale}/${relativePath}`,
+          file: filePath
+        };
+      });
+  }
+
+  const remoteFiles = remoteUploadManifest?.files && typeof remoteUploadManifest.files === 'object'
+    ? remoteUploadManifest.files
+    : {};
+
+  return entries
+    .filter(([relativePath, entry]) => {
+      if (forceUpload) return true;
+      const remoteEntry = remoteFiles[relativePath];
+      return !remoteEntry || remoteEntry.sha256 !== entry.sha256 || remoteEntry.size !== entry.size;
+    })
+    .map(([relativePath, entry]) => ({
+      key: `${prefix}/${locale}/${entry.r2Key || relativePath}`,
+      file: resolve(gearDir, relativePath)
+    }))
+    .filter((entry) => existsSync(entry.file));
+}
+
+function fetchR2Json(bucketName, gearPrefix, gearLocale, relativePath) {
+  if (process.env.GEAR_CACHE_DRY_RUN === '1') return null;
+  const key = `${bucketName}/${gearPrefix}/${gearLocale}/${relativePath}`;
+  const outFile = resolve(workDir, `r2-${relativePath.replace(/[^a-zA-Z0-9._-]+/g, '-')}`);
   mkdirSync(workDir, { recursive: true });
   const args = [
     'wrangler', 'r2', 'object', 'get', key,
@@ -96,8 +136,9 @@ function fetchR2LatestPointer(bucket, prefix, locale) {
 }
 
 function validatePointer(pointer) {
-  if (!pointer || Number(pointer.schemaVersion) !== 2 || !pointer.manifestVersion || !pointer.root) {
-    throw new Error(`Invalid v2 gear pointer: ${resolve(gearDir, 'latest.json')}`);
+  const schemaVersion = Number(pointer?.schemaVersion || 0);
+  if (!pointer || ![2, 3].includes(schemaVersion) || !pointer.manifestVersion || !pointer.root) {
+    throw new Error(`Invalid v2/v3 gear pointer: ${resolve(gearDir, 'latest.json')}`);
   }
 }
 
@@ -135,16 +176,6 @@ function bulkUpload(filename) {
     '--force'
   ];
   runNpx(args, `wrangler r2 bulk put failed for ${bucket}`);
-}
-
-function appendSourceAliases(entries, root) {
-  if (!existsSync(sourceAliasesFile)) return false;
-  JSON.parse(readFileSync(sourceAliasesFile, 'utf8'));
-  entries.push({
-    key: `${prefix}/${locale}/${root}/source-aliases.json`,
-    file: sourceAliasesFile
-  });
-  return true;
 }
 
 function publishKvPointer(pointer) {

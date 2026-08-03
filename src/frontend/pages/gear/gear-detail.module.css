@@ -242,33 +242,46 @@
 
 .perk-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 8px;
   align-items: start;
 }
 
 .perk-column {
   min-width: 0;
   display: grid;
-  gap: 7px;
-  padding: 8px;
+  gap: 5px;
+  padding: 6px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-2);
 }
 
 .perk-column h4 {
-  margin: 0 0 2px;
+  margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
+}
+
+.perk-origin-inline {
+  margin-top: 4px;
+  display: grid;
+  gap: 5px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.perk-origin-inline h4 {
+  margin: 0;
 }
 
 .perk-card {
+  position: relative;
   min-width: 0;
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 7px;
-  padding: 6px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 6px;
+  padding: 5px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--surface-elevated);
@@ -279,10 +292,15 @@
   background: var(--amber-2);
 }
 
+.perk-card.values-open {
+  z-index: 40;
+  border-color: var(--green-border);
+}
+
 .perk-card img {
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
   object-fit: cover;
   background: var(--avatar-bg);
 }
@@ -294,7 +312,7 @@
 }
 
 .perk-card b {
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
@@ -302,18 +320,22 @@
 .perk-card span,
 .perk-card p {
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .perk-card p {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .perk-enhanced-notes {
-  margin-top: 5px;
+  margin-top: 3px;
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .perk-enhanced-notes em {
@@ -322,10 +344,206 @@
   color: var(--amber-text);
   background: var(--amber-2);
   border: 1px solid var(--amber-border);
-  border-radius: 5px;
-  padding: 3px 5px;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 10px;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.perk-champion-badges {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.perk-champion-badge {
+  display: inline-flex;
+  min-height: 17px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--amber-border) 75%, var(--line));
+  border-radius: 999px;
+  padding: 0 6px;
+  background: color-mix(in srgb, var(--amber-2) 85%, transparent);
+  color: var(--amber-text);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.perk-card-actions {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.perk-card-actions button {
+  min-height: 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 6px;
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.perk-card-actions button:hover,
+.perk-card-actions button:focus-visible {
+  border-color: var(--green-border);
+  color: var(--green);
+  outline: none;
+}
+
+.perk-effect-toggle[aria-expanded='true'] {
+  border-color: var(--green-border);
+  background: var(--green-2);
+  color: var(--green);
+}
+
+.perk-enhanced-toggle[aria-expanded='true'] {
+  border-color: var(--amber-border);
+  background: var(--amber-2);
+  color: var(--amber-text);
+}
+
+.perk-popularity-toggle[aria-expanded='true'] {
+  border-color: var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.perk-info-popover {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: calc(100% + 5px);
+  z-index: 30;
+  border-radius: 8px;
+  background: var(--surface-elevated);
+  box-shadow: 0 14px 30px rgb(0 0 0 / 30%);
+}
+
+.perk-effect-popover {
+  border: 1px solid var(--green-border);
+}
+
+.perk-enhanced-popover {
+  border: 1px solid var(--amber-border);
+  padding: 7px;
+}
+
+.perk-popularity-popover {
+  border: 1px solid var(--line);
+  padding: 7px;
+}
+
+.perk-popularity-notes {
+  display: grid;
+  gap: 5px;
+}
+
+.perk-popularity-notes strong {
+  color: var(--text);
   font-size: 11px;
+  line-height: 1.25;
+}
+
+.perk-popularity-notes ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.perk-popularity-notes li {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 6px;
+  color: var(--muted);
+  font-size: 10px;
   line-height: 1.35;
+}
+
+.perk-enhanced-popover .perk-enhanced-notes {
+  margin-top: 0;
+}
+
+.perk-enhanced-popover .perk-enhanced-notes em {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.perk-card-clickable {
+  cursor: pointer;
+}
+
+.perk-card-clickable:hover {
+  border-color: var(--green);
+}
+
+.perk-effect-notes {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+}
+
+.perk-effect-notes > strong {
+  color: var(--green);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.perk-effect-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  align-items: start;
+}
+
+.perk-effect-group > span {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 17px;
+  align-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid var(--green-border);
+  background: var(--green-2);
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.perk-effect-group ul {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.perk-effect-group li {
+  margin: 0;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.perk-effect-group li + li {
+  margin-top: 3px;
 }
 
 .perk-strip {
@@ -391,12 +609,43 @@
   }
 }
 
-.perk-card-clickable {
-  cursor: pointer;
+.perk-rec-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
 }
 
-.perk-card-clickable:hover {
-  border-color: var(--green);
+.perk-rec-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--amber-2);
+  color: var(--amber-text);
+  border: 1px solid var(--amber-border);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.perk-rec-badge-pve {
+  background: color-mix(in srgb, var(--green) 14%, var(--surface-elevated));
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 50%, var(--line));
+}
+
+.perk-rec-badge-pvp {
+  background: color-mix(in srgb, var(--amber-2) 35%, var(--surface-elevated));
+  color: var(--amber-text);
+  border-color: var(--amber-border);
+}
+
+.perk-rec-badge-general {
+  background: var(--surface-2);
+  color: var(--muted);
+  border-color: var(--line);
 }
 
 .perk-chip-clickable:not(:disabled) {

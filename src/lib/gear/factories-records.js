@@ -8,6 +8,7 @@ import {
   isEnhancedPerk,
   baseWeaponName
 } from './labels.js';
+import { extractChampionCounters } from './champion-counters.js';
 
 export function makeWeaponRecord(definition, item, items, plugSets, statDefs, weaponPlugs, craftingInfoByHash = new Map(), sandboxPerks = {}, objectiveDefs = {}) {
   const sockets = [];
@@ -149,7 +150,7 @@ export function resolveSocketPerks(socket, perkByHash) {
 export function addWeaponPlug(output, definition, statDefs) {
   const hash = Number(definition.hash);
   if (!hash || output.has(hash)) return;
-  output.set(hash, {
+  const record = {
     hash,
     name: displayName(definition),
     type: definition.itemTypeDisplayName || '',
@@ -158,7 +159,10 @@ export function addWeaponPlug(output, definition, statDefs) {
     description: cleanText(displayDescription(definition)),
     category: definition.plug?.plugCategoryIdentifier || '',
     stats: formatInvestmentStats(definition, statDefs)
-  });
+  };
+  const championCounters = extractChampionCounters(record);
+  if (championCounters.length) record.championCounters = championCounters;
+  output.set(hash, record);
 }
 
 export function isWeaponSocketPlug(definition) {

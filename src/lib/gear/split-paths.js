@@ -1,7 +1,9 @@
 import { normalizeText } from './utils.js';
 
 export const GEAR_SPLIT_SCHEMA_VERSION = 2;
+export const GEAR_PACKED_SCHEMA_VERSION = 3;
 export const GEAR_SPLIT_PREFIX = 'gear-cache/v2';
+export const GEAR_PACKED_PREFIX = 'gear-cache/v3';
 
 /**
  * DJB2 hash over normalizeText(value) → deterministic sourceKey.
@@ -21,13 +23,35 @@ export function gearItemBucket(hash) {
   return value.slice(-2).padStart(2, '0') || '00';
 }
 
+export function packedBucket(hash) {
+  const value = Number(safeHash(hash));
+  if (!Number.isFinite(value)) return '00';
+  return String(Math.abs(value) % 100).padStart(2, '0');
+}
+
 export function gearItemPath(hash) {
   const value = safeHash(hash);
   return `items/${gearItemBucket(value)}/${value}.json`;
 }
 
+export function gearItemBucketPath(hash) {
+  return `items/${packedBucket(hash)}.json`;
+}
+
 export function perkWeaponsPath(hash) {
   return `perk-weapons/${safeHash(hash)}.json`;
+}
+
+export function perkWeaponsBucketPath(hash) {
+  return `perk-weapons/${packedBucket(hash)}.json`;
+}
+
+export function rollRecommendationsBucketPath(hash) {
+  return `rolls/${packedBucket(hash)}.json`;
+}
+
+export function uploadManifestPath() {
+  return 'upload-manifest.json';
 }
 
 export function searchShardPath(kind) {

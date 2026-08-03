@@ -104,3 +104,117 @@ describe('GearDetailViews perk weapon groups', () => {
     expect(screen.getByText('2 / 2')).toBeTruthy();
   });
 });
+
+describe('GearDetailViews roll recommendation badges', () => {
+  it('renders anti-champion badges on perk cards', () => {
+    render(<GearDetailSlot detail={{
+      item: {
+        hash: 9002,
+        kind: 'weapon',
+        name: 'Exotic Counter Weapon'
+      },
+      detail: {
+        hash: 9002,
+        name: 'Exotic Counter Weapon',
+        stats: [],
+        sockets: [
+          {
+            socketIndex: 0,
+            label: '框架 / 固有',
+            perks: [
+              {
+                hash: 5001,
+                name: 'Queen Counter',
+                type: '固有',
+                description: '克制屏障勇士。',
+                championCounters: [{ type: 'barrier', label: '反屏障' }]
+              }
+            ]
+          }
+        ],
+        recommendations: []
+      }
+    }} />);
+
+    expect(screen.getByText('反屏障')).toBeTruthy();
+  });
+
+  it('marks recommended perks in place without rendering separate roll cards', () => {
+    render(<GearDetailSlot detail={{
+      item: {
+        hash: 9001,
+        kind: 'weapon',
+        name: 'Test Heavy Weapon'
+      },
+      detail: {
+        hash: 9001,
+        name: 'Test Heavy Weapon',
+        stats: [],
+        sockets: [
+          {
+            socketIndex: 3,
+            label: 'Column 4',
+            perks: [
+              { hash: 3001, name: 'Reload Perk', description: 'Reloads the weapon.' },
+              { hash: 3002, name: 'Duel Perk', description: 'Improves consistency.' }
+            ]
+          },
+          {
+            socketIndex: 4,
+            label: 'Column 5',
+            perks: [
+              { hash: 4001, name: 'Damage Perk', description: 'Increases damage.' }
+            ]
+          }
+        ],
+        recommendations: [
+          {
+            id: 'pve-clear',
+            mode: 'pve',
+            label: '清怪',
+            source: 'test',
+            sockets: [
+              { socketIndex: 3, perkHashes: [3001] },
+              { socketIndex: 4, perkHashes: [4001] }
+            ]
+          },
+          {
+            id: 'pve-damage',
+            mode: 'pve',
+            label: '输出',
+            source: 'test',
+            sockets: [
+              { socketIndex: 3, perkHashes: [3001] },
+              { socketIndex: 4, perkHashes: [4001] }
+            ]
+          },
+          {
+            id: 'pvp-duel',
+            mode: 'pvp',
+            label: '对枪',
+            source: 'test',
+            sockets: [
+              { socketIndex: 3, perkHashes: [3002] }
+            ]
+          },
+          {
+            id: 'lightgg-popular',
+            mode: 'general',
+            label: '社区热度 12%',
+            source: 'light.gg',
+            sockets: [
+              { socketIndex: 3, perkHashes: [3001] },
+              { socketIndex: 4, perkHashes: [4001] }
+            ]
+          }
+        ]
+      }
+    }} />);
+
+    expect(screen.queryByText('推荐组合')).toBeNull();
+    expect(screen.getAllByText('PvE · 清怪')).toHaveLength(2);
+    expect(screen.getAllByText('PvE · 输出')).toHaveLength(2);
+    expect(screen.getByText('PvP · 对枪')).toBeTruthy();
+    expect(screen.getAllByText('热度 1')).toHaveLength(2);
+  });
+});
